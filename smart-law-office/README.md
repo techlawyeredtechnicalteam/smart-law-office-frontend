@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Smart Law Office
+Daily Update
+I. Project Overview and Goal
 
-## Getting Started
+This application is a product app designed for a "Smart Law Office" SaaS product. The primary goal is to present a modern, professional, and visually engaging pitch, combining dark, sophisticated branding with functional previews of the software's user interface.
 
-First, run the development server:
+The design is achieved by integrating several distinct sections, highlighted by a unique hero section where the main application dashboard is visually overlayed, simulating a 3D effect.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+Day 2
+This document outlines the architecture, technology stack, and step-by-step process for the Law Firm/Counsel sign-up flow, as implemented in App.jsx
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Step-by-Step Process Walkthrough
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Step 1: Sign Up (SignUpForm)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Form Validation: The form data is validated client-side using Zod against the SignUpSchema. This ensures:
 
-## Learn More
+Email is a valid format.
 
-To learn more about Next.js, take a look at the following resources:
+Password meets complexity requirements (min 8 chars, letter, number).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+password and confirmPassword fields match.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Submission: The onSubmit handler is called upon successful client-side validation.
 
-## Deploy on Vercel
+API Call: An asynchronous api.post('signup', data) request is initiated.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+In Production: This Axios call registers the user's details on the backend and triggers the email delivery system to send the verification code.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+State Update: If the API call returns success: true, the flow updates the global state:
+
+userEmail is saved (for use in Step 2).
+
+step is updated to 2 (calls onNext()).
+
+Error Handling: If the API returns an error (e.g., email already exists, network failure), the error message is displayed to the user.
+
+Step 2: Verification (VerifyCodeForm)
+
+Input Validation: The code input is validated using the VerifySchema to ensure it is exactly 6 characters long.
+
+Submission: The onSubmit handler is called.
+
+API Call: An asynchronous api.post('verify', { email, code }) request is initiated.
+
+In Production: The backend checks the submitted code against the code associated with the provided userEmail.
+
+State Update: If the API call returns success: true:
+
+step is updated to 3 (calls onNext()).
+
+Error Handling: If verification fails (e.g., incorrect code), the API throws an error, and the user-facing message is updated (setError(errorMessage)).
+
+Step 3: Account Creation/Finalization (CreatingAccount)
+
+Automatic Execution: This component immediately initiates the finalization process upon rendering using a React.useEffect hook.
+
+API Call: An asynchronous api.post('create-account', {}) request is initiated.
+
+In Production: This final call signals the backend to move the user record from a temporary/pending state to an active, full account and potentially generate initial access tokens.
+
+Visual Feedback: While the API call is pending (isFinishing: true), the component displays the animated dots and the "Creating your account" message, matching the provided design.
+
+Finalization: Upon successful response, isFinishing is set to false, the message changes to "Account created successfully!", and the user is advanced to Step 4 after a brief delay (setTimeout).
