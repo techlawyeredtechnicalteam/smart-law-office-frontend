@@ -1,7 +1,8 @@
 import React from "react";
 
 const authLayout = ({ children }: { children: React.ReactNode }) => {
-  // Default two-pane layout for steps 1 and 2
+  
+  // Default two-pane layout for steps 1 and 2  
   return (
     <div className="flex min-h-screen">
       {/* Left Pane (Content) */}
