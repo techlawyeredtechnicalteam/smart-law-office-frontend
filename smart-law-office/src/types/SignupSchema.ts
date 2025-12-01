@@ -9,7 +9,10 @@ const SignUpSchema = z
       .regex(/[a-zA-Z]/, { message: "Password must contain a letter." })
       .regex(/[0-9]/, { message: "Password must contain a number." }),
     confirmPassword: z.string(),
-    firmId: z.string().optional()
+    firmId: z.string().optional(),
+    consent: z.boolean().refine((val) => val === true, {
+      message: "You must agree to the terms of service and privacy policy."
+    })
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match.",
@@ -17,7 +20,7 @@ const SignUpSchema = z
   });
 
 const VerifySchema = z.object({
-  code: z
+  otp: z
     .string()
     .min(6, { message: "Code must be 6 digits." })
     .max(6, { message: "Code must be 6 digits." })

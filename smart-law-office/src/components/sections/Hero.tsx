@@ -1,8 +1,14 @@
 import Image from "next/image";
 import React from "react";
 import { Button } from "../ui/button";
+import { useRouter } from "next/navigation";
 
 const Hero = () => {
+  const router = useRouter();
+
+  const handleRole = () => {
+    router.push("/role");
+  };
   return (
     <section className="min-h-screen flex flex-col pt-24 pb-16 lg:pt-32 overflow-hidden relative">
       {/* Background ImageOverlay */}
@@ -34,7 +40,11 @@ const Hero = () => {
 
             {/* Button Group */}
             <div className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8 lg:mb-12">
-              <Button variant="default" className="bg-violet-600">
+              <Button
+                onClick={handleRole}
+                variant="default"
+                className="bg-violet-600"
+              >
                 Start Free Trial
               </Button>
               <Button

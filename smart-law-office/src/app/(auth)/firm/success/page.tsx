@@ -1,34 +1,49 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
 import { CheckCircle, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React from "react";
 
-const Dot: React.FC = () => (
+const Dot: React.FC<{ delay?: string }> = ({ delay }) => (
   <div
     className="w-3 h-3 mx-1 rounded-full bg-[#7C3AED] animate-pulse"
-    style={{ animationDelay: "0.3s" }}
+    style={{ animationDelay: delay }}
   ></div>
 );
-const CreateAcct = () => {
-  // const router = useRouter();
-  // const { checkAuth, resetSignupFlow } = useAuthStore();
+const SuccessPage = () => {
+  const router = useRouter();
+  const { user } = useAuthStore();
   const [isFinishing, setIsFinishing] = React.useState<boolean>(true);
-  // const [showSuccess, setShowSuccess] = React.useState<boolean>(false);
+
+  React.useEffect(() => {
+    // simulate acct delay
+    const timer = setTimeout(() => {
+      setIsFinishing(false);
+
+      // Redirect after short delay
+      setTimeout(() => {
+        router.push("/dashboard");
+      }, 1500);
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center bg-violet-50">
       <div className="flex mb-8">
-        <Dot />
-        <Dot />
-        <Dot />
+        <Dot delay="0s" />
+        <Dot delay="0.2s" />
+        <Dot delay="0.4s" />
       </div>
+
       <p className="textlg font-medium text-gray-800">
         {isFinishing
           ? "Creating your account"
-          : "Account created successfully!"}
+          : `Account created successfully ${
+              user?.email ? `, ${user?.email}` : ""
+            }!`}
       </p>
 
       {/* placeholder for visual  */}
@@ -47,17 +62,15 @@ const CreateAcct = () => {
           {isFinishing ? (
             <Loader2 className="w-10 h-10 text-[#7C3AED] animate-spin" />
           ) : (
-            <CheckCircle className="w-10 h-10 text-green-600" />
+            <div className="flex flex-col items-center">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+              <p className="text-gray-600">Redirecting you now...</p>
+            </div>
           )}
-          <p className="mt-4 text-gray-600">
-            {isFinishing
-              ? "Please wait, this may take a moment."
-              : "Redirecting you now..."}
-          </p>
         </div>
       </div>
     </div>
   );
 };
 
-export default CreateAcct;
+export default SuccessPage;

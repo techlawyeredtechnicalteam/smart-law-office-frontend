@@ -1,15 +1,19 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
+import { useForgotPasswordStore } from "@/store/forgotPasswordStore";
+import { toast } from "sonner";
+import {
+  sendPasswordResetOtp,
+  verifyPasswordResetOtp
+} from "@/app/api/forgotpassword.api";
+import {
+  ForgotOtpFormData,
+  ForgotOtpSchema
+} from "@/types/ForgotPasswordSchema";
 import { useForm } from "react-hook-form";
-import { Input } from "@/components/ui/input";
-import { useAuthStore } from "@/store/authStore";
-import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { VerifySchema } from "@/types/SignupSchema";
-import { Button } from "@/components/ui/button";
-import { ArrowRight, Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   Form,
   FormControl,
@@ -18,46 +22,44 @@ import {
   FormLabel,
   FormMessage
 } from "@/components/ui/form";
-import { verifyOtp, finalizeSignup, sendOtp } from "@/app/api/signup.api";
-import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
-type VerifyFormData = z.infer<typeof VerifySchema>;
-
-const VerifyPage = () => {
+const VerifyOtp = () => {
   const router = useRouter();
-  const params = useSearchParams();
-  const userIdFromQuery = params.get("userId") || "";
-  const { setUser } = useAuthStore();
+  const { email } = useForgotPasswordStore();
+  // countdown
+  const [countdown, setCountdown] = React.useState(30);
   const [showCode, setShowCode] = React.useState<boolean>(false);
-  // resend countdown state
-  const [countdown, setCountdown] = React.useState(0);
   const countdownRef = React.useRef<number | null>(null);
 
-  const form = useForm<VerifyFormData>({
-    resolver: zodResolver(VerifySchema),
+  const form = useForm<ForgotOtpFormData>({
+    resolver: zodResolver(ForgotOtpSchema),
     defaultValues: {
       otp: ""
     }
   });
 
   React.useEffect(() => {
-    if (!userIdFromQuery) toast.error("Missing userId - please signup again");
-    // router.push("/firm/sign-up");
-    return () => {
-      if (countdownRef.current) window.clearInterval(countdownRef.current);
-    };
-  }, [userIdFromQuery]);
+    if (!email) {
+      toast.error("Email not found, Start over.");
+      // router.push("/forgot-password");
+    }
+    startCountdown();
 
-  // Otp count down
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [email]);
+
+  // start count down
   const startCountdown = (seconds = 30) => {
     setCountdown(seconds);
     countdownRef.current = window.setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) {
-          if (countdownRef.current) {
-            window.clearInterval(countdownRef.current);
-            countdownRef.current = null;
-          }
+          if (countdownRef.current) clearInterval(countdownRef.current);
           return 0;
         }
         return c - 1;
@@ -65,52 +67,35 @@ const VerifyPage = () => {
     }, 1000);
   };
 
-  const onVerify = React.useCallback(
-    async (data: VerifyFormData) => {
-      // setLoading(true)
-      try {
-        await verifyOtp({ email: userIdFromQuery, otp: data.otp });
-        const finalizeRes = await finalizeSignup({ email: userIdFromQuery });
-        const user = finalizeRes.data?.user ?? finalizeRes.data?.data?.user;
-        if (user) setUser(user);
-        toast.success("OTP verified! Creating acct...");
-        router.push("/firm/success");
-      } catch (err: any) {
-        toast.error("OTP verification failed");
-      }
-    },
-    [userIdFromQuery, router, setUser]
-  );
-
   const handleResend = async () => {
-    if (!userIdFromQuery) return toast.error("No userId to resend to");
     if (countdown > 0) return; // prevent spam
     try {
-      await sendOtp({ email: userIdFromQuery });
+      await sendPasswordResetOtp({ email });
       toast.info("OTP resent. Check your email");
       startCountdown(30); //30s
     } catch (err: any) {
-      toast.error("Resend failed");
+      toast.error("failed to resend OTP");
+    }
+  };
+
+  const onVerify = async (data: ForgotOtpFormData) => {
+    // setLoading(true)
+    try {
+      await verifyPasswordResetOtp({ email, otp: data.otp });
+      toast.success("OTP verified!");
+      router.push("/forgot-password/reset");
+    } catch (err: any) {
+      toast.error("OTP verification failed");
     }
   };
 
   return (
     <div className="flex flex-col h-full p-8 lg:p-16 justify-center">
-      {/* back to sign-up page */}
-      <button
-        type="button"
-        aria-label="Back to sign-up"
-        onClick={() => router.push("/firm/sign-up")}
-        className="flex items-center text-sm text-gray-600 hover:text-[#7C3AED] transition-colors absolute top-4 left-4 lg:top-8 lg:left-8"
-      >
-        <ArrowRight className="w-4 h-4 mr-1 rotate-180" /> Back
-      </button>
-
       <div className="max-w-lg mx-auto w-full">
         <h1 className="text-5xl font-bold mb-4">We emailed you a code</h1>
         <p className="text-lg text-gray-700 mb-8">
-          A Verification code was sent to <strong>{userIdFromQuery}</strong>.
-          Enter the code below.
+          A Verification code was sent to <strong>{email}</strong>. Enter the
+          code below.
         </p>
 
         <Form {...form}>
@@ -184,4 +169,4 @@ const VerifyPage = () => {
   );
 };
 
-export default VerifyPage;
+export default VerifyOtp;
