@@ -1,8 +1,10 @@
 "use client";
 import VerifyForm from "@/components/auth/VerifyForm";
+import { Loader2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 
-export default function VerifyPage() {
+function VerifyContent() {
   const params = useSearchParams();
   const userIdFromQuery = params.get("email") || "";
 
@@ -19,5 +21,15 @@ export default function VerifyPage() {
       {/* VerifyForm */}
       <VerifyForm />
     </div>
+  );
+}
+
+export default function VerifyPage() {
+  return (
+    <Suspense
+      fallback={<Loader2 className="w-32 h-32 animate-spin rounded-full" />}
+    >
+      <VerifyContent />
+    </Suspense>
   );
 }
