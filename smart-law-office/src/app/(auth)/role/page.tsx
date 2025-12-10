@@ -1,17 +1,17 @@
 "use client";
 
 import React from "react";
-import { useAuthStore } from "@/store/authStore";
+// import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { RoleCard } from "@/components/auth/UserRoleCard";
 
 const UserRole = () => {
-  const { setRole } = useAuthStore();
+  // const { setRole } = useAuthStore();
   const router = useRouter();
 
-  const handleRoleSelect = (role: "client" | "lawyer") => {
-    setRole(role);
-    if (role === "client") {
+  const handleRoleSelect = (role: "CLIENT" | "COUNSEL") => {
+    // setRole(role);
+    if (role === "CLIENT") {
       router.push("/signup-client");
     } else {
       router.push("/signup");
@@ -35,7 +35,7 @@ const UserRole = () => {
           iconSrc="/client-user-role.png"
           role="client"
           activeColor="blue"
-          onClick={() => handleRoleSelect("client")}
+          onClick={() => handleRoleSelect("CLIENT")}
         />
         {/* LawFirm/Counsel Card */}
         <RoleCard
@@ -44,7 +44,7 @@ const UserRole = () => {
           iconSrc="/firm-user-role.png"
           role="lawyer"
           activeColor="violet"
-          onClick={() => handleRoleSelect("lawyer")}
+          onClick={() => handleRoleSelect("COUNSEL")}
         />
       </div>
 
