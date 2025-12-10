@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { Button } from "../../shared/ui/button";
 
 interface FileUploadProps {
   id: string;
