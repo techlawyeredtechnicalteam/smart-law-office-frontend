@@ -4,14 +4,14 @@ import React from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { useForgotPasswordStore } from "@/store/forgotPasswordStore";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button } from "@/components/shared/ui/button";
+import { Input } from "@/components/shared/ui/input";
 import { toast } from "sonner";
 import { sendOtp } from "@/app/api/signup.api";
 import {
   ForgotPasswordFormData,
   ForgotPasswordSchema
-} from "@/types/ForgotPasswordSchema";
+} from "@/lib/ForgotPasswordSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { sendPasswordResetOtp } from "@/app/api/forgotpassword.api";
 import { Loader2, Mail } from "lucide-react";
@@ -22,7 +22,7 @@ import {
   FormItem,
   FormLabel,
   FormMessage
-} from "@/components/ui/form";
+} from "@/components/shared/ui/form";
 
 const ForgotPassword = () => {
   const router = useRouter();

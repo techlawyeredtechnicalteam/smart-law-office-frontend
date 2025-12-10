@@ -1,19 +1,12 @@
-import api from "./api";
+// import api, { FirmProfileAPI } from "./api";
 
-export type SignupPayload = {
-  email: string;
-  password: string;
-  confirmPassword: string;
-  firstName: string;
-  lastName: string;
-  address?: string;
-  consent: boolean;
-  role?: string;
-  firmId: string;
-};
+// import { SignUpPayload } from "@/store/firmProfileStore";
+import api, { CompleteSignupApi } from "./api";
 
-export const signup = (payload: SignupPayload) =>
-  api.post("/auths/signup", payload);
+// Complete form payload
+// export type completeSignupPayload = FormData;
+
+export const signup = (payload: any) => api.post("/auths/signup", payload);
 
 export const sendOtp = (payload: { email: string }) =>
   api.post("/auths/send-otp", payload);
@@ -21,7 +14,13 @@ export const sendOtp = (payload: { email: string }) =>
 export const verifyOtp = (payload: { email: string; otp: string }) =>
   api.post("/auths/verify-otp", payload);
 
-export const finalizeSignup = (payload: { email: string }) =>
+export const finalizeSignup = async (payload: { otp: string }) =>
   api.post("/auths/signup-finalize", payload);
 
-export const fetchUser = () => api.get("/auths/me");
+export type loginPayload = {
+  email: string;
+  password: string;
+};
+
+export const login = (loginPayload: { email: string; password: string }) =>
+  api.post("/auths/signin", loginPayload);

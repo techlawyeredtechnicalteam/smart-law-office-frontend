@@ -1,0 +1,1160 @@
+// import React, { useState, useEffect, useCallback, useMemo } from 'react';
+// import { create } from 'zustand';
+// import {
+//     Home, Briefcase, DollarSign, MessageSquare, Shield, FileText, Settings, LogOut, Menu, X, User,
+//     Calendar, Search, Bell, Monitor, Lock, UserPlus, Zap, TrendingUp, HelpCircle, Plus, Edit, Trash2,
+//     Clock, Users, File, ChevronDown
+// } from 'lucide-react';
+// import { initializeApp } from 'firebase/app';
+// import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, User as FirebaseAuthUser } from 'firebase/auth';
+// import {
+//     getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc,
+//     onSnapshot, collection, query, where, getDocs, setLogLevel
+// } from 'firebase/firestore';
+
+// // --- 0. FIREBASE INITIALIZATION & GLOBALS ---
+
+// // Mandatory Canvas global variables
+// const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+// const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+// const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : undefined;
+
+// let app;
+// let db;
+// let auth;
+
+// try {
+//     app = initializeApp(firebaseConfig);
+//     db = getFirestore(app);
+//     auth = getAuth(app);
+//     setLogLevel('error'); // Set error logging for production build
+// } catch (error) {
+//     console.error("Failed to initialize Firebase:", error);
+// }
+
+// // --- 1. ZUSTAND AUTH STORE (User provided) ---
+
+// export interface UserProfile {
+//     id: string;
+//     email: string;
+//     firmId?: string;
+//     role: 'client' | 'lawyer' | 'admin'; // Refined role type for logic
+//     firstName?: string;
+//     lastName?: string;
+// }
+
+// interface AuthState {
+//     user: UserProfile | null;
+//     setUser: (user: UserProfile | null) => void;
+//     clearUser: () => void;
+
+//     // Auth readiness state (Crucial for Firestore queries)
+//     isAuthReady: boolean;
+//     setIsAuthReady: (ready: boolean) => void;
+
+//     // user role
+//     role: "client" | "lawyer" | "";
+//     setRole: (role: "client" | "lawyer" | "") => void;
+//     clearRole: () => void;
+// }
+
+// export const useAuthStore = create<AuthState>((set) => ({
+//     user: null,
+//     setUser: (user) => set({ user }),
+//     clearUser: () => set({ user: null }),
+//     role: "",
+//     setRole: (role) => set({ role }),
+//     clearRole: () => set({ role: "" }),
+//     isAuthReady: false,
+//     setIsAuthReady: (ready) => set({ isAuthReady: ready }),
+// }));
+
+// // --- 2. ZUSTAND CASE MANAGEMENT STORE (User provided, extended for API) ---
+
+// interface Case {
+//     id: string;
+//     clientName: string;
+//     clientId: string;
+//     caseType: string;
+//     status: 'Pending' | 'Active' | 'Closed';
+//     counselId?: string;
+//     counselName?: string;
+//     nextAdjournedDate?: string;
+//     lastAdjournedDate?: string;
+//     documents: string[]; // Placeholder for doc names
+//     notes: Array<{ id: number, date: string, text: string, author: string }>;
+//     createdAt: string;
+// }
+
+// interface CaseState {
+//     cases: Case[];
+//     selectedCase: Case | null;
+//     setCases: (data: Case[]) => void;
+//     setSelectedCase: (c: Case | null) => void;
+//     isLoading: boolean;
+//     error: string | null;
+//     setIsLoading: (loading: boolean) => void;
+//     setError: (error: string | null) => void;
+// }
+
+// export const useCaseStore = create<CaseState>((set) => ({
+//     cases: [],
+//     selectedCase: null,
+//     setCases: (data) => set({ cases: data }),
+//     setSelectedCase: (c) => set({ selectedCase: c }),
+//     isLoading: false,
+//     error: null,
+//     setIsLoading: (loading) => set({ isLoading: loading }),
+//     setError: (error) => set({ error: error }),
+// }));
+
+// // --- 3. FIREBASE/FIRESTORE DATA HANDLERS ---
+
+// const FIRESTORE_PATHS = {
+//     // Public data visible across users (cases, shared profiles)
+//     CASES: `/artifacts/${appId}/public/data/cases`,
+//     PROFILES: `/artifacts/${appId}/public/data/profiles`,
+// };
+
+// /**
+//  * Fetches the user profile from the public 'profiles' collection.
+//  * If not found, a mock 'admin' profile is created for initial setup.
+//  * @param {string} uid The Firebase User ID
+//  * @returns {Promise<UserProfile>}
+//  */
+// const fetchOrCreateUserProfile = async (uid: string): Promise<UserProfile> => {
+//     const profileRef = doc(db, FIRESTORE_PATHS.PROFILES, uid);
+//     const profileSnap = await getDoc(profileRef);
+
+//     if (profileSnap.exists()) {
+//         const data = profileSnap.data() as UserProfile;
+//         // Ensure role is set for the store
+//         return { ...data, id: uid, role: data.role || 'client' };
+//     } else {
+//         // --- MOCK INITIAL ADMIN SETUP (For first run) ---
+//         const initialProfile: UserProfile = {
+//             id: uid,
+//             email: `user_${uid.substring(0, 4)}@lawfirm.com`,
+//             role: 'lawyer', // Default to 'lawyer' for initial testing
+//             firstName: 'Demo',
+//             lastName: 'Counsel',
+//         };
+//         await setDoc(profileRef, initialProfile);
+//         return initialProfile;
+//     }
+// };
+
+// // --- 4. DATA FETCHING AND MUTATION LOGIC (Integrated into Component) ---
+
+// // Custom hook to manage real-time case data
+// const useCaseData = (userId: string | null, isAuthReady: boolean) => {
+//     const { setCases, setIsLoading, setError } = useCaseStore();
+
+//     useEffect(() => {
+//         if (!isAuthReady || !userId || !db) return;
+
+//         // Query for ALL cases in the public collection.
+//         // In a real app, this query might be filtered by firmId or counselId
+//         const q = collection(db, FIRESTORE_PATHS.CASES);
+
+//         setIsLoading(true);
+//         const unsubscribe = onSnapshot(q, (snapshot) => {
+//             try {
+//                 const casesData: Case[] = snapshot.docs.map(doc => {
+//                     const data = doc.data();
+//                     // Deserialize complex objects if needed, although simple data is used here
+//                     return {
+//                         id: doc.id,
+//                         ...(data as Omit<Case, 'id'>)
+//                     };
+//                 });
+//                 setCases(casesData);
+//                 setError(null);
+//             } catch (err) {
+//                 console.error("Error processing case snapshot:", err);
+//                 setError("Failed to process case data.");
+//             } finally {
+//                 setIsLoading(false);
+//             }
+//         }, (error) => {
+//             console.error("Error listening to cases:", error);
+//             setError("Real-time case updates failed.");
+//             setIsLoading(false);
+//         });
+
+//         return () => unsubscribe(); // Cleanup listener on unmount
+//     }, [isAuthReady, userId, setCases, setIsLoading, setError]);
+// };
+
+// // --- 5. UI COMPONENTS (Adapted for Firestore) ---
+
+// const Input = ({ label, name, value, onChange, type = 'text', required = false, className = '' }) => (
+//     <div className={`mb-4 ${className}`}>
+//         <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+//             {label} {required && <span className="text-red-500">*</span>}
+//         </label>
+//         <input
+//             type={type}
+//             name={name}
+//             id={name}
+//             value={value}
+//             onChange={onChange}
+//             required={required}
+//             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition shadow-sm"
+//         />
+//     </div>
+// );
+
+// const Select = ({ label, name, value, onChange, required = false, children }) => (
+//     <div className="mb-4">
+//         <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">
+//             {label} {required && <span className="text-red-500">*</span>}
+//         </label>
+//         <select
+//             name={name}
+//             id={name}
+//             value={value}
+//             onChange={onChange}
+//             required={required}
+//             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 bg-white transition shadow-sm"
+//         >
+//             {children}
+//         </select>
+//     </div>
+// );
+
+// const Button = ({ children, onClick, color = 'primary', type = 'button', className = '', disabled = false }) => {
+//     const colorClasses = {
+//         primary: 'bg-purple-600 hover:bg-purple-700 text-white shadow-md',
+//         secondary: 'bg-gray-200 hover:bg-gray-300 text-gray-800 shadow-sm',
+//         danger: 'bg-red-500 hover:bg-red-600 text-white shadow-md',
+//     };
+//     return (
+//         <button
+//             type={type}
+//             onClick={onClick}
+//             disabled={disabled}
+//             className={`flex items-center justify-center px-4 py-2 font-semibold rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed ${colorClasses[color]} ${className}`}
+//         >
+//             {children}
+//         </button>
+//     );
+// };
+
+// // --- 6. MODAL COMPONENTS for Workflow ---
+
+// const CreateCaseModal = ({ onClose, userId, userName }) => {
+//     const { setIsLoading, setError } = useCaseStore();
+//     const [formData, setFormData] = useState({
+//         clientName: '',
+//         clientId: '',
+//         caseType: '',
+//         status: 'Pending',
+//     });
+//     const [isSubmitting, setIsSubmitting] = useState(false);
+
+//     const handleFormChange = (e) => {
+//         const { name, value } = e.target;
+//         setFormData(prev => ({ ...prev, [name]: value }));
+//     };
+
+//     const handleSubmit = async (e) => {
+//         e.preventDefault();
+//         if (!db || !userId) return;
+
+//         setIsLoading(true);
+//         setIsSubmitting(true);
+//         setError(null);
+
+//         try {
+//             const newCase: Omit<Case, 'id'> = {
+//                 ...formData,
+//                 status: formData.status as 'Pending' | 'Active' | 'Closed',
+//                 counselId: userId, // Default assign to creator
+//                 counselName: userName || 'Admin/Creator',
+//                 documents: [],
+//                 notes: [{
+//                     id: Date.now(),
+//                     date: new Date().toISOString(),
+//                     text: `Case created by ${userName || 'System User'}.`,
+//                     author: userName || 'System User'
+//                 }],
+//                 createdAt: new Date().toISOString(),
+//             };
+
+//             const casesCollection = collection(db, FIRESTORE_PATHS.CASES);
+//             await addDoc(casesCollection, newCase);
+
+//             onClose();
+//         } catch (error) {
+//             console.error('Error creating case:', error);
+//             setError('Failed to create case.');
+//         } finally {
+//             setIsLoading(false);
+//             setIsSubmitting(false);
+//         }
+//     };
+
+//     return (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+//             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl p-8 transform transition-all duration-300">
+//                 <div className="flex justify-between items-center mb-6">
+//                     <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+//                         <Briefcase className="w-6 h-6 mr-2 text-purple-600" /> Create New Case
+//                     </h3>
+//                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2 rounded-full transition">
+//                         <X className="w-6 h-6" />
+//                     </button>
+//                 </div>
+
+//                 <form onSubmit={handleSubmit}>
+//                     <Input label="Client Name" name="clientName" value={formData.clientName} onChange={handleFormChange} required />
+//                     <Input label="Client ID/Reference" name="clientId" value={formData.clientId} onChange={handleFormChange} required />
+//                     <Input label="Case Type (e.g., Land Dispute, IP)" name="caseType" value={formData.caseType} onChange={handleFormChange} required />
+
+//                     <Select label="Initial Status" name="status" value={formData.status} onChange={handleFormChange} required>
+//                         <option value="Pending">Pending</option>
+//                         <option value="Active">Active</option>
+//                         <option value="Closed">Closed</option>
+//                     </Select>
+
+//                     <Button type="submit" className="w-full mt-4" disabled={isSubmitting}>
+//                         {isSubmitting ? 'Creating...' : 'Create Case'}
+//                     </Button>
+//                 </form>
+//             </div>
+//         </div>
+//     );
+// };
+
+// const AssignCaseModal = ({ caseData, onClose }) => {
+//     const { setIsLoading, setError } = useCaseStore();
+//     const [counselProfiles, setCounselProfiles] = useState<UserProfile[]>([]);
+//     const [selectedCounselId, setSelectedCounselId] = useState(caseData.counselId || '');
+//     const [isSubmitting, setIsSubmitting] = useState(false);
+
+//     // Fetch all 'lawyer' and 'admin' profiles for assignment
+//     useEffect(() => {
+//         if (!db) return;
+//         const fetchCounsel = async () => {
+//             try {
+//                 const q = query(collection(db, FIRESTORE_PATHS.PROFILES), where("role", "in", ["lawyer", "admin"]));
+//                 const snapshot = await getDocs(q);
+//                 const profiles = snapshot.docs.map(doc => ({ ...doc.data() as Omit<UserProfile, 'id'>, id: doc.id }));
+//                 setCounselProfiles(profiles as UserProfile[]);
+//             } catch (error) {
+//                 console.error("Failed to fetch counsel profiles:", error);
+//                 setError("Could not load counsel profiles for assignment.");
+//             }
+//         };
+//         fetchCounsel();
+//     }, [setError]);
+
+//     const handleSubmit = async (e) => {
+//         e.preventDefault();
+//         if (!db || !selectedCounselId) return;
+
+//         const counsel = counselProfiles.find(c => c.id === selectedCounselId);
+//         if (!counsel) return;
+
+//         setIsLoading(true);
+//         setIsSubmitting(true);
+//         setError(null);
+
+//         try {
+//             const caseRef = doc(db, FIRESTORE_PATHS.CASES, caseData.id);
+//             const updates = {
+//                 counselId: counsel.id,
+//                 counselName: `${counsel.firstName} ${counsel.lastName}`,
+//                 status: 'Active'
+//             };
+
+//             await updateDoc(caseRef, updates);
+//             onClose();
+//         } catch (error) {
+//             console.error('Error assigning counsel:', error);
+//             setError('Failed to assign counsel.');
+//         } finally {
+//             setIsLoading(false);
+//             setIsSubmitting(false);
+//         }
+//     };
+
+//     return (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4">
+//             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 transform transition-all duration-300">
+//                 <div className="flex justify-between items-center mb-6">
+//                     <h3 className="text-2xl font-bold text-gray-800 flex items-center">
+//                         <Users className="w-6 h-6 mr-2 text-purple-600" /> Assign Counsel
+//                     </h3>
+//                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2 rounded-full transition">
+//                         <X className="w-6 h-6" />
+//                     </button>
+//                 </div>
+
+//                 <form onSubmit={handleSubmit}>
+//                     <Select
+//                         label="Select New Counsel"
+//                         name="counselId"
+//                         value={selectedCounselId}
+//                         onChange={(e) => setSelectedCounselId(e.target.value)}
+//                         required
+//                     >
+//                         <option value="" disabled>Select a Counsel</option>
+//                         {counselProfiles.map(c => (
+//                             <option key={c.id} value={c.id}>{c.firstName} {c.lastName} ({c.role})</option>
+//                         ))}
+//                     </Select>
+
+//                     <Button type="submit" className="w-full mt-4" disabled={isSubmitting || !selectedCounselId}>
+//                         {isSubmitting ? 'Assigning...' : 'Assign Case'}
+//                     </Button>
+//                 </form>
+//             </div>
+//         </div>
+//     );
+// };
+
+// const CaseDetailsModal = ({ caseData, onClose, userName }) => {
+//     const { setIsLoading, setError } = useCaseStore();
+//     const [newNoteText, setNewNoteText] = useState('');
+//     const [nextAdjournedDate, setNextAdjournedDate] = useState(caseData.nextAdjournedDate || '');
+//     const [isSubmitting, setIsSubmitting] = useState(false);
+
+//     const handleNoteSubmit = async (e) => {
+//         e.preventDefault();
+//         if (!newNoteText.trim() || !db) return;
+
+//         setIsSubmitting(true);
+//         setIsLoading(true);
+//         setError(null);
+
+//         try {
+//             const caseRef = doc(db, FIRESTORE_PATHS.CASES, caseData.id);
+
+//             const newNote = {
+//                 id: Date.now(),
+//                 date: new Date().toISOString(),
+//                 text: newNoteText.trim(),
+//                 author: userName || 'Admin User',
+//             };
+
+//             const updatedNotes = [...caseData.notes, newNote];
+
+//             await updateDoc(caseRef, { notes: updatedNotes });
+
+//             setNewNoteText('');
+//         } catch (error) {
+//             console.error('Error adding note:', error);
+//             setError('Failed to add note.');
+//         } finally {
+//             setIsLoading(false);
+//             setIsSubmitting(false);
+//         }
+//     };
+
+//     const handleDateUpdate = async (e) => {
+//         e.preventDefault();
+//         if (nextAdjournedDate.trim() === caseData.nextAdjournedDate || !db) return;
+
+//         setIsSubmitting(true);
+//         setIsLoading(true);
+//         setError(null);
+
+//         try {
+//             const caseRef = doc(db, FIRESTORE_PATHS.CASES, caseData.id);
+//             const updates = {
+//                 nextAdjournedDate,
+//                 lastAdjournedDate: caseData.nextAdjournedDate
+//             };
+
+//             await updateDoc(caseRef, updates);
+//         } catch (error) {
+//             console.error('Error updating date:', error);
+//             setError('Failed to update date.');
+//         } finally {
+//             setIsLoading(false);
+//             setIsSubmitting(false);
+//         }
+//     };
+
+//     const sortedNotes = useMemo(() =>
+//         [...caseData.notes].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+//     , [caseData.notes]);
+
+//     return (
+//         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4 overflow-y-auto">
+//             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-8 transform transition-all duration-300 my-8">
+//                 <div className="flex justify-between items-start mb-6 border-b pb-4">
+//                     <h3 className="text-3xl font-extrabold text-purple-700">
+//                         {caseData.caseType} <span className="text-lg text-gray-500 font-normal">({caseData.id})</span>
+//                     </h3>
+//                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-2 rounded-full transition">
+//                         <X className="w-6 h-6" />
+//                     </button>
+//                 </div>
+
+//                 {/* Case Info Grid */}
+//                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+//                     <InfoBox icon={User} title="Client" value={caseData.clientName} subtitle={`ID: ${caseData.clientId}`} />
+//                     <InfoBox icon={Users} title="Assigned Counsel" value={caseData.counselName || 'Unassigned'} />
+//                     <InfoBox
+//                         icon={Calendar}
+//                         title="Next Adjourned Date"
+//                         value={caseData.nextAdjournedDate ? new Date(caseData.nextAdjournedDate).toLocaleDateString() : 'N/A'}
+//                         subtitle={caseData.status}
+//                     />
+//                 </div>
+
+//                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+//                     {/* Left Column: Notes / Updates */}
+//                     <div className="lg:col-span-2 space-y-6">
+//                         <h4 className="text-xl font-bold text-gray-700 border-b pb-2 flex items-center"><Clock className="w-5 h-5 mr-2"/> Real-Time Notes & Updates</h4>
+
+//                         {/* Add Note Form */}
+//                         <form onSubmit={handleNoteSubmit} className="p-4 bg-gray-50 rounded-xl shadow-inner">
+//                             <textarea
+//                                 value={newNoteText}
+//                                 onChange={(e) => setNewNoteText(e.target.value)}
+//                                 placeholder="Add a real-time note (date/time automatically tracked)"
+//                                 required
+//                                 rows="3"
+//                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 transition"
+//                             />
+//                             <Button type="submit" className="mt-3" disabled={isSubmitting || !newNoteText.trim()}>
+//                                 {isSubmitting ? 'Saving...' : 'Add Note'}
+//                             </Button>
+//                         </form>
+
+//                         {/* Notes Timeline */}
+//                         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+//                             {sortedNotes.map(note => (
+//                                 <div key={note.id} className="p-4 bg-white rounded-lg border-l-4 border-purple-400 shadow-sm">
+//                                     <p className="text-sm font-semibold text-gray-800">{note.text}</p>
+//                                     <p className="text-xs text-gray-500 mt-1">
+//                                         By {note.author} on {new Date(note.date).toLocaleString()}
+//                                     </p>
+//                                 </div>
+//                             ))}
+//                             {caseData.notes.length === 0 && <p className="text-center text-gray-500 py-4">No notes recorded yet.</p>}
+//                         </div>
+//                     </div>
+
+//                     {/* Right Column: Documents & Dates */}
+//                     <div className="space-y-6">
+//                         {/* Documents */}
+//                         <div className="p-6 bg-purple-50 rounded-xl border border-purple-200">
+//                             <h4 className="text-xl font-bold text-purple-700 mb-4 flex items-center"><File className="w-5 h-5 mr-2"/> Documents ({caseData.documents.length})</h4>
+//                             <ul className="space-y-2 text-sm text-gray-700">
+//                                 {caseData.documents.map((doc, index) => (
+//                                     <li key={index} className="flex items-center justify-between p-2 bg-white rounded-lg border border-gray-100">
+//                                         <span className='truncate'>{doc}</span>
+//                                         <a href="#" className="text-purple-500 hover:text-purple-700 text-xs flex-shrink-0 ml-2">View</a>
+//                                     </li>
+//                                 ))}
+//                             </ul>
+//                             <div className="mt-4">
+//                                 <Button color="secondary" className="w-full text-sm">
+//                                     <Plus className="w-4 h-4 mr-1"/> Upload Document (Mock)
+//                                 </Button>
+//                             </div>
+//                         </div>
+
+//                         {/* Date Tracking */}
+//                         <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+//                             <h4 className="text-xl font-bold text-gray-700 mb-4">Date Tracking</h4>
+//                             <p className="text-sm text-gray-600 mb-3">Last Adjourned Date: <span className="font-semibold">{caseData.lastAdjournedDate || 'N/A'}</span></p>
+
+//                             <form onSubmit={handleDateUpdate}>
+//                                 <Input
+//                                     label="Next Adjourned Date"
+//                                     name="nextAdjournedDate"
+//                                     type="date"
+//                                     value={nextAdjournedDate}
+//                                     onChange={(e) => setNextAdjournedDate(e.target.value)}
+//                                     required
+//                                 />
+//                                 <Button type="submit" className="w-full mt-2" disabled={isSubmitting || nextAdjournedDate === caseData.nextAdjournedDate}>
+//                                     Update Date
+//                                 </Button>
+//                             </form>
+//                         </div>
+//                     </div>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// const InfoBox = ({ icon: Icon, title, value, subtitle }) => (
+//     <div className="p-4 bg-white rounded-xl shadow-md border-t-4 border-purple-500">
+//         <div className="flex items-center space-x-3">
+//             <Icon className="w-6 h-6 text-purple-500 flex-shrink-0" />
+//             <div>
+//                 <p className="text-sm font-medium text-gray-500">{title}</p>
+//                 <p className="text-lg font-bold text-gray-800 truncate">{value}</p>
+//                 {subtitle && <p className="text-xs text-gray-400">{subtitle}</p>}
+//             </div>
+//         </div>
+//     </div>
+// );
+
+// // --- 7. CASE MANAGEMENT PAGE (List View) ---
+
+// const CaseManagementPage = () => {
+//     const { cases, isLoading, error, setError } = useCaseStore();
+//     const { user } = useAuthStore();
+//     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+//     const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+//     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
+//     const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+
+//     // Function to delete a case
+//     const handleDelete = async (caseId: string) => {
+//         if (!db) return;
+
+//         // Custom confirmation modal should be implemented instead of console log
+//         const confirmed = window.confirm(`Are you sure you want to delete case ${caseId}? This action cannot be undone.`);
+//         if (!confirmed) return;
+
+//         try {
+//             const caseRef = doc(db, FIRESTORE_PATHS.CASES, caseId);
+//             await deleteDoc(caseRef);
+//             // The onSnapshot listener handles the UI refresh automatically
+//         } catch (err) {
+//             console.error(`Failed to delete case:`, err);
+//             setError(`Failed to delete case: ${(err as Error).message || 'Unknown error'}`);
+//         }
+//     };
+
+//     const openAssignModal = (caseData: Case) => {
+//         setSelectedCase(caseData);
+//         setIsAssignModalOpen(true);
+//     };
+
+//     const openDetailsModal = (caseData: Case) => {
+//         setSelectedCase(caseData);
+//         setIsDetailsModalOpen(true);
+//     };
+
+//     const getStatusClass = (status: Case['status']) => {
+//         switch (status) {
+//             case 'Active': return 'bg-green-100 text-green-800';
+//             case 'Pending': return 'bg-yellow-100 text-yellow-800';
+//             case 'Closed': return 'bg-gray-100 text-gray-800';
+//             default: return 'bg-blue-100 text-blue-800';
+//         }
+//     };
+
+//     if (isLoading && cases.length === 0) {
+//         return <div className="p-8 text-center"><Zap className="w-6 h-6 animate-spin mx-auto text-purple-600 mb-3" /> Loading Case Data...</div>;
+//     }
+
+//     if (error && cases.length === 0) {
+//         return <div className="p-8 text-center bg-red-100 text-red-700 rounded-xl">Error: {error}</div>;
+//     }
+
+//     return (
+//         <div className="p-0 bg-white rounded-xl shadow-lg border border-purple-200">
+//             <div className="p-6 flex justify-between items-center border-b">
+//                 <h2 className="text-2xl font-bold text-gray-800">All Cases & Consultations ({cases.length})</h2>
+//                 <Button onClick={() => setIsCreateModalOpen(true)}>
+//                     <Plus className="w-5 h-5 mr-2" /> Create Case
+//                 </Button>
+//             </div>
+
+//             <div className="overflow-x-auto">
+//                 <table className="min-w-full divide-y divide-gray-200">
+//                     <thead className="bg-purple-50">
+//                         <tr>
+//                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Case ID / Type</th>
+//                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Client</th>
+//                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Counsel</th>
+//                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Next Date</th>
+//                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+//                             <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+//                         </tr>
+//                     </thead>
+//                     <tbody className="bg-white divide-y divide-gray-200">
+//                         {cases.map((c) => (
+//                             <tr key={c.id} className="hover:bg-purple-50 transition duration-150">
+//                                 <td className="px-6 py-4 whitespace-nowrap">
+//                                     <button onClick={() => openDetailsModal(c)} className="text-sm font-bold text-purple-600 hover:underline">
+//                                         {c.caseType}
+//                                     </button>
+//                                     <div className="text-xs text-gray-500">{c.id}</div>
+//                                 </td>
+//                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{c.clientName}</td>
+//                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{c.counselName || '—'}</td>
+//                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+//                                     {c.nextAdjournedDate ? new Date(c.nextAdjournedDate).toLocaleDateString() : 'N/A'}
+//                                 </td>
+//                                 <td className="px-6 py-4 whitespace-nowrap">
+//                                     <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClass(c.status)}`}>
+//                                         {c.status}
+//                                     </span>
+//                                 </td>
+//                                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+//                                     <button
+//                                         onClick={() => openAssignModal(c)}
+//                                         className="text-blue-600 hover:text-blue-900 p-1 rounded-md hover:bg-blue-50 transition"
+//                                         title="Assign Counsel"
+//                                     >
+//                                         <Users className="w-5 h-5"/>
+//                                     </button>
+//                                     <button
+//                                         onClick={() => openDetailsModal(c)}
+//                                         className="text-purple-600 hover:text-purple-900 p-1 rounded-md hover:bg-purple-50 transition"
+//                                         title="View Details"
+//                                     >
+//                                         <Edit className="w-5 h-5"/>
+//                                     </button>
+//                                     <button
+//                                         onClick={() => handleDelete(c.id)}
+//                                         className="text-red-600 hover:text-red-900 p-1 rounded-md hover:bg-red-50 transition"
+//                                         title="Delete Case"
+//                                     >
+//                                         <Trash2 className="w-5 h-5"/>
+//                                     </button>
+//                                 </td>
+//                             </tr>
+//                         ))}
+//                     </tbody>
+//                 </table>
+//             </div>
+
+//             {isCreateModalOpen &&
+//                 <CreateCaseModal
+//                     onClose={() => setIsCreateModalOpen(false)}
+//                     userId={user?.id || 'anonymous'}
+//                     userName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Anonymous'}
+//                 />}
+//             {isAssignModalOpen && selectedCase &&
+//                 <AssignCaseModal
+//                     caseData={cases.find(c => c.id === selectedCase.id) || selectedCase}
+//                     onClose={() => { setIsAssignModalOpen(false); setSelectedCase(null); }}
+//                 />}
+//             {isDetailsModalOpen && selectedCase &&
+//                 <CaseDetailsModal
+//                     caseData={cases.find(c => c.id === selectedCase.id) || selectedCase} // Ensure real-time data is used
+//                     onClose={() => { setIsDetailsModalOpen(false); setSelectedCase(null); }}
+//                     userName={`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || user?.email || 'Anonymous'}
+//                 />}
+//         </div>
+//     );
+// };
+
+// // --- 8. PAGE COMPONENTS ---
+
+// const DashboardContent = () => {
+//     const { user } = useAuthStore();
+//     const { cases } = useCaseStore();
+
+//     const activeCases = cases.filter(c => c.status === 'Active').length;
+//     const pendingCases = cases.filter(c => c.status === 'Pending').length;
+//     // Mock the counsel count since we don't have a dedicated counsel list
+//     const counselCount = 3;
+
+//     // Staff/Lawyer view with KPIs
+//     const StaffOverview = () => (
+//         <div className="space-y-6">
+//             <h3 className="text-xl font-bold text-gray-700">Firm Performance Metrics</h3>
+//             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+//                 <div className="p-4 rounded-xl shadow-md bg-white border-l-4 border-purple-500">
+//                     <p className="text-sm text-gray-500">Total Cases</p>
+//                     <div className="flex items-center justify-between mt-1">
+//                         <span className="text-3xl font-bold text-gray-900">{cases.length}</span>
+//                         <Briefcase className="w-6 h-6 text-purple-500" />
+//                     </div>
+//                     <p className="text-xs text-green-600 flex items-center mt-1"><TrendingUp className="w-3 h-3 mr-1" /> Active: {activeCases}</p>
+//                 </div>
+//                 <div className="p-4 rounded-xl shadow-md bg-white border-l-4 border-blue-500">
+//                     <p className="text-sm text-gray-500">Counsel Staff</p>
+//                     <div className="flex items-center justify-between mt-1">
+//                         <span className="text-3xl font-bold text-gray-900">{counselCount}</span>
+//                         <UserPlus className="w-6 h-6 text-blue-500" />
+//                     </div>
+//                     <p className="text-xs text-blue-600 flex items-center mt-1">Lawyers & Admins</p>
+//                 </div>
+//                 <div className="p-4 rounded-xl shadow-md bg-white border-l-4 border-yellow-500">
+//                     <p className="text-sm text-gray-500">Pending Cases</p>
+//                     <div className="flex items-center justify-between mt-1">
+//                         <span className="text-3xl font-bold text-gray-900">{pendingCases}</span>
+//                         <Zap className="w-6 h-6 text-yellow-500" />
+//                     </div>
+//                     <p className="text-xs text-orange-600 mt-1">Needs Assignment</p>
+//                 </div>
+//                 <div className="p-4 rounded-xl shadow-md bg-white border-l-4 border-green-500">
+//                     <p className="text-sm text-gray-500">Payments Rec'd</p>
+//                     <div className="flex items-center justify-between mt-1">
+//                         <span className="text-3xl font-bold text-gray-900">₦2.1M (Mock)</span>
+//                         <DollarSign className="w-6 h-6 text-green-500" />
+//                     </div>
+//                     <p className="text-xs text-gray-500 mt-1">This quarter</p>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+
+//     return (
+//         <div className="p-0 md:p-0">
+//             <h2 className="text-2xl font-bold text-gray-800 mb-4">
+//                 Welcome back, {user?.firstName || user?.email || 'User'}
+//             </h2>
+//             {user?.role !== 'client' ? <StaffOverview /> : (
+//                 <Card
+//                     title="Client Portal Overview"
+//                     content="Welcome to your secure client portal. You can view your current cases, documents, and billing history using the navigation on the left."
+//                     icon={User}
+//                     colorClass="bg-purple-50"
+//                 />
+//             )}
+//         </div>
+//     );
+// };
+
+// // Generic Card for Placeholder Pages
+// const Card = ({ title, content, icon: Icon, colorClass = 'bg-purple-50' }) => (
+//     <div className={`p-8 rounded-2xl shadow-xl ${colorClass} flex flex-col items-center justify-center text-center max-w-lg mx-auto h-96 border-t-4 border-purple-600`}>
+//         <Icon className="w-16 h-16 text-purple-600 mb-6" strokeWidth={1.5} />
+//         <h3 className="text-2xl font-bold text-gray-800 mb-2">{title}</h3>
+//         <p className="text-gray-600 mb-8">{content}</p>
+//     </div>
+// );
+
+// // --- 9. NAVIGATION & LAYOUT COMPONENTS ---
+
+// const navItems = [
+//     { name: 'Overview', path: 'dashboard', icon: Home, roles: ['client', 'lawyer', 'admin'] },
+//     { name: 'Case management', path: 'cases', icon: Briefcase, roles: ['lawyer', 'admin'] },
+//     { name: 'Billings & Payment', path: 'billings', icon: DollarSign, roles: ['client', 'lawyer', 'admin'] },
+//     { name: 'Communications', path: 'communications', icon: MessageSquare, roles: ['client', 'lawyer', 'admin'] },
+//     { name: 'Manage Counsel', path: 'counsel', icon: User, roles: ['admin'] },
+//     { name: 'Support', path: 'support', icon: HelpCircle, roles: ['client', 'lawyer', 'admin'] },
+//     { name: 'User Access', path: 'user-access', icon: Shield, roles: ['admin'] },
+//     { name: 'Privacy Policy', path: 'privacy', icon: Lock, roles: ['client', 'lawyer', 'admin'] },
+//     { name: 'Terms and Conditions', path: 'terms', icon: FileText, roles: ['client', 'lawyer', 'admin'] },
+// ];
+
+// /**
+//  * Render the main content based on the current path.
+//  */
+// const renderPage = (currentPage: string, userRole: string) => {
+//     switch (currentPage) {
+//         case 'dashboard':
+//             return <DashboardContent />;
+//         case 'cases':
+//             if (userRole === 'admin' || userRole === 'lawyer') {
+//                 return <CaseManagementPage />;
+//             }
+//             return <Card title="Unauthorized Access" content="You do not have permission to view Case Management." icon={Shield} colorClass="bg-red-50" />;
+//         default:
+//             const item = navItems.find(i => i.path === currentPage);
+//             return (
+//                 <Card
+//                     title={item?.name || "Page Content"}
+//                     content={`This is the main content area for the ${item?.name || 'selected'} section. Functionality coming soon.`}
+//                     icon={item?.icon || Settings}
+//                     colorClass="bg-white border-t-4 border-blue-600"
+//                 />
+//             );
+//     }
+// };
+
+// /**
+//  * Navigation links component used in both sidebar and drawer.
+//  */
+// const NavLinks = ({ currentPath, setPath, userRole, closeDrawer }) => {
+//     const filteredItems = navItems.filter(item => item.roles.includes(userRole));
+
+//     return (
+//         <nav className="flex flex-col space-y-1">
+//             {filteredItems.map(item => (
+//                 <button
+//                     key={item.path}
+//                     onClick={() => { setPath(item.path); if(closeDrawer) closeDrawer(); }}
+//                     className={`
+//                         flex items-center p-3 rounded-lg transition-all duration-200 text-left
+//                         ${currentPath === item.path
+//                         ? 'bg-purple-600/50 text-white font-semibold' // Active state uses a lighter purple tint
+//                         : 'text-purple-200 hover:bg-purple-600/20 hover:text-white'
+//                         }
+//                     `}
+//                 >
+//                     <item.icon className="w-5 h-5 mr-3 flex-shrink-0" />
+//                     {item.name}
+//                 </button>
+//             ))}
+//         </nav>
+//     );
+// };
+
+// // Sidebar (Desktop/Large screen)
+// const Sidebar = ({ currentPath, setPath }) => {
+//     const { user, role } = useAuthStore();
+//     const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Loading...';
+//     const profileText = role === 'admin' ? 'Administrator' : (role === 'lawyer' ? 'Lawyer/Counsel' : 'Client');
+//     const userInitials = userName?.split(' ').map(n => n[0]).join('') || 'U';
+
+//     return (
+//         <div className="flex flex-col w-64 bg-purple-900 text-white min-h-screen p-4 shadow-2xl">
+//             <div className="py-4 mb-4">
+//                 <h1 className="text-2xl font-bold tracking-wider text-white flex items-center">
+//                     <Monitor className="w-6 h-6 mr-2 text-yellow-400" /> Smart Law Office
+//                 </h1>
+//             </div>
+
+//             {/* User Profile Section (Top of Sidebar) */}
+//             <div className="bg-purple-600 p-4 rounded-xl shadow-md mb-6">
+//                 <div className="flex items-center space-x-3">
+//                     <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-xl font-bold text-purple-700 overflow-hidden">
+//                         {userInitials}
+//                     </div>
+//                     <div className='flex-1 min-w-0'>
+//                         <p className="text-base font-semibold truncate">{userName}</p>
+//                         <p className="text-xs text-purple-200">{profileText}</p>
+//                         <p className="text-[10px] text-purple-200 break-all pt-1">ID: {user?.id || 'N/A'}</p>
+//                     </div>
+//                 </div>
+//             </div>
+
+//             {/* Navigation Links */}
+//             <div className="flex-grow overflow-y-auto pr-1">
+//                 {user?.role && <NavLinks currentPath={currentPath} setPath={setPath} userRole={user.role} />}
+//             </div>
+
+//             {/* Cynt.ai Box (Bottom of Sidebar) */}
+//             <div className="mt-8 pt-4">
+//                 <div className="p-4 bg-purple-800 rounded-xl text-center shadow-inner">
+//                     <p className="text-sm font-semibold text-purple-200 mb-2">Cynt.ai Chatbot</p>
+//                     <button className="w-full py-2 bg-white text-purple-800 font-bold rounded-lg transition-colors duration-200 hover:bg-gray-200">
+//                         Ask Legal Assistant
+//                     </button>
+//                 </div>
+//             </div>
+//         </div>
+//     );
+// };
+
+// // Header (Visible on all devices, controls mobile menu and houses search/user buttons)
+// const Header = ({ toggleDrawer }) => {
+//     const { user } = useAuthStore();
+//     const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Loading...';
+//     const today = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+//     const time = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+//     return (
+//         <header className="flex items-center justify-between p-4 bg-white shadow-md sticky top-0 z-20 border-b">
+
+//             {/* Left Section (Title & Date/Time on Desktop) */}
+//             <div className="flex items-center">
+//                 <button
+//                     onClick={toggleDrawer}
+//                     className="p-2 mr-4 rounded-lg hover:bg-gray-100 transition lg:hidden"
+//                 >
+//                     <Menu className="w-6 h-6 text-gray-700" />
+//                 </button>
+
+//                 <div className="hidden lg:block">
+//                     <h2 className="text-lg font-semibold text-gray-700">Welcome back, {userName}</h2>
+//                 </div>
+//             </div>
+
+//             {/* Center Section (Date/Time/Search) */}
+//             <div className="flex items-center space-x-4 flex-grow max-w-lg mx-4 hidden md:flex">
+//                 <Calendar className="w-4 h-4 text-gray-500" />
+//                 <span className="text-sm text-gray-600">{today}</span>
+//                 <span className="text-sm text-gray-600">{time}</span>
+
+//                 {/* Search Bar */}
+//                 <div className="relative flex-grow">
+//                     <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
+//                     <input
+//                         type="text"
+//                         placeholder="Search cases, clients, documents..."
+//                         className="w-full py-2 pl-10 pr-4 border border-gray-200 rounded-xl focus:ring-purple-500 focus:border-purple-500 text-sm"
+//                     />
+//                 </div>
+//             </div>
+
+//             {/* Right Section (Actions) */}
+//             <div className="flex items-center space-x-3">
+//                 <button className="p-2 rounded-full hover:bg-gray-100 transition text-gray-700">
+//                     <Bell className="w-6 h-6" />
+//                 </button>
+//                 <button className="p-2 rounded-full hover:bg-gray-100 transition text-gray-700">
+//                     <Settings className="w-6 h-6" />
+//                 </button>
+
+//                 <div className="relative group">
+//                     <Button>
+//                         Create
+//                         <ChevronDown className="w-4 h-4 ml-2" />
+//                     </Button>
+//                     <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-xl hidden group-hover:block z-30">
+//                         <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">New Client</a>
+//                         <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Schedule Consultation</a>
+//                         <a href="#" className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Upload Document</a>
+//                     </div>
+//                 </div>
+//             </div>
+//         </header>
+//     );
+// };
+
+// // Mobile Navigation Drawer (Overlay)
+// const MobileDrawer = ({ currentPath, setPath, isDrawerOpen, closeDrawer }) => {
+//     const { user, role } = useAuthStore();
+//     const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : 'Loading...';
+//     const userInitials = userName?.split(' ').map(n => n[0]).join('') || 'U';
+
+//     return (
+//         <>
+//             {/* Backdrop */}
+//             <div
+//                 className={`fixed inset-0 z-40 transition-opacity duration-300 ${isDrawerOpen ? 'opacity-50' : 'opacity-0 pointer-events-none'} lg:hidden bg-black`}
+//                 onClick={closeDrawer}
+//             ></div>
+
+//             {/* Drawer Content */}
+//             <div
+//                 className={`fixed top-0 left-0 h-full w-64 bg-purple-900 text-white z-50 transition-transform duration-300 transform ${isDrawerOpen ? 'translate-x-0' : '-translate-x-full'} lg:hidden shadow-2xl`}
+//             >
+//                 <div className="flex flex-col h-full p-4">
+//                     <div className="flex justify-between items-center py-4 mb-4 border-b border-purple-700">
+//                         <h1 className="text-xl font-bold text-white flex items-center">
+//                             <Monitor className="w-5 h-5 mr-2 text-yellow-400" /> Smart Law
+//                         </h1>
+//                         <button onClick={closeDrawer} className="p-2 rounded-lg hover:bg-purple-700 transition">
+//                             <X className="w-6 h-6" />
+//                         </button>
+//                     </div>
+
+//                     <div className="bg-purple-600 p-3 rounded-xl shadow-md mb-6">
+//                         <div className="flex items-center space-x-3">
+//                             <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-lg font-bold text-purple-700">{userInitials}</div>
+//                             <div className='flex-1 min-w-0'>
+//                                 <p className="text-sm font-semibold truncate">{userName}</p>
+//                                 <p className="text-xs text-purple-200 capitalize">{role || 'unknown'}</p>
+//                                 <p className="text-[10px] text-purple-200 break-all pt-1">ID: {user?.id || 'N/A'}</p>
+//                             </div>
+//                         </div>
+//                     </div>
+
+//                     <div className="flex-grow overflow-y-auto pr-1">
+//                         {user?.role && <NavLinks currentPath={currentPath} setPath={setPath} userRole={user.role} closeDrawer={closeDrawer} />}
+//                     </div>
+
+//                     <div className="mt-8 pt-4">
+//                         <div className="p-4 bg-purple-800 rounded-xl text-center shadow-inner">
+//                             <p className="text-sm font-semibold text-purple-200 mb-2">Cynt.ai Chatbot</p>
+//                             <button className="w-full py-2 bg-white text-purple-800 font-bold rounded-lg transition-colors duration-200 hover:bg-gray-200">
+//                                 Ask Legal Assistant
+//                             </button>
+//                         </div>
+//                     </div>
+//                 </div>
+//             </div>
+//         </>
+//     );
+// };
+
+// // --- 10. MAIN APPLICATION COMPONENT (Layout & Routing) ---
+
+// const App = () => {
+//     // Auth State from user-provided store
+//     const { user, setUser, setRole, isAuthReady, setIsAuthReady } = useAuthStore();
+
+//     // Local UI State for Routing and Mobile Drawer
+//     const [currentPage, setCurrentPage] = useState('dashboard');
+//     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+
+//     // 1. Firebase Authentication Effect
+//     useEffect(() => {
+//         if (!auth) return;
+
+//         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseAuthUser | null) => {
+//             if (firebaseUser) {
+//                 // Fetch or create user profile in Firestore
+//                 const userProfile = await fetchOrCreateUserProfile(firebaseUser.uid);
+//                 setUser(userProfile);
+//                 setRole(userProfile.role);
+//             } else {
+//                 // Sign in anonymously if no token is available, or use custom token
+//                 try {
+//                     if (initialAuthToken) {
+//                         await signInWithCustomToken(auth, initialAuthToken);
+//                     } else {
+//                         await signInAnonymously(auth);
+//                     }
+//                 } catch (e) {
+//                     console.error("Auth failed:", e);
+//                 }
+//             }
+//             setIsAuthReady(true);
+//         });
+
+//         return () => unsubscribe();
+//     }, [setUser, setRole, setIsAuthReady]);
+
+//     // 2. Real-time Case Data Hook
+//     useCaseData(user?.id || null, isAuthReady);
+
+//     // Function to handle internal routing
+//     const setPath = useCallback((path: string) => {
+//         setCurrentPage(path);
+//     }, []);
+
+//     // Handle mobile drawer
+//     const toggleDrawer = () => setIsDrawerOpen(!isDrawerOpen);
+//     const closeDrawer = () => setIsDrawerOpen(false);
+
+//     // Initial Loading/Auth Check
+//     if (!isAuthReady || !user) {
+//         return (
+//             <div className="min-h-screen flex items-center justify-center bg-gray-50">
+//                 <div className="text-center p-8">
+//                     <Monitor className="w-10 h-10 mx-auto mb-3 animate-spin text-purple-600" />
+//                     <p className="text-lg text-gray-700">Authenticating and Initializing...</p>
+//                 </div>
+//             </div>
+//         );
+//     }
+
+//     // Main application view
+//     return (
+//         <div className="flex min-h-screen bg-gray-100 font-sans">
+
+//             {/* 1. Large Screen Sidebar (Desktop) */}
+//             <div className="hidden lg:block flex-shrink-0">
+//                 <Sidebar currentPath={currentPage} setPath={setPath} />
+//             </div>
+
+//             {/* 2. Mobile Drawer (Overlay for Mobile/Tablet) */}
+//             <MobileDrawer
+//                 currentPath={currentPage}
+//                 setPath={setPath}
+//                 isDrawerOpen={isDrawerOpen}
+//                 closeDrawer={closeDrawer}
+//             />
+
+//             {/* 3. Main Content Wrapper */}
+//             <div className="flex flex-col flex-grow">
+//                 {/* Header (Visible on all devices, handles search and mobile menu) */}
+//                 <Header toggleDrawer={toggleDrawer} />
+
+//                 {/* Main Content Area */}
+//                 <main className="flex-grow p-4 md:p-8 overflow-y-auto">
+//                     <h1 className="text-3xl font-bold text-gray-800 mb-6 capitalize">
+//                         {navItems.find(i => i.path === currentPage)?.name || 'Dashboard'}
+//                     </h1>
+
+//                     {/* Content Router */}
+//                     {renderPage(currentPage, user.role)}
+//                 </main>
+//             </div>
+//         </div>
+//     );
+// };
+
+// export default App;
