@@ -5,7 +5,7 @@ import Step3CustomFee from "@/components/admin/onboarding/CustomFee";
 import Step1FirmType from "@/components/admin/onboarding/FirmType";
 import ProgressBar from "@/components/admin/onboarding/ProgressBar";
 import { useFirmProfileStore } from "@/store/firmProfileStore";
-import { SessionManager } from "@/components/admin/onboarding/SessionManager";
+// import { SessionManager } from "@/components/admin/onboarding/SessionManager";
 
 const FirmProfilePage = () => {
   const { currentStep } = useFirmProfileStore();
@@ -24,7 +24,7 @@ const FirmProfilePage = () => {
     }
   };
   return (
-    <SessionManager>
+    <>
       <div className="mb-8">
         {/* Header */}
         <h1 className="text-3xl font-bold text-[${TEXT_COLOR}]">
@@ -37,7 +37,7 @@ const FirmProfilePage = () => {
 
         {renderStepContent()}
       </div>
-    </SessionManager>
+    </>
   );
 };
 
