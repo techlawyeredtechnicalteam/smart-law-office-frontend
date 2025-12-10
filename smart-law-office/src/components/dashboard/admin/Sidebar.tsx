@@ -11,7 +11,7 @@ export const userName = (user: any) =>
     : "Loading...";
 
 const Sidebar = () => {
-  const { user, currentPath, setCurrentPath } = useAuthStore();
+  const { user } = useAuthStore();
   const userNameValue = userName(user);
   const userInitials =
     userNameValue

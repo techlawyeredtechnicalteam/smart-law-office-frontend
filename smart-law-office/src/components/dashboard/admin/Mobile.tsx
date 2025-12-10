@@ -14,7 +14,7 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({
   isDrawerOpen,
   closeDrawer
 }) => {
-  const { user, currentPath, setCurrentPath } = useAuthStore();
+  const { user } = useAuthStore();
   const userNameValue = userName(user);
   const userInitials =
     userNameValue
@@ -69,9 +69,7 @@ const MobileDrawer: React.FC<MobileDrawerProps> = ({
             </div>
           </div>
 
-          <div className="grow pr-1">
-            {<NavLinks closeDrawer={closeDrawer} />}
-          </div>
+          <div className="grow pr-1">{<NavLinks />}</div>
 
           <div className="mt-8 pt-4">
             <div className="p-4 bg-violet-800 rounded-xl text-center shadow-inner">
