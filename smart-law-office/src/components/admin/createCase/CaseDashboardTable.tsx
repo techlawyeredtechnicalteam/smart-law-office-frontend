@@ -1,5 +1,5 @@
 // components/CaseDashboard.tsx
-import { Case, useCaseStore } from "@/store/caseManagement";
+import { Case } from "@/store/createCase";
 import {
   Table,
   TableBody,
