@@ -7,7 +7,6 @@ interface FileUploadProps {
   label: string;
   fileData: string | null;
   fileName?: string | null;
-  // onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onFileChange: (
     fileData: string | null,
     fileName: string | null,

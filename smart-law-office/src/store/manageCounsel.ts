@@ -1,113 +1,181 @@
-// import {create} from 'zustand'
+import { create, StateCreator } from "zustand";
+// import { persist } from "zustand/middleware";
+import { toast } from "sonner";
+import {
+  addCounsel,
+  CounselPayload,
+  deleteCounsel,
+  fetchCounsel,
+  updateCounsel
+} from "@/app/api/signup.api";
 
-// export interface Counsel {
-//   id: number;
-//   fullName: string;
-//   scn: string;
-//   callToBarFile: string | null;
-// }
+export interface Counsel {
+  id: number;
+  fullName: string;
+  firstName: string;
+  lastName: string;
+  scn: string;
+  email: string;
+  callToBarFile: string | null;
+  status: "Active" | "Inactive";
+  assignedCases: string;
+  role: "STAFF";
+}
 
-// export inferface ManageCounselData{
-//   // Step 3: Counsel
-//   // counsel: Counsel[];
+export interface ManageCounselStore {
+  // State
+  counsel: Counsel[];
+  isSubmitting: boolean;
+  callToBarFile: string | null;
+  isLoading: boolean;
 
-//   // Step 4: Office Link
-//   // officeLink: string;
-// }
+  // Modal State
+  isAddModalOpen: boolean;
+  isEditModalOpen: boolean;
+  isDeleteModalOpen: boolean;
+  selectedCounsel: Counsel | null;
 
-// interface ManageCounselStore{
-//   // addCounsel: () => void;
-//   // removeCounsel: (id: number) => void;
-//   // updateCounsel: (id: number, key: keyof Counsel, value: any) => void;
-//   // generateOfficeLink: () => void;
-// }
+  // Actions
+  setCounsels: (data: Counsel[]) => void;
+  setIsSubmitting: (status: boolean) => void;
+  setFile: (file: string | null) => void;
+  // Modal Control
+  openAddModal: () => void;
+  closeAddModal: () => void;
+  openEditModal: (counsel: Counsel) => void;
+  closeEditModal: () => void;
+  openDeleteModal: (counsel: Counsel) => void;
+  closeDeleteModal: () => void;
 
-// const initalFormData: ManageCounselData= {
-//   // counsel: [
-//   //   {
-//   //     id: 1,
-//   //     fullName: "",
-//   //     scn: "",
-//   //     callToBarFile: null
-//   //   }
-//   // ],
-//   // officeLink: "",
-// }
+  // API Operations (Placeholders for component use)
+  addCounsel: (payload: CounselPayload) => Promise<void>;
+  updateCounsel: (
+    id: number,
+    updatedFields: Partial<CounselPayload>
+  ) => Promise<void>;
+  deleteCounsel: (id: number) => Promise<void>;
+  fetchCounsels: () => Promise<void>;
+}
 
-// export const useManageCounselStore = create<ManageCounselStore>({
+const store: StateCreator<ManageCounselStore> = (set, get) => ({
+  counsel: [],
+  isSubmitting: false,
+  callToBarFile: null,
+  isLoading: false,
 
-//   // addCounsel: () => {
-//       //   const state = get();
-//       //   get().updateActivity();
-//       //   const maxId = Math.max(...state.formData.counsel.map((c) => c.id), 0);
-//       //   const newCounsel: Counsel = {
-//       //     id: maxId + 1,
-//       //     fullName: "",
-//       //     scn: "",
-//       //     callToBarFile: ""
-//       //   };
-//       //   set({
-//       //     formData: {
-//       //       ...state.formData,
-//       //       counsel: [...state.formData.counsel, newCounsel]
-//       //     }
-//       //   });
-//       // },
+  isAddModalOpen: false,
+  isEditModalOpen: false,
+  isDeleteModalOpen: false,
+  selectedCounsel: null,
 
-//       // removeCounsel: (id) => {
-//       //   get().updateActivity();
-//       //   set((state) => ({
-//       //     formData: {
-//       //       ...state.formData,
-//       //       counsel: state.formData.counsel.filter((c) => c.id !== id)
-//       //     }
-//       //   }));
-//       // },
+  setFile: (file: string | null) => set({ callToBarFile: file }),
 
-//       // updateCounsel: (id, key, value) => {
-//       //   get().updateActivity();
-//       //   set((state) => ({
-//       //     formData: {
-//       //       ...state.formData,
-//       //       counsel: state.formData.counsel.map((c) =>
-//       //         c.id === id ? { ...c, [key]: value } : c
-//       //       )
-//       //     }
-//       //   }));
-//       // },
+  setCounsels: (data) => set({ counsel: data }),
+  setIsSubmitting: (status) => set({ isSubmitting: status }),
 
-//       // generateOfficeLink: () => {
-//       //   get().updateActivity();
-//       //   set((state) => {
-//       //     // use firmName when ready
-//       //     const firmNameSlug = state.formData.firmName
-//       //       .toLowerCase()
-//       //       .replace(/[^a-z0-9]+/g, "-")
-//       //       .replace(/(^-|-$)/g, "");
-//       //     const officeLink = `https://cyntlawoffice.com/${firmNameSlug}`;
-//       //     return {
-//       //       formData: { ...state.formData, officeLink }
-//       //     };
-//       //   });
-//       // },
+  openAddModal: () => set({ isAddModalOpen: true }),
+  closeAddModal: () => set({ isAddModalOpen: false }),
+  openEditModal: (counsel) =>
+    set({ isEditModalOpen: true, selectedCounsel: counsel }),
+  closeEditModal: () => set({ isEditModalOpen: false, selectedCounsel: null }),
+  openDeleteModal: (counsel) =>
+    set({ isDeleteModalOpen: true, selectedCounsel: counsel }),
+  closeDeleteModal: () =>
+    set({ isDeleteModalOpen: false, selectedCounsel: null }),
 
-//   //append counsel data
-//           // formData.counsel.forEach((counsel, index) => {
-//           //   completeSignupPayload.append(
-//           //     `counsel[${index}][id]`,
-//           //     String(counsel.id)
-//           //   );
-//           //   completeSignupPayload.append(
-//           //     `counsel[${index}][fullName]`,
-//           //     counsel.fullName
-//           //   );
-//           //   completeSignupPayload.append(`counsel[${index}][scn]`, counsel.scn);
+  // --- API/Data Logic (Placeholder for full integration) ---
+  fetchCounsels: async () => {
+    set({ isLoading: true });
+    try {
+      const response = await fetchCounsel();
+      console.log("Fetch counsel response:", response);
 
-//           //   if (counsel.callToBarFile) {
-//           //     completeSignupPayload.append(
-//           //       `counsel[${index}][callToBarFile]`,
-//           //       counsel.callToBarFile
-//           //     );
-//           //   }
-//           // });
-// })
+      // Handle different response structures
+      let counselData = [];
+      if (response.data) {
+        counselData = Array.isArray(response.data)
+          ? response.data
+          : response.data.data || [];
+      } else if (response.data !== undefined) {
+        counselData = response.data || [];
+      }
+
+      // Map API response to Counsel interface
+      const mappedCounselData = counselData.map((counsel: any) => ({
+        id: counsel.id,
+        fullName:
+          counsel.fullName ||
+          `${counsel.firstName || ""} ${counsel.lastName || ""}`.trim(),
+        scn: counsel.scn,
+        email: counsel.email,
+        callToBarFile: counsel.callToBarFile || counsel.barCertificate,
+        status: counsel.status || "Inactive",
+        assignedCases: counsel.assignedCases || "0",
+        role: counsel.role || "COUNSEL"
+      }));
+
+      console.log("Mapped counsel data:", mappedCounselData);
+      set({ counsel: mappedCounselData });
+    } catch (error) {
+      console.error("Failed to fetch counsels:", error);
+      toast.error("Failed to load counsels");
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  addCounsel: async (payload: CounselPayload) => {
+    set({ isSubmitting: true });
+    try {
+      await addCounsel(payload);
+      await get().fetchCounsels();
+      toast.success("Counsel added successfully");
+    } catch (error) {
+      console.error("Failed to add counsel:", error);
+      throw error;
+    } finally {
+      set({ isSubmitting: false });
+    }
+  },
+
+  updateCounsel: async (id, updatedFields) => {
+    set({ isSubmitting: true });
+    try {
+      await updateCounsel(String(id), updatedFields);
+
+      set((state) => ({
+        counsels: state.counsel.map((c) =>
+          c.id === id ? { ...c, ...updatedFields } : c
+        ),
+        isEditModalOpen: false,
+        selectedCounsel: null
+      }));
+      toast.success("Counsel details have been saved.");
+    } catch (error) {
+      toast.error("Failed to update counsel.");
+    } finally {
+      set({ isSubmitting: false });
+    }
+  },
+
+  deleteCounsel: async (id) => {
+    set({ isSubmitting: true });
+    try {
+      await deleteCounsel(String(id));
+
+      set((state) => ({
+        counsels: state.counsel.filter((c) => c.id !== id),
+        isDeleteModalOpen: false,
+        selectedCounsel: null
+      }));
+      toast.success("Counsel removed successfully.");
+    } catch (error) {
+      toast.error("Failed to delete counsel.");
+      throw error;
+    } finally {
+      set({ isSubmitting: false });
+    }
+  }
+});
+
+export const UseCounselStore = create<ManageCounselStore>()(store);

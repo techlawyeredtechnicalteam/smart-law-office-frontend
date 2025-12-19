@@ -5,18 +5,32 @@ const baseURL =
 
 const api = axios.create({
   baseURL,
-  withCredentials: true, // allow cookies from BE
-  headers: { "Content-Type": "application/json" }
+  withCredentials: true,
+  headers: { "Content-Type": "application/json"}
 });
 
 // Request Interceptor
 api.interceptors.request.use(
   (config) => {
+    // Get auth token from localStorage
+    const authState = localStorage.getItem('auth-session-storage');
+    if (authState) {
+      try {
+        const parsedAuth = JSON.parse(authState);
+        if (parsedAuth.state?.token) {
+          config.headers.Authorization = `Bearer ${parsedAuth.state.token}`;
+        }
+      } catch (error) {
+        console.error("Error parsing auth state:", error);
+      }
+    }
+
     // log what's sent
     console.log("Request", {
       method: config.method?.toUpperCase(),
       url: `${config.baseURL}${config.url}`,
-      data: config.data
+      data: config.data,
+      hasAuth: !!config.headers.Authorization
     });
     return config;
   },

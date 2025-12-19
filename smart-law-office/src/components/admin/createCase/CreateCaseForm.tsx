@@ -50,7 +50,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     defaultValues: {
       clientName: "",
       caseType: "",
-      date: "09/11/2025", // Mocking the filled state from createcase4.png
+      date: "09/11/2025", 
       time: "11:00 PM",
       status: "Scheduled",
       lastAdjournedDate: "30/11/2025",
@@ -74,19 +74,14 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     };
 
     const newCase = await createCase(payload);
-
-    // 3. If the case was created successfully, trigger success and close
+   
     if (newCase) {
-      onSuccess(); // Shows the success modal (createcase5.png)
-      onClose(); // Closes the current form dialog
+      onSuccess();
+      onClose();
       form.reset();
     }
     // Error state is handled by the store
   }
-
-  // NOTE: Document upload logic (for "Payment_receipt.pdf") is complex and omitted for brevity.
-  // It would typically involve an `onChange` handler, uploading the file to a server endpoint,
-  // and getting back a temporary URL/ID before submitting the main case form.
 
   return (
     <Form {...form}>

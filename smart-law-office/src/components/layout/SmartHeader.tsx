@@ -3,15 +3,9 @@
 import { useAuthStore } from "@/store/authStore";
 import React from "react";
 import { userName } from "../dashboard/admin/Sidebar";
-import {
-  Bell,
-  Calendar,
-  ChevronDown,
-  Menu,
-  Search,
-  Settings
-} from "lucide-react";
+import { Bell, Calendar, ChevronDown, Menu, Search } from "lucide-react";
 import { Button } from "@/components/shared/ui/button";
+import SettingsDropdown from "../settings/Settings";
 
 type HeaderProps = {
   toggleDrawer: () => void;
@@ -76,13 +70,7 @@ const Header: React.FC<HeaderProps> = ({ toggleDrawer }) => {
         >
           <Bell className="w-6 h-6" />
         </button>
-        <button
-          type="button"
-          className="p-2 rounded-full hover:bg-gray-100 transition text-gray-700"
-          aria-label="Settings"
-        >
-          <Settings className="w-6 h-6" />
-        </button>
+        <SettingsDropdown />
         <div className="relative group">
           <Button>
             Create

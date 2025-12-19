@@ -30,7 +30,7 @@ const Hero = () => {
             </h1>
             <p className="text-lg sm:text-xl text-gray-800 mb-10 max-w-3xl mx-auto">
               Simplifying how clients access legal support. Book consultations,
-              manage documents and get your legal concerns sorted. all in one
+              manage documents and get your legal concerns sorted all in one
               place.
             </p>
 

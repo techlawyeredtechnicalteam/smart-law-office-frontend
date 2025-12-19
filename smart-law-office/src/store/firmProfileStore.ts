@@ -113,7 +113,7 @@ const store: StateCreator<FirmProfileStore> = (set, get) => ({
       const fullName = signupData.fullName.trim();
       const nameParts = fullName.split(/\s+/).filter((part) => part.length > 0);
       const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || firstName; // Fallback to firstName if only one word
+      const lastName = nameParts.slice(1).join(" ") || firstName; 
 
       const feeValue = formData.isCustomFeeEnabled
         ? typeof formData.customFeeAmount === "string"

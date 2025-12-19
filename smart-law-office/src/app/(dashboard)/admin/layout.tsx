@@ -19,6 +19,10 @@ import { useAuthStore, User } from "@/store/authStore";
 import { userName } from "@/components/dashboard/admin/Sidebar";
 import NavLinks from "@/components/layout/SmartNavLink";
 import { useSessionInitializer } from "@/hook/useSessionInitializer";
+import SettingsDropdown from "@/components/settings/Settings";
+import { currentTime, currentDate } from "@/utils/time-date";
+import { UseCounselStore } from "@/store/manageCounsel";
+import Link from "next/link";
 
 export default function SmartLawOfficeDashboard({
   children
@@ -27,6 +31,7 @@ export default function SmartLawOfficeDashboard({
 }) {
   const isReady = useSessionInitializer();
   const { user } = useAuthStore();
+  const { isAddModalOpen, closeAddModal } = UseCounselStore();
 
   if (!isReady) {
     return (
@@ -36,11 +41,10 @@ export default function SmartLawOfficeDashboard({
     );
   }
   const userNameValue = userName(user);
-  const userInitials =
-    userNameValue
-      ?.split(" ")
-      .map((n: string) => n[0])
-      .join("") || "U";
+  const userInitials = userNameValue
+    ?.split(" ")
+    .map((n: string) => n[0])
+    .join("");
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -59,10 +63,8 @@ export default function SmartLawOfficeDashboard({
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">{userNameValue}</span>
-            <span className="text-xs opacity-70">
-              {user?.role} | {user?.firmName || "N/A"}
-            </span>
+            <span className="text-sm font-semibold">{user?.firstName} </span>
+            <span className="text-xs opacity-70">{user?.role}</span>
           </div>
         </div>
 
@@ -89,20 +91,16 @@ export default function SmartLawOfficeDashboard({
       {/* --- MAIN CONTENT AREA --- */}
       <main className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="h-16 bg-white border-b flex items-center justify-between px-6">
+        <header className="h-16 bg-white border-b flex items-center justify-between px-6 relative">
           <div className="flex items-center gap-6 text-sm text-gray-600">
             <span className="font-semibold text-gray-900">
-              Welcome back,{" "}
-              {user?.firstName ||
-                user?.fullName ||
-                user?.email?.split("@")[0] ||
-                "User"}
+              Welcome back, {user?.firstName}
             </span>
             <div className="flex items-center gap-2">
-              <Calendar size={16} /> <span>Monday, 9th November 2025</span>
+              <Calendar size={16} /> <span>{currentDate}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Clock size={16} /> <span>10:00 AM</span>
+              <Clock size={16} /> <span>{currentTime}</span>
             </div>
           </div>
 
@@ -115,7 +113,9 @@ export default function SmartLawOfficeDashboard({
               />
             </div>
             <ButtonIcon icon={<Bell size={20} />} />
-            <ButtonIcon icon={<Settings size={20} />} />
+            <Link href="/admin/settings/$[tab]">
+              <Settings />
+            </Link>
           </div>
         </header>
 
@@ -152,7 +152,7 @@ function ButtonIcon({ icon }: { icon: any }) {
   return (
     <button
       type="button"
-      className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition"
+      className="p-2 hover:bg-gray-100 rounded-full text-gray-600 transition cursor-pointer"
     >
       {icon}
     </button>

@@ -128,26 +128,6 @@ const SignUpFormAdmin = () => {
             )}
           />
 
-          {/* FirmName */}
-          {/* <FormField
-            control={form.control}
-            name="firmName"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Firm Name</FormLabel>
-                <FormControl>
-                  <Input
-                    type="firmName"
-                    autoComplete="firmName"
-                    placeholder="JaneDoe & Co..."
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          /> */}
-
           {/* Password */}
           <FormField
             control={form.control}
