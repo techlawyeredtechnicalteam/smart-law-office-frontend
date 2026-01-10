@@ -1,6 +1,6 @@
-import { FileText, Upload } from "lucide-react";
+import { ChevronRight, FileText, Upload } from "lucide-react";
 import React from "react";
-import { Button } from "../shared/ui/button";
+import { Button } from "../ui/button";
 
 interface DocumentCardMockupProps {
   showButton?: boolean;
@@ -62,6 +62,39 @@ export const DocumentCardMockup: React.FC<DocumentCardMockupProps> = ({
             Sept. 05, 2025, 02:30 PM
           </p>
         </div>
+      </div>
+    </div>
+  </div>
+);
+
+export const MonthlyFinancialOverview: React.FC = () => (
+  <div className="p-6 bg-white rounded-xl shadow-2xl border border-gray-100">
+    <div className="flex justify-between items-center mb-4">
+      <h4 className="text-sm font-semibold text-gray-800">
+        Monthly Financial Overview
+      </h4>
+      <a
+        href="#"
+        className="text-xs text-violet-600 font-medium flex items-center"
+      >
+        Generate Report <ChevronRight className="w-3 h-3 ml-1" />
+      </a>
+    </div>
+    <p className="text-2xl font-bold text-gray-900 mb-2">₦44,000</p>
+    <p className="text-xs text-green-500 mb-6">▲ 2.5% in the last 6 months</p>
+
+    <div className="flex justify-between space-x-4 h-24 items-end">
+      <div className="text-center">
+        <div className="h-16 w-8 bg-violet-200 rounded-lg mx-auto"></div>
+        <p className="text-xs text-gray-500 mt-2">Jan</p>
+      </div>
+      <div className="text-center">
+        <div className="h-12 w-8 bg-violet-200 rounded-lg mx-auto"></div>
+        <p className="text-xs text-gray-500 mt-2">Feb</p>
+      </div>
+      <div className="text-center">
+        <div className="h-20 w-8 bg-violet-600 rounded-lg mx-auto shadow-lg"></div>
+        <p className="text-xs text-gray-500 mt-2">Mar</p>
       </div>
     </div>
   </div>

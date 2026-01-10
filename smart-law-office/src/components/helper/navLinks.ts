@@ -1,102 +1,152 @@
 import {
   Briefcase,
   CreditCard,
+  DownloadCloud,
   FileText,
   HelpCircle,
   Home,
-  Lock,
   MessageSquare,
-  PlusCircle,
   UserPlus,
   Users
 } from "lucide-react";
+import { TbCalendarEvent, TbDashboard, TbInvoice } from "react-icons/tb";
 
 export type NavItems = {
   name: string;
   icon: any;
   route: string;
-  roles: Array<"ADMIN" | "COUNSEL" | "CLIENT" | "">;
+  roles: Array<"ADMIN" | "STAFF" | "CLIENT" | "">;
   subItems?: NavItems[];
 };
 
 export const ALL_LINKS: Record<string, NavItems> = {
-  // shared links
+  // Admin Dashboard
   overview: {
     name: "Overview",
     icon: Home,
     route: "/admin/overview",
-    roles: ["ADMIN", "COUNSEL", "CLIENT"]
+    roles: ["ADMIN"]
   },
-
   // Admin/Counsel links
   caseManagement: {
     name: "Case Management",
     icon: Briefcase,
     route: "/admin/case-mgmt",
-    roles: ["ADMIN", "COUNSEL"],
+    roles: ["ADMIN"],
     subItems: [
       {
-        name: "Create Case",
-        icon: PlusCircle,
-        route: "/admin/cases",
-        roles: ["ADMIN", "COUNSEL"]
+        icon: Briefcase,
+        name: "Create New Case",
+        route: "/admin/create-case",
+        roles: ["ADMIN"]
       },
       {
         name: "Assign Cases",
         icon: UserPlus,
         route: "/admin/assign-case",
-        roles: ["ADMIN", "COUNSEL"]
+        roles: ["ADMIN"]
       }
     ]
+  },
+  billings: {
+    name: "Billings & Payment",
+    icon: CreditCard,
+    route: "/admin/billing",
+    roles: ["ADMIN"]
+  },
+  subscribe: {
+    icon: FileText,
+    name: "Subscriptions",
+    route: "/subscribe",
+    roles: ["ADMIN"]
   },
   manageCounsel: {
     name: "Manage Counsel",
     icon: Users,
     route: "/admin/counsel",
-    roles: ["ADMIN", "COUNSEL"]
+    roles: ["ADMIN"]
+  },
+
+  // Staff Links
+  dashboard: {
+    icon: TbDashboard,
+    name: "Dashboard",
+    route: "/staff/dashboard",
+    roles: ["STAFF"]
+  },
+  cases: {
+    icon: Briefcase,
+    name: "My Cases",
+    route: "/staff/my-cases",
+    roles: ["STAFF"]
+  },
+  billingTrack: {
+    icon: TbInvoice,
+    name: "TrackBilling",
+    route: "/staff/track-billing",
+    roles: ["STAFF"]
+  },
+  documents: {
+    icon: DownloadCloud,
+    name: "Document",
+    route: "/staff/document",
+    roles: ["STAFF"]
   },
 
   //clients links
   myCases: {
     icon: FileText,
     name: "My Cases",
-    route: "/clients/my-cases",
+    route: "/client/my-case",
     roles: ["CLIENT"]
   },
+  // createCase: {
+  //   icon: Briefcase,
+  //   name: "Create New Case",
+  //   route: "/create-case",
+  //   roles: ["CLIENT", "STAFF"]
+  // },
   consultations: {
     icon: FileText,
     name: "Consultations",
-    route: "/clients/consultations",
+    route: "/client/consultations",
     roles: ["CLIENT"]
   },
   invoice: {
     icon: FileText,
-    name: "My Cases",
-    route: "/clients/invoice",
+    name: "Billings & Payment",
+    route: "/client/billings",
     roles: ["CLIENT"]
   },
+  // commsClient: {
+  //   name: "Communications",
+  //   icon: MessageSquare,
+  //   route: "/client/comms",
+  //   roles: ["CLIENT"]
+  // }
 
-  // Finiancial Links
-  billings: {
-    name: "Billings & Payment",
-    icon: CreditCard,
-    route: "/admin/billings",
-    roles: ["ADMIN", "COUNSEL"]
-  },
-
-  // shared links
-  comminications: {
+  // shared links (moved to the bottom before commented out section)
+  commsAdmin: {
     name: "Communications",
     icon: MessageSquare,
-    route: "/admin/comms",
-    roles: ["ADMIN", "COUNSEL", "CLIENT"]
+    route: "/comms",
+    roles: ["ADMIN", "STAFF", "CLIENT"]
+  },
+  calendar: {
+    name: "Calendar & Scheduling",
+    icon: TbCalendarEvent,
+    route: "/calendar-&-scheduling",
+    roles: ["ADMIN", "STAFF", "CLIENT"]
   },
   support: {
     name: "Support",
     icon: HelpCircle,
-    route: "/admin/support",
-    roles: ["ADMIN", "COUNSEL", "CLIENT"]
+    route: "/support",
+    roles: ["ADMIN", "STAFF", "CLIENT"]
   }
+
+  // Finiancial Links
+
   // privacy: {
   //   name: "Privacy Policy",
   //   icon: Lock,

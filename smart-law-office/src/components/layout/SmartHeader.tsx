@@ -4,8 +4,8 @@ import { useAuthStore } from "@/store/authStore";
 import React from "react";
 import { userName } from "../dashboard/admin/Sidebar";
 import { Bell, Calendar, ChevronDown, Menu, Search } from "lucide-react";
-import { Button } from "@/components/shared/ui/button";
-import SettingsDropdown from "../settings/Settings";
+import { Button } from "@/components/ui/button";
+import SettingsDropdown from "../dashboard/settings/Settings";
 
 type HeaderProps = {
   toggleDrawer: () => void;

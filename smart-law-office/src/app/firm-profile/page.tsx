@@ -1,9 +1,9 @@
 "use client";
 
-import Step2Branding from "@/components/admin/onboarding/Branding";
-import Step3CustomFee from "@/components/admin/onboarding/CustomFee";
-import Step1FirmType from "@/components/admin/onboarding/FirmType";
-import ProgressBar from "@/components/admin/onboarding/ProgressBar";
+import Step2Branding from "@/components/firmProfile/Branding";
+import Step3CustomFee from "@/components/firmProfile/CustomFee";
+import Step1FirmType from "@/components/firmProfile/FirmType";
+import ProgressBar from "@/components/firmProfile/ProgressBar";
 import { useFirmProfileStore } from "@/store/firmProfileStore";
 // import { SessionManager } from "@/components/admin/onboarding/SessionManager";
 

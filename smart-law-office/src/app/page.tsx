@@ -1,11 +1,11 @@
 "use client";
-import { AboutSection } from "@/components/shared/landingPageSections/About";
-import { FeaturesSection } from "@/components/shared/landingPageSections/Features";
-import Header from "@/components/shared/landingPageSections/Header";
-import { WhyChooseUsSection } from "@/components/shared/landingPageSections/WhyChooseUsSection";
-import PricingSection from "@/components/shared/landingPageSections/Pricing";
-import { Footer } from "@/components/shared/landingPageSections/Footer";
-import Hero from "@/components/shared/landingPageSections/Hero";
+import { AboutSection } from "@/components/layout/landingPageSections/About";
+import { FeaturesSection } from "@/components/layout/landingPageSections/Features";
+import Header from "@/components/layout/landingPageSections/Header";
+import { WhyChooseUsSection } from "@/components/layout/landingPageSections/WhyChooseUsSection";
+import PricingSection from "@/components/layout/landingPageSections/Pricing";
+import { Footer } from "@/components/layout/landingPageSections/Footer";
+import Hero from "@/components/layout/landingPageSections/Hero";
 
 export default function Home() {
   return (

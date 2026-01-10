@@ -8,7 +8,10 @@ import {
   sendPasswordResetOtp,
   verifyPasswordResetOtp
 } from "@/app/api/forgotpassword.api";
-import { ForgotOtpFormData, ForgotOtpSchema } from "@/lib/ForgotPasswordSchema";
+import {
+  ForgotOtpFormData,
+  ForgotOtpSchema
+} from "@/types/ForgotPasswordSchema";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -18,10 +21,10 @@ import {
   FormItem,
   FormLabel,
   FormMessage
-} from "@/components/shared/ui/form";
-import { Input } from "@/components/shared/ui/input";
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { Button } from "@/components/shared/ui/button";
+import { Button } from "@/components/ui/button";
 
 const VerifyOtp = () => {
   const router = useRouter();

@@ -5,7 +5,7 @@
 
 const nextConfig = {
   /* config options here */
-  // output: "export",
+  // output: "export"
   // images: {
   //   loader: "custom"
   //   // loaderFile: "./my-loader.ts"

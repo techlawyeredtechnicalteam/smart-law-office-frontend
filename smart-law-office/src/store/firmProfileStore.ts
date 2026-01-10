@@ -110,10 +110,10 @@ const store: StateCreator<FirmProfileStore> = (set, get) => ({
         throw new Error("Signup data not found. Please start over.");
       }
 
-      const fullName = signupData.fullName.trim();
-      const nameParts = fullName.split(/\s+/).filter((part) => part.length > 0);
-      const firstName = nameParts[0] || "";
-      const lastName = nameParts.slice(1).join(" ") || firstName; 
+      // const fullName = signupData.fullName.trim();
+      // const nameParts = fullName.split(/\s+/).filter((part) => part.length > 0);
+      // const firstName = nameParts[0] || "";
+      // const lastName = nameParts.slice(1).join(" ") || firstName;
 
       const feeValue = formData.isCustomFeeEnabled
         ? typeof formData.customFeeAmount === "string"
@@ -127,8 +127,8 @@ const store: StateCreator<FirmProfileStore> = (set, get) => ({
         email: signupData.email,
         password: signupData.password,
         confirmPassword: signupData.confirmPassword,
-        firstName: firstName,
-        lastName: lastName,
+        firstName: signupData.firstName,
+        lastName: signupData.lastName,
         address: signupData.address || "N/A",
         consent: true,
         role: "ADMIN",
@@ -180,23 +180,5 @@ export const useFirmProfileStore = create<FirmProfileStore>()(
       currentStep: state.currentStep,
       formData: state.formData
     })
-    // Using a custom storage might be needed if you serialize/deserialize complex types,
-    // but standard localStorage is fine for this structure.
   })
 );
-
-// Helper function to convert base64 to file
-// const base64ToFile = (
-//   base64String: string,
-//   fileName: string
-// ): File => {
-//   const arr = base64String.split(",");
-//   const mime = arr[0].match(/:(.*?);/)?.[1] || "image/png";
-//   const bstr = atob(arr[1]);
-//   let n = bstr.length;
-//   const u8arr = new Uint8Array(n);
-//   while (n--) {
-//     u8arr[n] = bstr.charCodeAt(n);
-//   }
-//   return new File([u8arr], fileName, { type: mime });
-// };

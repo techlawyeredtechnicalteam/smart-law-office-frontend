@@ -23,7 +23,7 @@ const SuccessPage = () => {
 
       // Redirect after short delay
       setTimeout(() => {
-        router.push("/admin/cases");
+        router.push("/admin/overview");
       }, 1500);
     }, 2000);
 

@@ -1,33 +1,90 @@
 "use client";
 
 import React from "react";
-// import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { RoleCard } from "@/components/auth/UserRoleCard";
+import { motion, Variants } from "framer-motion";
+
+const containerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+      delayChildren: 0.1
+    }
+  }
+};
+const fadeInSlideUp: Variants = {
+  hidden: { y: 30, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 20
+    }
+  }
+};
+
+const cardContainerVariant: Variants = {
+  hidden: { y: 50, opacity: 0, scale: 0.95 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 80,
+      damping: 15
+    }
+  }
+};
 
 const UserRole = () => {
-  // const { setRole } = useAuthStore();
   const router = useRouter();
 
   const handleRoleSelect = (role: "CLIENT" | "COUNSEL") => {
     // setRole(role);
     if (role === "CLIENT") {
-      router.push("/signup-client");
+      router.push("/client/signup");
     } else {
-      router.push("/signup");
+      router.push("/admin/signup");
     }
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-start pt-0 bg-white">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="min-h-screen flex flex-col items-center justify-start pt-0 bg-white"
+    >
       {/* Top color logo area */}
-      <div className="w-full bg-[#7C3AED] text-white pt-16 pb-48 px-4 text-center shadow-lg">
-        <h1 className="text-3xl font-semibold mb-1">Logo</h1>
-        <h2 className="text-5xl font-extrabold mt-8">What&apos;s your goal?</h2>
-      </div>
+      <motion.div
+        variants={containerVariants}
+        className="w-full bg-[#7C3AED] text-white pt-16 pb-48 px-4 text-center shadow-lg"
+      >
+        <motion.h1
+          variants={fadeInSlideUp}
+          className="text-3xl font-semibold mb-1"
+        >
+          Logo
+        </motion.h1>
+        <motion.h2
+          variants={fadeInSlideUp}
+          className="text-5xl font-extrabold mt-8"
+        >
+          What&apos;s your goal?
+        </motion.h2>
+      </motion.div>
 
       {/* Card Container */}
-      <div className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-12 -mt-32 max-w-5xl mx-auto p-4 relative z-10">
+      <motion.div
+        variants={cardContainerVariant}
+        className="flex flex-col lg:flex-row space-y-6 lg:space-y-0 lg:space-x-12 -mt-32 max-w-5xl mx-auto p-4 relative z-10"
+      >
         {/* Client Card */}
         <RoleCard
           title="As a Client"
@@ -46,10 +103,13 @@ const UserRole = () => {
           activeColor="violet"
           onClick={() => handleRoleSelect("COUNSEL")}
         />
-      </div>
+      </motion.div>
 
       {/* Footer Links */}
-      <div className="mt-16 text-center text-sm text-gray-600 px-4">
+      <motion.div
+        variants={fadeInSlideUp}
+        className="mt-16 text-center text-sm text-gray-600 px-4"
+      >
         By signing up, you agree to the{" "}
         <a href="#" className="font-semibold text-[#7C3AED] hover:underline">
           Terms of service
@@ -59,17 +119,17 @@ const UserRole = () => {
           Privacy policy
         </a>
         .
-      </div>
-      <div className="mt-4 mb-10 text-center text-sm text-gray-600 px-4">
+      </motion.div>
+      <motion.div
+        variants={fadeInSlideUp}
+        className="mt-4 mb-10 text-center text-sm text-gray-600 px-4"
+      >
         Already have an account?{" "}
-        <a
-          href="/login"
-          className="font-semibold text-[#7C3AED] hover:underline"
-        >
+        <a href="/admin/login" className="font-semibold text-[#7C3AED] hover:underline">
           Sign in
         </a>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

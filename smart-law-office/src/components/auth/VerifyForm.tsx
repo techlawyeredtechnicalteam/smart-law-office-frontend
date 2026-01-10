@@ -2,13 +2,13 @@
 
 import React from "react";
 import { useForm } from "react-hook-form";
-import { Input } from "@/components/shared/ui/input";
+import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { email, string, z } from "zod";
-import { VerifyFormValidation } from "@/lib/FirmAuthSchema";
-import { Button } from "@/components/shared/ui/button";
+import { VerifyFormValidation } from "@/types/FirmAuthSchema";
+import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import {
   Form,
@@ -17,10 +17,9 @@ import {
   FormItem,
   FormLabel,
   FormMessage
-} from "@/components/shared/ui/form";
+} from "@/components/ui/form";
 import { verifyOtp, sendOtp, finalizeSignup } from "@/app/api/signup.api";
 import { toast } from "sonner";
-import { useCountdown } from "@/hook/useCountdown";
 
 type VerifyFormData = z.infer<typeof VerifyFormValidation>;
 
@@ -28,17 +27,22 @@ const VerifyForm = () => {
   const router = useRouter();
   const params = useSearchParams();
   const userEmail = params.get("email") || "";
+  const userRole = params.get("role") || "";
   const [showCode, setShowCode] = React.useState<boolean>(false);
   const { setUser, setRole } = useAuthStore();
-  // const { countdown, startCountdown, formattedCountdown } = useCountdown(600);
 
   // Check if email exist
   React.useEffect(() => {
     if (!userEmail) {
       toast.error("Email not found. Please signup again");
-      router.push("/signup");
+      // Route to appropriate signup based on role
+      if (userRole === "ADMIN") {
+        router.push("/admin/signup");
+      } else {
+        router.push("/client/signup");
+      }
     }
-  }, [userEmail, router]);
+  }, [userEmail, userRole, router]);
 
   const form = useForm<VerifyFormData>({
     resolver: zodResolver(VerifyFormValidation),
@@ -72,8 +76,6 @@ const VerifyForm = () => {
           setUser({
             id: userData.id,
             email: userData.email,
-            fullName:
-              userData.fullName || `${userData.firstName} ${userData.lastName}`,
             firstName: userData.firstName,
             lastName: userData.lastName,
             firmId: userData.firmId,

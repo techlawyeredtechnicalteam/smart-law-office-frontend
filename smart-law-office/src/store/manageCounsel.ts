@@ -7,7 +7,13 @@ import {
   deleteCounsel,
   fetchCounsel,
   updateCounsel
-} from "@/app/api/signup.api";
+} from "@/app/api/manageCounse.api";
+
+export interface Notification {
+  type: "success" | "info" | "error";
+  message: string;
+  details: string;
+}
 
 export interface Counsel {
   id: number;
@@ -34,6 +40,21 @@ export interface ManageCounselStore {
   isEditModalOpen: boolean;
   isDeleteModalOpen: boolean;
   selectedCounsel: Counsel | null;
+
+  // New Modal State
+  isUpgradeModalOpen: boolean;
+
+  // New Modal Actions
+  openUpgradeModal: () => void;
+  closeUpgradeModal: () => void;
+
+  notifications: Notification[];
+  lastAddedCounsel: Counsel | null;
+
+  setLastAddedCounsel: (counsel: Counsel | null) => void;
+
+  // New Action
+  addNotification: (notification: Notification) => void;
 
   // Actions
   setCounsels: (data: Counsel[]) => void;
@@ -73,7 +94,24 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
   setCounsels: (data) => set({ counsel: data }),
   setIsSubmitting: (status) => set({ isSubmitting: status }),
 
-  openAddModal: () => set({ isAddModalOpen: true }),
+  isUpgradeModalOpen: false, // New State
+
+  // New Modal Control
+  openUpgradeModal: () => set({ isUpgradeModalOpen: true }),
+  closeUpgradeModal: () => set({ isUpgradeModalOpen: false }),
+
+  // Refactor openAddModal to check subscription
+  openAddModal: () => {
+    // Placeholder for subscription check
+    const hasActiveSubscription = true; // Simulate no active subscription
+
+    if (hasActiveSubscription) {
+      set({ isAddModalOpen: true });
+    } else {
+      set({ isUpgradeModalOpen: true });
+    }
+  },
+
   closeAddModal: () => set({ isAddModalOpen: false }),
   openEditModal: (counsel) =>
     set({ isEditModalOpen: true, selectedCounsel: counsel }),
@@ -100,8 +138,12 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
         counselData = response.data || [];
       }
 
+      const staffOnly = counselData.filter(
+        (user: any) => user.role === "STAFF"
+      );
+
       // Map API response to Counsel interface
-      const mappedCounselData = counselData.map((counsel: any) => ({
+      const mappedCounselData = staffOnly.map((counsel: any) => ({
         id: counsel.id,
         fullName:
           counsel.fullName ||
@@ -111,7 +153,7 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
         callToBarFile: counsel.callToBarFile || counsel.barCertificate,
         status: counsel.status || "Inactive",
         assignedCases: counsel.assignedCases || "0",
-        role: counsel.role || "COUNSEL"
+        role: "STAFF" as const
       }));
 
       console.log("Mapped counsel data:", mappedCounselData);
@@ -124,14 +166,41 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
     }
   },
 
+  notifications: [],
+  lastAddedCounsel: null,
+
+  setLastAddedCounsel: (counsel: Counsel | null) =>
+    set({ lastAddedCounsel: counsel }),
+
+  addNotification: (notification) =>
+    set((state) => ({ notifications: [notification, ...state.notifications] })),
+
   addCounsel: async (payload: CounselPayload) => {
     set({ isSubmitting: true });
     try {
-      await addCounsel(payload);
+      const response = await addCounsel(payload);
+
+      const newCounsel: Counsel = response.data;
+
       await get().fetchCounsels();
-      toast.success("Counsel added successfully");
+
+      // SUCCESS ACTIONS
+      toast.success("Counsel Added!", {
+        description: "You have successfully added a new counsel to your team."
+      });
+
+      // 1. Set the last added counsel for the banner
+      set({ lastAddedCounsel: newCounsel });
+
+      // 2. Add to header notifications
+      get().addNotification({
+        type: "success",
+        message: "Counsel Added",
+        details: `${newCounsel.fullName} was successfully added to your team.`
+      });
     } catch (error) {
       console.error("Failed to add counsel:", error);
+      toast.error("Failed to add counsel. Please try again.");
       throw error;
     } finally {
       set({ isSubmitting: false });
@@ -141,17 +210,20 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
   updateCounsel: async (id, updatedFields) => {
     set({ isSubmitting: true });
     try {
-      await updateCounsel(String(id), updatedFields);
+      await updateCounsel(String(id));
+      await get().fetchCounsels();
 
-      set((state) => ({
-        counsels: state.counsel.map((c) =>
-          c.id === id ? { ...c, ...updatedFields } : c
-        ),
-        isEditModalOpen: false,
-        selectedCounsel: null
-      }));
-      toast.success("Counsel details have been saved.");
+      set({ isEditModalOpen: false, selectedCounsel: null });
+
+      // Custom Success Toast
+      toast("Update Successful", {
+        description: "The Counsel's details have been saved.",
+        // icon: <CheckCircle className="h-4 w-4 text-white" />,
+        // className: "bg-white text-black border-l-4 border-green-500",
+        duration: 3000
+      });
     } catch (error) {
+      console.error("Update counsel error:", error);
       toast.error("Failed to update counsel.");
     } finally {
       set({ isSubmitting: false });
@@ -161,15 +233,16 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
   deleteCounsel: async (id) => {
     set({ isSubmitting: true });
     try {
-      await deleteCounsel(String(id));
+      const response = await deleteCounsel(String(id));
+      console.log("Delete counsel response:", response);
 
-      set((state) => ({
-        counsels: state.counsel.filter((c) => c.id !== id),
-        isDeleteModalOpen: false,
-        selectedCounsel: null
-      }));
+      // Refetch the data to get the updated state from server
+      await get().fetchCounsels();
+
+      set({ isDeleteModalOpen: false, selectedCounsel: null });
       toast.success("Counsel removed successfully.");
     } catch (error) {
+      console.error("Delete counsel error:", error);
       toast.error("Failed to delete counsel.");
       throw error;
     } finally {
@@ -178,4 +251,4 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
   }
 });
 
-export const UseCounselStore = create<ManageCounselStore>()(store);
+export const useCounselStore = create<ManageCounselStore>()(store);

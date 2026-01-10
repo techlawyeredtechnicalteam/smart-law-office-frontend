@@ -4,7 +4,7 @@ import React from "react";
 import {
   ResetPasswordFormData,
   ResetPasswordSchema
-} from "@/lib/ForgotPasswordSchema";
+} from "@/types/ForgotPasswordSchema";
 import { useRouter } from "next/navigation";
 import { useForgotPasswordStore } from "@/store/forgotPasswordStore";
 import { useForm } from "react-hook-form";

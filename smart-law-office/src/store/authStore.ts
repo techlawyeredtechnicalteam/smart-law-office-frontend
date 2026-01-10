@@ -1,35 +1,36 @@
 "use client";
-import { SignUpFormData } from "@/lib/FirmAuthSchema";
+import { deleteCooke, getCookie, setCookie } from "@/lib/cookies";
+import { SignUpFormData } from "@/types/FirmAuthSchema";
 import { create, StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 
 const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
 
-// type
+// User data structure
 export interface User {
   id: string;
   email: string;
   firmId?: string;
-  role: "ADMIN" | "COUNSEL" | "CLIENT" | "";
-  firstName?: string;
-  lastName?: string;
-  fullName: string;
+  role: "ADMIN" | "STAFF" | "CLIENT" | "";
+  firstName: string;
+  lastName: string;
   firmName?: string;
 }
 
+// stores the admin data temporary until on final signup
 export type SignupFormTemp = {
   email: string;
   password: string;
   confirmPassword: string;
-  fullName: string;
+  firstName: string;
+  lastName: string;
   address?: string;
   consent: boolean;
-  role: "ADMIN" | "COUNSEL" | "CLIENT" | "";
+  role: "ADMIN" | "STAFF" | "CLIENT" | "";
 };
 
+// Auth Store State and Actions
 interface AuthState {
-  // session
-  token: string | null;
   lastActivity: number | null;
   isAuthenticated: boolean;
 
@@ -46,23 +47,21 @@ interface AuthState {
   logout: () => void;
   setLastActivity: () => void;
   checkSessionStatus: () => void;
+  getToken: () => string | null;
 
   // user role
-  role: "CLIENT" | "COUNSEL" | "ADMIN" | "";
-  setRole: (role: "CLIENT" | "COUNSEL" | "ADMIN" | "") => void;
-
-  //navigation
-  // currentPath: string;
-  // setCurrentPath: (path: string) => void;
+  role: "CLIENT" | "STAFF" | "ADMIN" | "";
+  setRole: (role: "CLIENT" | "STAFF" | "ADMIN" | "") => void;
 
   // holding basic signupdetails
   signupFormTemp: SignupFormTemp | null;
   setSignupFormTemp: (data: Partial<SignupFormTemp> | null) => void;
+
+  updateUserRole: (newRole: "CLIENT" | "STAFF" | "ADMIN") => void;
 }
 
 const store: StateCreator<AuthState> = (set, get) => ({
   // session State
-  token: null,
   lastActivity: null,
   isAuthenticated: false,
 
@@ -74,11 +73,21 @@ const store: StateCreator<AuthState> = (set, get) => ({
   isAuthReady: false,
   signupFormTemp: null,
 
-  // Actions
+  updateUserRole: (newRole) => {
+    set((state) => ({
+      role: newRole,
+      user: state.user ? { ...state.user, role: newRole } : null
+    }));
+  },
+
+  // Get toekn from cookie
+  getToken: () => getCookie("auth-token"),
   // Called on successful login
   loginSuccess: (token, userData) => {
+    // Store token in both localStorage (via Zustand) and cookies (for middleware)
+    setCookie("auth-token", token, 30); //30 days
+
     set({
-      token,
       user: userData,
       lastActivity: Date.now(),
       isAuthenticated: true,
@@ -89,9 +98,10 @@ const store: StateCreator<AuthState> = (set, get) => ({
 
   // Called on explicit user logout or session timeout
   logout: () => {
+    // Clear token from cookies
+    deleteCooke("auth-token");
     // Clear all session-sensitive data
     set({
-      token: null,
       user: null,
       lastActivity: null,
       isAuthenticated: false,
@@ -99,7 +109,6 @@ const store: StateCreator<AuthState> = (set, get) => ({
       role: ""
     });
     console.log("User session invalidated/logged out.");
-    // NOTE: You would typically redirect the user to the login page here
   },
 
   // Called on user interaction to reset the 30-day timer
@@ -109,14 +118,10 @@ const store: StateCreator<AuthState> = (set, get) => ({
 
   // Called on store hydration to enforce the 30-day inactivity rule
   checkSessionStatus: () => {
-    const { token, lastActivity, logout, setLastActivity, isAuthenticated } =
+    const { getToken, lastActivity, logout, setLastActivity, isAuthenticated } =
       get();
 
-    console.log("Checking session Status:", {
-      hasToken: !!token,
-      isAuthenticated,
-      lastActivity
-    });
+    const token = getToken();
 
     if (isAuthenticated && token) {
       console.log("Already authenticated, skipping check");
@@ -152,16 +157,6 @@ const store: StateCreator<AuthState> = (set, get) => ({
   // Existing Actions Cleaned Up
   setUser: (user) => set({ user }),
 
-  // clearUser: () =>
-  //   set({
-  //     user: null,
-  //     token: null,
-  //     isAuthenticated: false,
-  //     lastActivity: null,
-  //     role: ""
-  //     // Keep isAuthReady true if it was already true, or set it if not
-  //   }),
-
   setIsAuthReady: (ready) => set({ isAuthReady: ready }),
 
   setRole: (role) => set({ role }),
@@ -177,9 +172,8 @@ const store: StateCreator<AuthState> = (set, get) => ({
 export const useAuthStore = create<AuthState>()(
   persist(store, {
     name: "auth-session-storage", // Key used in localStorage
-    // Only persist the token and the activity timestamp, user data, and role
+    // Only persist the activity timestamp, user data, and role
     partialize: (state) => ({
-      token: state.token,
       lastActivity: state.lastActivity,
       user: state.user,
       role: state.role,
@@ -194,26 +188,3 @@ export const useAuthStore = create<AuthState>()(
     }
   })
 );
-
-// export const useAuthStore = create<AuthState>((set) => ({
-//   user: null,
-//   setUser: (user) => set({ user }),
-//   clearUser: () => set({ user: null }),
-//   role: "",
-//   setRole: (role) => set({ role }),
-//   isAuthReady: false,
-//   setIsAuthReady: (ready) => set({ isAuthReady: ready }),
-
-//   // temp new state
-//   signupFormTemp: null,
-//   setSignupFormTemp: (data) =>
-//     set((state) => ({
-//       signupFormTemp: data
-//         ? ({ ...state.signupFormTemp, ...data } as SignupFormTemp)
-//         : null
-//     })),
-
-//   // nav
-//   currentPath: "/",
-//   setCurrentPath: (path) => set({ currentPath: path })
-// }));
