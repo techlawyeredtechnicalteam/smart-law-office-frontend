@@ -8,7 +8,7 @@ import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
-import { usePaystackPayment } from "react-paystack";
+// import { usePaystackPayment } from "react-paystack";
 
 export function PaymentSummary() {
   const { user } = useAuthStore();
@@ -60,7 +60,7 @@ export function PaymentSummary() {
     }
   };
 
-  const initializePayment = usePaystackPayment(config);
+  // const initializePayment = usePaystackPayment(config);
 
   const onSuccess = (reference: any) => {
     setIsLoading(false);
@@ -83,7 +83,7 @@ export function PaymentSummary() {
     }
 
     setIsLoading(true);
-    initializePayment({ onSuccess, onClose });
+    // initializePayment({ onSuccess, onClose });
   };
 
   // If user navigated here directly without filling form, handle undefined
