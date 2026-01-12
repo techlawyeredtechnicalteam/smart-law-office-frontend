@@ -25,15 +25,21 @@ const getStatusBadgeVariant = (status: string) => {
 };
 
 export function CaseDashboard({ cases }: CaseDashboardProps) {
+  console.log("CaseDashboard:", cases);
+
   const { caseTypes } = useCaseStore();
   const columns: TableColumn<Case>[] = [
     {
       key: "id",
       header: "Case ID",
-      render: (caseItem) => {
-        // If id exists, slice it. Otherwise, return a placeholder.
-        return caseItem?.id ? caseItem.id.slice(-8).toUpperCase() : "PENDING";
-      }
+      render: (caseItem) => (
+        // Prioritize the human-readable caseCode from your debug logs
+        <span className="font-mono font-bold text-violet-700">
+          {(caseItem as any).caseCode ||
+            caseItem.id?.slice(-8).toUpperCase() ||
+            "---"}
+        </span>
+      )
     },
     {
       key: "clientName",
@@ -53,14 +59,13 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       key: "caseType",
       header: "Case Type",
       render: (caseItem) => {
-        // Find the name in the master list using the ID stored in the case
+        const nestedName = caseItem.caseType?.feeSchedule?.name;
         const masterData = caseTypes.find(
           (t) =>
             t.caseTypeId === caseItem.caseTypeId ||
             t.feeScheduleId === caseItem.caseTypeId
         );
-
-        const typeName = masterData?.name || "Standard Case";
+        const typeName = nestedName || masterData?.name || "Standard Case";
         return <span className="capitalize">{typeName.toLowerCase()}</span>;
       }
     },
@@ -73,31 +78,36 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
             caseItem.status
           )} border shadow-sm`}
         >
-          {caseItem.status}
+          {caseItem.status || "PENDING"}
         </Badge>
       )
     },
     {
-      key: "document",
-      header: "Document",
-      render: (caseItem) =>
-        caseItem.documents && caseItem.documents.length > 0
-          ? caseItem.documents[0].name
-          : "N/A"
-    },
-    {
       key: "notes",
       header: "Notes",
-      render: (caseItem) =>
-        caseItem.notes ? (
-          caseItem.notes.length > 50 ? (
-            caseItem.notes.substring(0, 50) + "..."
-          ) : (
-            caseItem.notes
-          )
+      render: (caseItem) => {
+        // Consolidated logic for 'notes' or 'note'
+        const noteText = caseItem.notes || (caseItem as any).note;
+        if (!noteText)
+          return <span className="text-gray-400 italic text-xs">No notes</span>;
+        return noteText.length > 40
+          ? noteText.substring(0, 40) + "..."
+          : noteText;
+      }
+    },
+    {
+      key: "document",
+      header: "Document",
+      render: (caseItem) => {
+        const hasDocs = caseItem.documents && caseItem.documents.length > 0;
+        return hasDocs ? (
+          <span className="text-violet-600 underline cursor-pointer text-sm">
+            {caseItem.documents[0].name}
+          </span>
         ) : (
-          <span className="text-gray-400 italic text-xs">No notes</span>
-        )
+          <span className="text-gray-400">N/A</span>
+        );
+      }
     }
   ];
 

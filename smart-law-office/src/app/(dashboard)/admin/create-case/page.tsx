@@ -8,13 +8,15 @@ import { Briefcase } from "lucide-react";
 // import SmartLawOfficeDashboard from "@/components/layout/SmartLawOfficeDashboard";
 
 export default function CasePage() {
-  const { cases, isLoading, fetchCases, error } = useCaseStore();
+  const { cases, isLoading, fetchCases, fetchCaseTypes, error } =
+    useCaseStore();
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   // Fetch data on component mount
   useEffect(() => {
     fetchCases();
-  }, [fetchCases]);
+    fetchCaseTypes();
+  }, []);
 
   // Handler to close the success modal
   const handleSuccessClose = () => setIsSuccessModalOpen(false);
