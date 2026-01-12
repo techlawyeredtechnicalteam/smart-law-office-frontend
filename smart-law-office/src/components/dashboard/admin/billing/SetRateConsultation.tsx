@@ -36,7 +36,7 @@ const SetRateConsultation = () => {
       subServiceId: "",
       caseRate: 0,
       duration: "",
-      consultationRate: 0
+      consultationRate: undefined
     }
   });
 

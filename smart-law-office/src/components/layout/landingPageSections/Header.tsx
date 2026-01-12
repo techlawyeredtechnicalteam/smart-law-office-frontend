@@ -175,7 +175,7 @@ const Header: React.FC = () => {
               ))}
               <motion.div variants={mobileLinkItemVariants}>
                 <Button variant="default" className="w-full bg-violet-600 mt-2">
-                  Login
+                  <a href="/role">Login</a>
                 </Button>
               </motion.div>
             </motion.nav>

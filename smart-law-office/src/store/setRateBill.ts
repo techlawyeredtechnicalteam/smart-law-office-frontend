@@ -214,9 +214,19 @@ export const useBillingStore = create<BillingStore>()(
         set({ isLoading: true });
         try {
           if (payload.serviceType === "Consultation") {
-            const numericDuration = Number(
-              String(payload.duration).replace(/\D/g, "")
-            );
+            // const numericDuration = Number(
+            //   String(payload.duration).replace(/\D/g, "")
+            // );
+            const durationValue = payload.duration;
+            let numericDuration: number;
+
+            if (typeof durationValue === "number") {
+              numericDuration = durationValue;
+            } else {
+              // If it's a string like "30 mins", strip non-digits and convert
+              numericDuration =
+                Number(String(durationValue).replace(/\D/g, "")) || 0;
+            }
             await saveConsultationFee({
               duration: numericDuration,
               fee: Number(payload.rate)
