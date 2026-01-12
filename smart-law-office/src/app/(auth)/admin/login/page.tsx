@@ -1,5 +1,4 @@
 import { Metadata } from "next";
-import LoginForm from "@/components/auth/admin/LoginForm";
 import { CheckCircle } from "lucide-react";
 import UnifiedLoginForm from "@/components/auth/LoginForm";
 

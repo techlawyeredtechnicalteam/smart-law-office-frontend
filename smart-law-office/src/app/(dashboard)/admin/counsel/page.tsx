@@ -80,7 +80,7 @@ const ManageCounselPage = () => {
             {/* Icon */}
             <User className="h-16 w-16 text-purple-600 mb-4" />
             {/* Heading */}
-            <h2 className="text-2xl font-semibold mb-3">Case</h2>
+            <h2 className="text-2xl font-semibold mb-3">Counsels</h2>
             {/* Descritption */}
             <p className="text-gray-800 mb-4 max-w-sm">
               No Counsel has been added yet. Add a counsel to begin manage your

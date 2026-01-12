@@ -7,6 +7,6 @@ export interface AssignCasePayload {
 }
 
 export const assignCase = (payload: AssignCasePayload) =>
-  api.post("/assign-case", payload);
+  api.post("/cases/assign-case", payload);
 
 export const getStaff = () => api.get("/users?role=STAFF");

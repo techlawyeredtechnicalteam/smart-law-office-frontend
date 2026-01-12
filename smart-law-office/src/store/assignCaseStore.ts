@@ -1,29 +1,27 @@
-// src/store/assignCaseStore.ts
-
 import { create } from "zustand";
-import api from "@/app/api/api";
-import { CaseType } from "@/types/case.schema";
-import { UserRole, Lawyer } from "@/types/user";
+import { CaseType } from "./createCase";
+import { Lawyer } from "@/types/user";
+import { getCounsel } from "@/app/api/manageCounse.api";
+import { assignCase } from "@/app/api/assignCase.api";
+import { getAdminCaseTypes } from "@/app/api/caseType.api";
+import { getAllCases, getCases } from "@/app/api/cases.api";
 
 export interface UnassignedCaseForUI {
-  id: string; // The consultCode for assignment
-  clientName: string; // Fictional client name for display/filtering
-  caseType: string; // The name of the case type
+  id: string;
+  clientName: string;
+  caseType: string;
   date: string;
   time: string;
-  status: string; // e.g., "Pending Lawyer agreement"
-  // Assuming the API provides a contract document link or status
+  status: string;
   contractDoc?: { name: string; url: string };
 }
 
-// Interface for the data needed to perform assignment
 interface AssignCasePayload {
   consultCode: string;
-  staffEmail: string; // The email of the lawyer
+  staffEmail: string;
   caseTypeId: string;
 }
 
-// Simplified AssignedCase to match the `AssignCasePage.tsx` table
 export interface AssignedCase {
   id: string;
   caseId: string;
@@ -36,17 +34,14 @@ export interface AssignedCase {
   status: "Active" | "Inactive";
 }
 
-// --- Store State & Actions ---
-
 interface AssignState {
   unassignedCases: UnassignedCaseForUI[];
   counsels: Lawyer[];
-  assignedCases: AssignedCase[]; // Keeping assigned cases in local state for the dashboard
+  assignedCases: AssignedCase[];
   isAssigning: boolean;
   isLoading: boolean;
   error: string | null;
 
-  // Actions
   fetchData: () => Promise<void>;
   assignCase: (
     consultCode: string,
@@ -65,39 +60,87 @@ export const useAssignStore = create<AssignState>((set, get) => ({
   isLoading: false,
   error: null,
 
-  // Async function to fetch all necessary data
   fetchData: async () => {
     if (get().isLoading) return;
 
     set({ isLoading: true, error: null });
-    try {
-      // 1. Fetch Case Types (Acting as Unassigned Cases in this refactor)
-      // We will assume the API for unassigned cases is what should be used,
-      // but since it's not provided, we use case-types and mock the rest.
-      const unassignedCasesRes = await api.get<CaseType[]>(
-        "/api/v1/case-types"
-      );
 
-      // Transform CaseType[] to UnassignedCaseForUI[]
-      const transformedCases: UnassignedCaseForUI[] =
-        unassignedCasesRes.data.map((caseType) => ({
-          id: caseType.id || "",
-          clientName: "Pending Assignment", // Mock data - replace with actual client name from API
-          caseType: caseType.name || "",
-          date: new Date().toLocaleDateString(), // Mock data - replace with actual date
-          time: new Date().toLocaleTimeString(), // Mock data - replace with actual time
-          status: "Pending Lawyer agreement",
-          // Add contractDoc if available in CaseType
-          contractDoc: undefined
+    try {
+      // const [unassignedCasesRes, usersRes] = await Promise.all([
+      //   getAllCases(),
+      //   getCounsel()
+      const [bookedCasesRes, usersRes] = await Promise.all([
+        // Use an endpoint that returns cases booked by clients
+        // If you don't have one, we can filter existing consultations
+        getAllCases(),
+        getCounsel()
+      ]);
+
+      // const transformedCases: UnassignedCaseForUI[] =
+      //   unassignedCasesRes.data.map((ct: any, index: number) => ({
+      //     id: ct.caseTypeId || ct.id || `case-${Date.now()}-${index}`,
+      //     clientName: "Pending Assignment",
+      //     caseType: ct.feeSchedule?.name || ct.name || "General Case",
+      //     date: new Date().toLocaleDateString(),
+      //     time: new Date().toLocaleTimeString(),
+      //     status: "Pending Lawyer agreement"
+      //   }));
+      const transformedCases: UnassignedCaseForUI[] = bookedCasesRes.data
+        .filter((c: any) => c.client || c.clientName) // Only show if a client exists
+        .map((ct: any) => ({
+          id: ct.caseId || ct.id,
+          clientName: ct.client?.name || ct.clientName || "Unknown Client",
+          caseType: ct.caseType?.name || ct.feeSchedule?.name || "Legal Case",
+          date: ct.createdAt
+            ? new Date(ct.createdAt).toLocaleDateString()
+            : "N/A",
+          time: ct.createdAt
+            ? new Date(ct.createdAt).toLocaleTimeString()
+            : "N/A",
+          status: ct.status || "Pending Assignment"
         }));
 
-      // 2. Fetch Lawyers (Users)
-      const counselsRes = await api.get<{ data: Lawyer[] }>("/api/v1/users");
-      // Filter users to find lawyers (assuming UserRole is defined and 'LAWYER' is the role)
-      const lawyers = counselsRes.data.data.filter(
-        (user) => user.role === UserRole.LAWYER
-      );
+      // FIX: Convert object with numeric keys to array
+      let allUsers: any[] = [];
 
+      if (usersRes.data) {
+        // Check if it's an object with numeric keys
+        if (
+          typeof usersRes.data === "object" &&
+          !Array.isArray(usersRes.data)
+        ) {
+          allUsers = Object.values(usersRes.data);
+        } else if (Array.isArray(usersRes.data)) {
+          allUsers = usersRes.data;
+        }
+      } else if (Array.isArray(usersRes)) {
+        allUsers = usersRes;
+      } else if (typeof usersRes === "object") {
+        allUsers = Object.values(usersRes);
+      }
+
+      // Filter for STAFF and transform to Lawyer format
+      const lawyers: Lawyer[] = allUsers
+        .filter((u: any) => u.role === "STAFF")
+        .map((u: any) => ({
+          id: u.userId,
+          name: `${u.firstName} ${u.lastName}`,
+          email: u.email,
+          role: u.role,
+          specialty: u.scn ? `SCN: ${u.scn}` : "General Practice",
+          casesCount: 0, // You can update this if you have case count data
+          firstName: u.firstName,
+          lastName: u.lastName,
+          userId: u.userId
+        }));
+
+      console.log("Transformed lawyers:", lawyers);
+
+      // set({
+      //   unassignedCases: transformedCases,
+      //   counsels: lawyers,
+      //   isLoading: false
+      // });
       set({
         unassignedCases: transformedCases,
         counsels: lawyers,
@@ -112,7 +155,6 @@ export const useAssignStore = create<AssignState>((set, get) => ({
     }
   },
 
-  // Action to assign a case
   assignCase: async (
     consultCode,
     counselEmail,
@@ -121,6 +163,7 @@ export const useAssignStore = create<AssignState>((set, get) => ({
     counselDetails
   ) => {
     set({ isAssigning: true, error: null });
+
     try {
       const payload: AssignCasePayload = {
         consultCode,
@@ -128,9 +171,8 @@ export const useAssignStore = create<AssignState>((set, get) => ({
         caseTypeId
       };
 
-      await api.post("/api/v1/cases/assign-case", payload);
+      await assignCase(payload);
 
-      // On successful assignment, update local state:
       const newAssignment: AssignedCase = {
         id: Math.random().toString(36).substring(2, 9),
         caseId: caseDetails.id,
@@ -150,14 +192,15 @@ export const useAssignStore = create<AssignState>((set, get) => ({
         ),
         isAssigning: false
       }));
-      return true; // Success
+
+      return true;
     } catch (err) {
       console.error("Failed to assign case:", err);
       set({
         error: "Failed to assign case. Please try again.",
         isAssigning: false
       });
-      return false; // Failure
+      return false;
     }
   }
 }));

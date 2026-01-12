@@ -20,14 +20,17 @@ const CaseManagementPage = () => {
         <header className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">Case</h1>
           {/* Button that triggers the Create Case Modal */}
-          <AssignCaseModal />
+          <AssignCaseModal
+            isSuccessOpen={isSuccessModalOpen}
+            setSuccessOpen={setIsSuccessModalOpen}
+          />
         </header>
 
         {/* Conditional rendering for the dashboard */}
         {isLoading && <p>Loading cases...</p>}
         {error && <p className="text-red-500">Error: {error}</p>}
 
-        {cases.length === 0 && !isLoading ? (         
+        {cases.length === 0 && !isLoading ? (
           <div className="flex flex-col items-center justify-center p-20 bg-purple-50 rounded-2xl text-center shadow-lg max-w-lg mx-auto">
             {/* Icon */}
             <Briefcase className="h-16 w-16 text-purple-600 mb-4" />
@@ -41,11 +44,14 @@ const CaseManagementPage = () => {
             <span className="text-gray-400 font-light font-sm max-w-sm mb-8">
               We cannot access funds without your permission
             </span>
-            <AssignCaseModal />
+            <AssignCaseModal
+              isSuccessOpen={isSuccessModalOpen}
+              setSuccessOpen={setIsSuccessModalOpen}
+            />
           </div>
         ) : (
           <AssignedCasesTable />
-        )}        
+        )}
       </div>
     </div>
   );

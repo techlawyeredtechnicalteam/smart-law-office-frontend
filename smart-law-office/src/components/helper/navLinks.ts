@@ -21,11 +21,11 @@ export type NavItems = {
 
 export const ALL_LINKS: Record<string, NavItems> = {
   // Admin Dashboard
-  overview: {
-    name: "Overview",
-    icon: Home,
-    route: "/admin/overview",
-    roles: ["ADMIN"]
+  dashboard: {
+    name: "Dashboard",
+    icon: TbDashboard,
+    route: "/admin/dashboard",
+    roles: ["ADMIN", "STAFF"]
   },
   // Admin/Counsel links
   caseManagement: {
@@ -68,12 +68,12 @@ export const ALL_LINKS: Record<string, NavItems> = {
   },
 
   // Staff Links
-  dashboard: {
-    icon: TbDashboard,
-    name: "Dashboard",
-    route: "/staff/dashboard",
-    roles: ["STAFF"]
-  },
+  // dashboard: {
+  //   icon: TbDashboard,
+  //   name: "Dashboard",
+  //   route: "/staff/dashboard",
+  //   roles: ["STAFF"]
+  // },
   cases: {
     icon: Briefcase,
     name: "My Cases",

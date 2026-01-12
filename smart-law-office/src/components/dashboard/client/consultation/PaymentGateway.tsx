@@ -7,16 +7,22 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-// import { ConsultService } from "@/lib/consultService";
+import { ConsultService } from "@/app/api/consultation.api";
 
-// A utility component to represent the Naira currency symbol
 const NairaSymbol = ({ className = "" }) => (
   <span className={cn("font-medium text-xl align-top", className)}>₦</span>
 );
 
 export function PaymentGateway() {
-  const { formData, isBookingOpen, resetBooking, setStep, addConsultation } =
-    useConsultationStore();
+  const {
+    formData,
+    isBookingOpen,
+    resetBooking,
+    setStep,
+    addConsultation,
+    setLastCreatedConsultCode
+  } = useConsultationStore();
+
   const isPaymentStep =
     isBookingOpen && useConsultationStore.getState().step === "payment";
 
@@ -37,15 +43,20 @@ export function PaymentGateway() {
     setIsLoading(true);
 
     try {
-      // 1. Simulate the final payment processing API call
-      // In a real app, this confirms the payment and finalizes the consultation.
-      // const { code } = await ConsultService.createConsultation(formData);
+      // 1. Create the consultation and get the consultCode
+      const response = await ConsultService.createConsultation(formData);
+      const consultCode = response.data.code || response.data; // Adjust based on your API response structure
 
-      // 2. Add the newly booked consultation to the dashboard list (Simulated)
+      console.log("Consultation created with code:", consultCode);
+
+      // 2. Store the consultCode for later use in case assignment
+      setLastCreatedConsultCode(consultCode);
+
+      // 3. Add the consultation to the dashboard list
       addConsultation({
-        consultationId: "",
+        consultationId: consultCode,
         clientName: formData.clientName || "N/A",
-        caseType: "General Law", // Assuming a default case type for new bookings
+        caseType: "General Law",
         status: "Scheduled",
         meetingDate: formData.date
           ? new Date(formData.date).toLocaleDateString()
@@ -55,11 +66,13 @@ export function PaymentGateway() {
           formData.notes?.substring(0, 50) + "..." || "New Consultation"
       });
 
-      // 3. Transition to the success screen
+      // 4. Show success message with consultCode
+      toast.success(`Consultation booked! Code: ${consultCode}`);
+
+      // 5. Transition to success screen
       setStep("success");
     } catch (error) {
       console.error("Payment failed:", error);
-      // Handle error display
       toast.error("Payment failed. Please try again.");
     } finally {
       setIsLoading(false);
@@ -115,7 +128,6 @@ export function PaymentGateway() {
                   Enter your card details to pay
                 </h3>
 
-                {/* Card Number */}
                 <Input
                   placeholder="CARD NUMBER: 1234 5678 1234 5678"
                   value={cardDetails.number}
@@ -127,7 +139,6 @@ export function PaymentGateway() {
                 />
 
                 <div className="flex space-x-4">
-                  {/* Card Expiry */}
                   <Input
                     placeholder="CARD EXPIRY: 04/25"
                     value={cardDetails.expiry}
@@ -138,7 +149,6 @@ export function PaymentGateway() {
                     maxLength={5}
                   />
 
-                  {/* CVV */}
                   <Input
                     placeholder="CVV: 000"
                     value={cardDetails.cvv}
@@ -154,12 +164,11 @@ export function PaymentGateway() {
             )}
           </div>
 
-          {/* Footer and Button */}
           <div>
             <Button
               onClick={handleSimulatedPay}
               className="w-full bg-green-600 hover:bg-green-700 text-white text-lg h-12"
-              disabled={isLoading || paymentMethod !== "card"} // Only enabled for card mock
+              disabled={isLoading || paymentMethod !== "card"}
             >
               {isLoading
                 ? "Processing..."

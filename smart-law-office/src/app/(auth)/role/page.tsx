@@ -66,12 +66,16 @@ const UserRole = () => {
         variants={containerVariants}
         className="w-full bg-[#7C3AED] text-white pt-16 pb-48 px-4 text-center shadow-lg"
       >
-        <motion.h1
+        <motion.div
           variants={fadeInSlideUp}
-          className="text-3xl font-semibold mb-1"
+          className="text-3xl font-semibold mb-1 flex items-center justify-center"
         >
-          Logo
-        </motion.h1>
+          <img
+            src="/logo.png"
+            alt="Logo-LandingPage"
+            className="text-6xl bg-white"
+          />
+        </motion.div>
         <motion.h2
           variants={fadeInSlideUp}
           className="text-5xl font-extrabold mt-8"
@@ -125,7 +129,10 @@ const UserRole = () => {
         className="mt-4 mb-10 text-center text-sm text-gray-600 px-4"
       >
         Already have an account?{" "}
-        <a href="/admin/login" className="font-semibold text-[#7C3AED] hover:underline">
+        <a
+          href="/admin/login"
+          className="font-semibold text-[#7C3AED] hover:underline"
+        >
           Sign in
         </a>
       </motion.div>

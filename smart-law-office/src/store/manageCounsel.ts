@@ -15,6 +15,17 @@ export interface Notification {
   details: string;
 }
 
+export interface Lawyer {
+  id: string;
+  name: string;
+  specialty: string;
+  // Make sure these three properties are present in the store's type:
+  lawyer: string; // Used in the component's inline type
+  avatar: string; // Used in the component's inline type
+  casesCount: number;
+  status: string; //
+}
+
 export interface Counsel {
   id: number;
   fullName: string;

@@ -5,6 +5,8 @@ import { useAssignStore } from "@/store/assignCaseStore";
 import { Search, MessageCircle, Briefcase } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Counsel } from "@/store/manageCounsel";
+import { Lawyer } from "@/types/user";
 
 export function AvailableLawyersPanel() {
   const { counsels } = useAssignStore();
@@ -12,8 +14,8 @@ export function AvailableLawyersPanel() {
 
   const filteredLawyers = counsels.filter(
     (lawyer) =>
-      lawyer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lawyer.specialty.toLowerCase().includes(searchQuery.toLowerCase())
+      lawyer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      lawyer.specialty?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -51,18 +53,7 @@ export function AvailableLawyersPanel() {
   );
 }
 
-function LawyerCard({
-  lawyer
-}: {
-  lawyer: {
-    id: string;
-    name: string;
-    specialty: string;
-    avatar: string;
-    casesCount: number;
-    status: string;
-  };
-}) {
+function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
   return (
     <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition">
       <div className="flex gap-3">
@@ -70,7 +61,9 @@ function LawyerCard({
           <AvatarImage
             src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${lawyer.name}`}
           />
-          <AvatarFallback>{lawyer.avatar}</AvatarFallback>
+          <AvatarFallback>
+            {lawyer.name?.slice(0, 2).toUpperCase() || "??"}
+          </AvatarFallback>
         </Avatar>
         <div>
           <div className="flex items-center gap-2">
@@ -84,10 +77,10 @@ function LawyerCard({
         </div>
       </div>
       <div className="text-right">
-        <div className="text-sm font-bold">{lawyer.casesCount} Cases</div>
+        <div className="text-sm font-bold">{lawyer.casesCount || 0} Cases</div>
         <div className="flex items-center justify-end gap-1 text-xs text-green-600">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-          {lawyer.status}
+          Available
         </div>
       </div>
     </div>

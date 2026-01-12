@@ -2,7 +2,8 @@ import axios from "axios";
 import { getCookie } from "@/lib/cookies";
 
 const baseURL =
-  process.env.NEXT_PUBLIC_API_BASE || "http://16.171.115.243/api/v1";
+  process.env.NEXT_PUBLIC_API_BASE ||
+  "https://api.legalflow.cyntonisca.com/api/v1";
 
 const AUTH_EXEMPT_ENDPOINTS = ["/auths/signin", "/auths/signup"];
 
@@ -20,29 +21,27 @@ api.interceptors.request.use(
     );
 
     if (isAuthExempt) {
-      console.log("📤 Request without auth (exempt endpoint):", {
-        url: config.url
-      });
+      url: config.url;
       return config;
     }
 
     // Get token from cookie
     const token = getCookie("auth-token");
 
-    // ADD THIS:
-    console.log("🔍 Token Check:", {
-      tokenExists: !!token,
-      tokenLength: token?.length,
-      url: config.url
-    });
+    // // ADD THIS:
+    // console.log("🔍 Token Check:", {
+    //   tokenExists: !!token,
+    //   tokenLength: token?.length,
+    //   url: config.url
+    // });
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      console.log("📤 Request with auth:", {
-        method: config.method?.toUpperCase(),
-        url: config.url,
-        hasAuth: true
-      });
+      // console.log("📤 Request with auth:", {
+      //   method: config.method?.toUpperCase(),
+      //   url: config.url,
+      //   hasAuth: true
+      // });
     } else {
       console.warn("⚠️ NO TOKEN FOUND for:", config.url);
     }
@@ -69,15 +68,15 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       console.error("🚫 Real 401 Unauthorized detected.");
 
-      const { useAuthStore } = await import("@/store/authStore");
-      // Only logout if we are not on a public page
-      if (
-        typeof window !== "undefined" &&
-        window.location.pathname !== "/role"
-      ) {
-        useAuthStore.getState().logout();
-        window.location.href = "/role";
-      }
+      // const { useAuthStore } = await import("@/store/authStore");
+      // // Only logout if we are not on a public page
+      // if (
+      //   typeof window !== "undefined" &&
+      //   window.location.pathname !== "/role"
+      // ) {
+      //   useAuthStore.getState().logout();
+      //   window.location.href = "/role";
+      // }
     }
     return Promise.reject(error);
   }

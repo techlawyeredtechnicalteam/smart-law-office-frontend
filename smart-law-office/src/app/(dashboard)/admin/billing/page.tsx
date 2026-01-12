@@ -1,17 +1,20 @@
-// /app/(dashboard)/billing/page.tsx
 "use client";
-import { Button } from "@/components/ui/button";
 import React from "react";
 import { useBillingStore } from "@/store/setRateBill";
-import SetRateModal from "@/components/dashboard/admin/billing/SetRateModal";
-import SetRateCaseModal from "@/components/dashboard/admin/billing/SetRateCaseModal";
 import ConfiguredServiceRateTable from "@/components/dashboard/admin/billing/ConfiguredServiceRateTable";
 import { SetRateBillEmptyState } from "@/components/dashboard/admin/billing/SetRateEmptyState";
 import { Loader2 } from "lucide-react";
+import SetRateConsultation from "@/components/dashboard/admin/billing/SetRateConsultation";
+import SetRateCase from "@/components/dashboard/admin/billing/SetRateCase";
 
 const BillingPage = () => {
-  const { isLoading, rates, fetchBillingInitialData, openSetRateModal } =
-    useBillingStore();
+  const {
+    isLoading,
+    rates,
+    fetchBillingInitialData,
+    isSetRateModalOpen,
+    isSetRateCaseModalOpen
+  } = useBillingStore();
 
   React.useEffect(() => {
     // We still fetch service types so the modals have data when opened
@@ -20,19 +23,6 @@ const BillingPage = () => {
 
   return (
     <div className="p-6">
-      {/* Main Content: Always show the EmptyState if not loading
-      {isLoading ? (
-        <div className="text-center p-10">Loading...</div>
-      ) : (
-        <SetRateBillEmptyState />
-      )}
-
-      
-      {!isLoading && rates.length > 0 && <ConfiguredServiceRateTable />}
-
-      
-      <SetRateModal />
-      <SetRateCaseModal /> */}
       {/* Conditional Rendering Logic */}
       <main>
         {isLoading ? (
@@ -52,8 +42,8 @@ const BillingPage = () => {
       </main>
 
       {/* Modals - Always rendered but visibility controlled by Zustand */}
-      <SetRateModal />
-      <SetRateCaseModal />
+      <SetRateConsultation />
+      <SetRateCase />
     </div>
   );
 };

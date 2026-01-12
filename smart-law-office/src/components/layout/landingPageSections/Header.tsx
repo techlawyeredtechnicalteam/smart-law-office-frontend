@@ -115,7 +115,8 @@ const Header: React.FC = () => {
               href="#"
               className="text-2xl font-heading font-bold text-black tracking-widest"
             >
-              LOGO
+              <img src="/logo.png" alt="Logo-LandingPage" className="" />
+              {/* LOGO */}
             </a>
           </motion.div>
 

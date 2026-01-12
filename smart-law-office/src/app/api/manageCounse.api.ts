@@ -16,6 +16,8 @@ export interface CounselPayload {
 export const addCounsel = (payload: CounselPayload) =>
   api.post("/users", payload);
 
+export const getCounsel = () => api.get("/users");
+
 export const updateCounsel = (id: string) => api.patch(`/users/${id}`);
 
 export const deleteCounsel = (id: string) => api.delete(`/users/${id}`);

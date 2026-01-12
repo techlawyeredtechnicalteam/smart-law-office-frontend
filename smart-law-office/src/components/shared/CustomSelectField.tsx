@@ -30,6 +30,7 @@ interface CustomSelectFieldProps<T extends FieldValues> {
   description?: string;
   className?: string;
   onChange?: (value: string) => void;
+  disabled?: boolean;
 }
 
 export function CustomSelectField<T extends FieldValues>({
@@ -40,6 +41,7 @@ export function CustomSelectField<T extends FieldValues>({
   options,
   description,
   className,
+  disabled,
   onChange
 }: CustomSelectFieldProps<T>) {
   return (
@@ -56,6 +58,7 @@ export function CustomSelectField<T extends FieldValues>({
             }}
             defaultValue={field.value}
             value={field.value}
+            disabled={disabled}
           >
             <FormControl>
               <SelectTrigger className={className}>

@@ -1,31 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { AssignedCase } from "@/store/assignCaseStore";
 import { CreateModal } from "@/components/shared/CreateModal";
 import { AssignCaseForm } from "./AssignFormCase";
 import { AssignCaseSuccessModal } from "./AssignCaseSuccessModal";
 
-export function AssignCaseModal() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [lastAssignedCase, setLastAssignedCase] = useState<AssignedCase | null>(
-    null
-  );
+interface AssignCaseModalProps {
+  isSuccessOpen: boolean;
+  setSuccessOpen: (open: boolean) => void;
+}
 
-  const handleSuccess = (assignedCase: AssignedCase) => {
-    setLastAssignedCase(assignedCase);
+export function AssignCaseModal({ isSuccessOpen, setSuccessOpen }: AssignCaseModalProps) {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  const handleFormSuccess = () => {
     setIsOpen(false);
-    setIsSuccessModalOpen(true);
-  };
-
-  const handleCancel = () => {
-    setIsOpen(false);
-  };
-
-  const handleSuccessModalClose = () => {
-    setIsSuccessModalOpen(false);
-    setLastAssignedCase(null);
+    setSuccessOpen(true);
   };
 
   return (
@@ -37,14 +28,11 @@ export function AssignCaseModal() {
         onOpenChange={setIsOpen}
         triggerClassName="bg-[#7C5CFC] hover:bg-[#6B46C1] whitespace-nowrap"
       >
-        <AssignCaseForm onSuccess={handleSuccess} onCancel={handleCancel} />
+        <AssignCaseForm
+          onSuccess={handleFormSuccess}
+          onCancel={() => setIsOpen(false)}
+        />
       </CreateModal>
-
-      <AssignCaseSuccessModal
-        isOpen={isSuccessModalOpen}
-        onClose={handleSuccessModalClose}
-        assignedCase={lastAssignedCase}
-      />
     </>
   );
 }

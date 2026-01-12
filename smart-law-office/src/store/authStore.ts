@@ -45,6 +45,7 @@ interface AuthState {
   // actions
   loginSuccess: (token: string, userData: User) => void;
   logout: () => void;
+  // deleteAccount: () => void;
   setLastActivity: () => void;
   checkSessionStatus: () => void;
   getToken: () => string | null;

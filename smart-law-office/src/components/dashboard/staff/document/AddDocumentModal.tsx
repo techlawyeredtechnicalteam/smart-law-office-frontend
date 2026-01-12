@@ -13,7 +13,7 @@ import { Form } from "@/components/ui/form";
 import { CustomSelectField } from "@/components/shared/CustomSelectField";
 import React from "react";
 import { getCaseById } from "@/app/api/cases.api";
-import { getCaseTypes } from "@/app/api/caseType.api";
+import { getAdminCaseTypes } from "@/app/api/caseType.api";
 
 const STATUS_OPTIONS = [
   { label: "Discovery", value: "Discovery" },
@@ -47,7 +47,7 @@ export function AddDocumentModal() {
   React.useEffect(() => {
     const fetchCaseTypes = async () => {
       try {
-        const response = await getCaseTypes();
+        const response = await getAdminCaseTypes();
         setCaseTypes(response.data);
       } catch (error) {
         console.error("Failed to fetch case types");
@@ -82,7 +82,6 @@ export function AddDocumentModal() {
           time: values.time
         });
 
-        // 4. Handle Modal Transitions (Matching your images)
         setIsAddModalOpen(false); // Close addNewDocumentFill.png
         setIsSuccessModalOpen(true); // Open documentUploaded.png
         form.reset();

@@ -30,7 +30,7 @@ export function CreateInvoiceForm() {
     }
   });
 
-  const handlePreview = (values: InvoiceFormValues) => {    
+  const handlePreview = (values: InvoiceFormValues) => {
     setNewInvoiceData(values);
     setStep("details");
   };
@@ -73,24 +73,24 @@ export function CreateInvoiceForm() {
           />
 
           {/* Service (Select) */}
-          <CustomSelectField
+          {/* <CustomSelectField
             control={form.control}
             name="service"
             label="Service"
             placeholder="Consultation"
             options={serviceOptions}
             className="bg-purple-50 border-purple-300"
-          />
+          /> */}
 
           {/* Duration (Select) */}
-          <CustomSelectField
+          {/* <CustomSelectField
             control={form.control}
             name="duration"
             label="Duration"
             placeholder="30 minutes"
             options={durationOptions}
             className="bg-purple-50 border-purple-300"
-          />
+          /> */}
 
           {/* Consultation Fee */}
           <CustomFormField

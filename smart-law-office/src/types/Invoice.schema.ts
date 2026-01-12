@@ -4,7 +4,7 @@ export const ServiceType = z.enum(["Consultation", "Case", "Document Review"]);
 export const DurationType = z.enum(["30 minutes", "1 hour", "Custom"]);
 
 export const invoiceFormSchema = z.object({
-  invoiceId: z.string().default("2025-0012"),
+  invoiceId: z.string(),
   clientName: z.string().min(1, { message: "Client name is required." }),
   service: ServiceType,
   duration: DurationType,

@@ -91,8 +91,12 @@ export function CustomFormField<T extends FieldValues>({
           placeholder={placeholder}
           autoComplete={autoComplete}
           {...fieldProps}
+          value={fieldProps.value ?? ""}
           onChange={(e) => {
-            const value = +e.target.value;
+            const rawValue = e.target.value;
+            // const value =
+            //   e.target.value === "" ? undefined : Number(e.target.value);
+            const value = rawValue === "" ? 0 : Number(rawValue);
             fieldProps.onChange(value);
             onChange?.(value);
           }}

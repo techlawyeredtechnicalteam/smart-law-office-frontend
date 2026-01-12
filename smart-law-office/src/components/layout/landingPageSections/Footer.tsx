@@ -24,12 +24,16 @@ export const Footer: React.FC = () => (
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 border-b border-violet-800 pb-12">
         {/* Logo & Contact */}
         <div className="col-span-2 lg:col-span-2 space-y-3">
-          <motion.div
+          <motion.a
             variants={footerItemVariant}
-            className="text-xl font-bold tracking-widest text-violet-300"
+            className="text-xl font-bold tracking-widest text-white"
           >
-            Logo
-          </motion.div>
+            <img
+              src="/logo.png"
+              alt="Logo-LandingPage"
+              className="bg-white text-5xl"
+            />
+          </motion.a>
           <p className="text-lg font-semibold">Smart Law Office</p>
           <p className="text-sm text-violet-200">+234 908 809 9848</p>
         </div>

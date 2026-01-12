@@ -23,7 +23,7 @@ const UnifiedLoginForm = () => {
     defaultValues: {
       email: "",
       password: "",
-      consent: false
+      consent: true
     },
     mode: "onChange"
   });
@@ -33,8 +33,8 @@ const UnifiedLoginForm = () => {
   // ✅ Role-based routing function
   const getRedirectPath = (role: string): string => {
     const routes = {
-      ADMIN: "/admin/overview",
-      STAFF: "/staff/dashboard",
+      ADMIN: "/admin/dashboard",
+      STAFF: "/admin/dashboard",
       CLIENT: "/client/my-case",
       "": "/role"
     };
