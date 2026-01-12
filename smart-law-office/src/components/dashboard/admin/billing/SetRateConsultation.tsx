@@ -135,7 +135,7 @@ const SetRateConsultation = () => {
                   control={form.control}
                   name="duration"
                   label="Duration (Minutes)"
-                  type="number" // Force numeric input
+                  // type="number" // Force numeric input
                   placeholder="e.g. 30"
                 />
 
