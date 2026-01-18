@@ -2,24 +2,19 @@
 
 import React from "react";
 import { useForm } from "react-hook-form";
-import { Input } from "@/components/ui/input";
-import { useAuthStore } from "@/store/authStore";
+import { useAuthStore, User } from "@/store/authStore";
 import { useRouter, useSearchParams } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { email, string, z } from "zod";
+import { z } from "zod";
 import { VerifyFormValidation } from "@/types/FirmAuthSchema";
 import { Button } from "@/components/ui/button";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
+import { Loader2 } from "lucide-react";
+import { Form } from "@/components/ui/form";
 import { verifyOtp, sendOtp, finalizeSignup } from "@/app/api/signup.api";
 import { toast } from "sonner";
+import { CustomFormField } from "../shared/CustomFormField";
+import { useFirmProfileStore } from "@/store/firmProfileStore";
+import { setAuthCookie } from "@/lib/cookies";
 
 type VerifyFormData = z.infer<typeof VerifyFormValidation>;
 
@@ -28,19 +23,13 @@ const VerifyForm = () => {
   const params = useSearchParams();
   const userEmail = params.get("email") || "";
   const userRole = params.get("role") || "";
-  const [showCode, setShowCode] = React.useState<boolean>(false);
-  const { setUser, setRole } = useAuthStore();
+  const { loginSuccess, isAuthLoading, setAuthLoading } = useAuthStore();
 
   // Check if email exist
   React.useEffect(() => {
     if (!userEmail) {
       toast.error("Email not found. Please signup again");
-      // Route to appropriate signup based on role
-      if (userRole === "ADMIN") {
-        router.push("/admin/signup");
-      } else {
-        router.push("/client/signup");
-      }
+      router.push(userRole === "ADMIN" ? "/admin/signup" : "client/signup");
     }
   }, [userEmail, userRole, router]);
 
@@ -51,78 +40,73 @@ const VerifyForm = () => {
     }
   });
 
-  const onVerify = React.useCallback(
-    async (data: VerifyFormData) => {
-      if (!userEmail) {
-        toast.error("Email not found");
-        return;
-      }
+  const onVerify = async (data: VerifyFormData) => {
+    setAuthLoading(true);
+    try {
+      // verify OTP
+      await verifyOtp({ email: userEmail, otp: data.otp });
 
-      try {
-        // First verify the OTP
-        await verifyOtp({ email: userEmail, otp: data.otp });
-        toast.success("OTP verified! Creating account...");
+      // finalize signup
+      const response = await finalizeSignup({
+        otp: data.otp
+      });
 
-        // Then finalize signup with just OTP
-        const response = await finalizeSignup({ otp: data.otp });
+      // const userData = response.data?.user || response.data;
+      // const token = response.data?.token; // ensure api returns a token
+      const { token, user: userData } = response.data;
+      const firmData = useFirmProfileStore.getState().formData;
 
-        console.log("Finalize signup response:", response);
+      const completeUser: User = {
+        ...userData,
+        firmName: firmData.firmName,
+        logo: firmData.logoFile
+      };
 
-        // extract user data
-        const userData = response.data?.user || response.data;
+      loginSuccess(token, completeUser);
 
-        if (userData) {
-          // update auth store
-          setUser({
-            id: userData.id,
-            email: userData.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            firmId: userData.firmId,
-            role: userData.role,
-            firmName: userData.firmName
-          });
-          setRole(userData.role);
-          toast.success("Account created successfully! Welcome!");
+      useFirmProfileStore.getState().resetProfile();
 
-          //route
-          router.push("/success");
-        } else {
-          toast.error("Failed to create account. Please try again.");
-        }
-      } catch (err: any) {
-        console.error("Verification error:", err);
+      toast.success("Account created successfully");
+      window.location.href = "/success";
 
-        // Handle 500 server error specifically
-        if (err.response?.status === 500) {
-          toast.error(
-            "Server error during account creation. The signup-finalize endpoint may not exist. Please check the backend API."
-          );
-          return;
-        }
+      // if (userData && userData.email) {
+      //   const userObject: User = {
+      //     id: userData.userId || userData.id || userData.firmId,
+      //     email: userData.email,
+      //     firstName: userData.firstName,
+      //     lastName: userData.lastName,
+      //     firmId: userData.firmId,
+      //     role: userData.role,
+      //     firmName: firmData.firmName || userData.firmName || userData.name,
+      //     logo: firmData.logoFile || userData.logo
+      //   };
 
-        const errorMessage =
-          err.response?.data?.message ||
-          err.message ||
-          "OTP verification failed";
-        toast.error(errorMessage);
-      }
-    },
-    [userEmail, router, setUser, setRole]
-  );
+      //   const finalToken = token || "session-active";
+      //   setAuthCookie(finalToken, userData.role);
+
+      //   // Commit to store(set user, authenticate and stop loading)
+      //   loginSuccess(finalToken, userObject);
+      //   useFirmProfileStore.getState().resetProfile();
+
+      //   router.push("/success");
+      // } else {
+      //   throw new Error(
+      //     "Verification succeeded but user data was not returned."
+      //   );
+      // }
+    } catch (err: any) {
+      setAuthLoading(false);
+      const errorMessage = err.response?.data?.message || "Verification failed";
+      toast.error(errorMessage);
+    }
+  };
 
   const handleResend = async () => {
-    if (!userEmail) {
-      toast.error("No email found to resend to");
-      return;
-    }
-
     try {
       await sendOtp({ email: userEmail });
-      toast.success("OTP resent successfully. Check your email!");
-    } catch (err: any) {
-      console.error("Resend OTP error:", err);
-      toast.error("Failed to resend OTP. Please try again.");
+      toast.success("OTP resent successfully.");
+    } catch (err) {
+      toast.error("Failed to resend OTP.");
     }
   };
 
@@ -131,36 +115,12 @@ const VerifyForm = () => {
       {/* handle onSubmit onSubmit={form.handleSubmit(onSubmit)}*/}
       <form className="space-y-6" onSubmit={form.handleSubmit(onVerify)}>
         {/* Verification Code */}
-        <FormField
+        <CustomFormField
           control={form.control}
           name="otp"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Verification Code</FormLabel>
-              <FormControl>
-                <div className="relative">
-                  <Input
-                    id="otp"
-                    {...field}
-                    type={showCode ? "text" : "password"}
-                    placeholder="123456"
-                  />
-                  <button
-                    type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
-                    onClick={() => setShowCode(!showCode)}
-                  >
-                    {showCode ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
+          label="Verification Code"
+          placeholder="123456"
+          // type="number"
         />
 
         {/* Verify Button */}
@@ -168,15 +128,14 @@ const VerifyForm = () => {
           type="submit"
           size="lg"
           className="w-full text-base"
-          disabled={form.formState.isSubmitting}
+          disabled={isAuthLoading}
         >
-          {form.formState.isSubmitting ? (
+          {isAuthLoading ? (
             <>
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Verifying & Creating Account...
             </>
           ) : (
-            "Verify & Continue"
+            "Verify & Create Account"
           )}
         </Button>
 
@@ -186,8 +145,8 @@ const VerifyForm = () => {
           type="button"
           size="lg"
           className="w-full text-base"
-          disabled={form.formState.isSubmitting}
           onClick={handleResend}
+          disabled={isAuthLoading}
         >
           Resend OTP
         </Button>

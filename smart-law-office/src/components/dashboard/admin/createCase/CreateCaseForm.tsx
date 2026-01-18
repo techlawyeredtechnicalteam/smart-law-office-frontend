@@ -20,8 +20,7 @@ interface CreateCaseFormProps {
 }
 
 const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
-  const { executeCreate, error, fetchCaseTypes, caseTypes, isLoading } =
-    useCaseStore();
+  const { executeCreate, isLoading } = useCaseStore();
   const { feeSchedules, fetchBillingInitialData } = useBillingStore();
   const { user } = useAuthStore();
 
@@ -30,15 +29,23 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     fetchBillingInitialData();
   }, [fetchBillingInitialData]);
 
-  React.useEffect(() => {
-    fetchCaseTypes();
-  }, [fetchCaseTypes]);
+  // const caseTypeOptions = React.useMemo(() => {
+  //   return feeSchedules.flatMap((item: any) =>
+  //     (item.caseTypes || []).map((ct: any) => ({
+  //       label: `${item.name} (₦${item.rateMin.toLocaleString()})`,
+  //       value: ct.caseTypeId // This is the ID the backend needs to create a case
+  //     }))
+  //   );
+  // }, [feeSchedules]);
 
   const caseTypeOptions = React.useMemo(() => {
-    return feeSchedules.flatMap((item: any) =>
-      (item.caseTypes || []).map((ct: any) => ({
-        label: `${item.name} (₦${item.rateMin.toLocaleString()})`,
-        value: ct.caseTypeId // This is the ID the backend needs to create a case
+    // map directly from the unified freescheduless array
+    return feeSchedules.flatMap((schedule: any) =>
+      (schedule.caseTypes || []).map((type: any) => ({
+        label: `${type.name} - ${
+          schedule.name
+        } (₦${schedule.rateMin?.toLocaleString()})`,
+        value: type.caseTypeId // remain the unique ID
       }))
     );
   }, [feeSchedules]);
@@ -63,12 +70,12 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
       lastAdjournedDate: "",
       nextAdjournedDate: "",
       notes: "",
-      file: "",
+      document: "",
       // Keep legacy fields for schema compatibility but won't be used
       title: "",
-      date: "",
-      time: "",
-      consultId: "",
+      // date: "",
+      // time: "",
+      // consultId: "",
       status: "Discovery"
     }
   });
@@ -163,8 +170,8 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           <FileUpload
             id="case-doc-upload"
             label=""
-            fileData={form.watch("file") || null}
-            onFileChange={(data) => form.setValue("file", data || "")}
+            fileData={form.watch("document") || null}
+            onFileChange={(data) => form.setValue("document", data || "")}
             maxSize={10}
             accept=".pdf,.docx,.jpg"
           />

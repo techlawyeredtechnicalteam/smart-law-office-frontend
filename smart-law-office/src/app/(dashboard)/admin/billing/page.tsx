@@ -17,9 +17,10 @@ const BillingPage = () => {
   } = useBillingStore();
 
   React.useEffect(() => {
-    // We still fetch service types so the modals have data when opened
-    fetchBillingInitialData();
-  }, [fetchBillingInitialData]);
+    if (isSetRateModalOpen) {
+      fetchBillingInitialData();
+    }
+  }, [isSetRateModalOpen, fetchBillingInitialData]);
 
   return (
     <div className="p-6">

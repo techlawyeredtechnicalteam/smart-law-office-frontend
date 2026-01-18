@@ -8,29 +8,28 @@ interface ProgressBarProps {
 }
 const ProgressBar: React.FC<ProgressBarProps> = ({
   currentStep,
-  totalSteps = 4
+  totalSteps = 3
 }) => {
-  // calculate the position of the indicator based on current step
-  const indicatorPosition = ((currentStep - 1) / (totalSteps - 1)) * 100;
+  const step = Number(currentStep);
+  const total = Number(totalSteps);
 
-  // clamp the position between 0 and 100
+  const indicatorPosition = ((step - 1) / (total - 1)) * 100;
   const clampedPosition = Math.max(0, Math.min(100, indicatorPosition));
 
   return (
-    <div className="relative w-full h-2 bg-gray-300 rounded-full mt-4 mb-8">
+    <div className="relative w-full h-2 bg-gray-100 rounded-full mt-4 mb-8">
       {/* Progress fill */}
       <div
-        className={`absolute h-full rounded-full transition-all duration-500 ease-out ${
-          clampedPosition ? "bg-violet-600" : "bg-black"
-        }`}
+        className="absolute h-full rounded-full bg-violet-600 transition-all duration-500 ease-out"
+        style={{ width: `${clampedPosition}%` }} // Added this line to actually show the fill!
       />
 
       {/* Animated handle/slider */}
       <div
-        className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full shadow-lg transition-all duration-500 ease-out"
+        className="absolute top-1/2 -translate-y-1/2 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-500 ease-out"
         style={{
-          left: `calc(${clampedPosition}% - 0.5rem)`, // Center the handle
-          border: "3px solid #7c3AED"
+          left: `calc(${clampedPosition}% - 0.625rem)`,
+          border: "4px solid #7c3AED"
         }}
       />
     </div>

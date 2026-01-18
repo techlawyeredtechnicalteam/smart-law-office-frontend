@@ -12,18 +12,10 @@ export default function PaymentTab() {
   // State to simulate empty vs filled state
   const [isFilled, setIsFilled] = useState(true);
 
-  const [bankName, setBankName] = useState(
-    isFilled ? "United Bank for Africa" : ""
-  );
-  const [accountName, setAccountName] = useState(
-    isFilled ? "Christine Adeola" : ""
-  );
-  const [accountNumber, setAccountNumber] = useState(
-    isFilled ? "5000924120" : ""
-  );
-  const [contactEmail, setContactEmail] = useState(
-    isFilled ? "christineadeola@gmail.com" : ""
-  );
+  const [bankName, setBankName] = useState(isFilled ? "" : "");
+  const [accountName, setAccountName] = useState(isFilled ? "" : "");
+  const [accountNumber, setAccountNumber] = useState(isFilled ? "" : "");
+  const [contactEmail, setContactEmail] = useState(isFilled ? "" : "");
 
   const handleSave = () => {
     console.log("Saving payment details...", {

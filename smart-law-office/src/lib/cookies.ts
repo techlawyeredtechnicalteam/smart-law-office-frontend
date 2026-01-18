@@ -1,35 +1,49 @@
-export const setCookie = (name: string, value: string, days: number = 30) => {
-  if (typeof window === "undefined") return;
+// export const setAuthCookie = (token: string) => {
+//   if (typeof window === "undefined") return;
+//   const isProduction = process.env.NODE_ENV === "production";
 
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+//   // ✅ FIXED: All attributes on ONE line, separated by semicolons
+//   document.cookie = `auth-token=${token}; path=/; max-age=${
+//     30 * 24 * 60 * 60
+//   }; ${isProduction ? "secure; " : ""}samesite=strict`;
+// };
 
-  // only use in production
-  const isProduction = process.env.NODE_ENV === "production";
-  const secureFlag = isProduction ? "secure;" : "";
+export const getAuthCookie = (): string | undefined => {
+  if (typeof window === "undefined") return undefined;
 
-  document.cookie = `${name}=${value}; expires=${expires.toUTCString()}; path=/; ${secureFlag} samesite=lax`;
-};
-
-export const getCookie = (name: string): string | null => {
-  if (typeof window === "undefined") return null;
-
-  const nameEQ = name + "=";
-  const ca = document.cookie.split(";");
+  const name = "auth-token=";
+  const decodedCookie = decodeURIComponent(document.cookie);
+  const ca = decodedCookie.split(";");
 
   for (let i = 0; i < ca.length; i++) {
     let c = ca[i];
-    while (c.charAt(0) === " ") c = c.substring(1, c.length);
-    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+    while (c.charAt(0) === " ") {
+      c = c.substring(1);
+    }
+    if (c.indexOf(name) === 0) {
+      return c.substring(name.length, c.length);
+    }
   }
-  return null;
+  return undefined;
 };
 
-export const deleteCooke = (name: string) => {
+export const setAuthCookie = (token: string, role: string) => {
   if (typeof window === "undefined") return;
 
   const isProduction = process.env.NODE_ENV === "production";
-  const secureFlag = isProduction ? "secure;" : "";
+  const secureFlag =
+    isProduction || window.location.protocol === "https:" ? "; secure" : "";
 
-  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; ${secureFlag} samesite=lax`;
+  // Set both cookies with the same expiry
+  const maxAge = 30 * 24 * 60 * 60; // 30 days (or adjust as needed)
+
+  document.cookie = `auth-token=${token}; path=/; max-age=${maxAge}; samesite=lax${secureFlag}`;
+  document.cookie = `user-role=${role}; path=/; max-age=${maxAge}; samesite=lax${secureFlag}`;
+};
+
+export const deleteAuthCookie = () => {
+  const expired =
+    "; path=/; expires=Thu, 01 Jan 1970 00:00:01 GMT; samesite=lax";
+  document.cookie = `auth-token=${expired}`;
+  document.cookie = `user-role=${expired}`;
 };

@@ -1,5 +1,5 @@
 "use client";
-import { CreateCaseModal } from "@/components/dashboard/client/mycase/CreateCaseModal";
+import { CreateCaseModal } from "@/components/dashboard/client/manage-cases/CreateCaseModal";
 import { TbUserScreen } from "react-icons/tb";
 import React from "react";
 

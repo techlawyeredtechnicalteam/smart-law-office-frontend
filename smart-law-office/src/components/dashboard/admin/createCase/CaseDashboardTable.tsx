@@ -48,7 +48,7 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
         <div className="flex items-center gap-2">
           <User className="w-4 h-4 text-gray-400" />
           <span className="font-medium capitalize">
-            {caseItem.clientName ||
+            {caseItem.clientEmail ||
               (caseItem as any).clientEmail ||
               "Unknown Client"}
           </span>
@@ -59,13 +59,26 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       key: "caseType",
       header: "Case Type",
       render: (caseItem) => {
-        const nestedName = caseItem.caseType?.feeSchedule?.name;
+        // 1. Check if the object already has the name nested (from normalization)
+        // .feeSchedule?.name;
+        const nestedName = caseItem.caseTypeId;
+
+        // 2. Lookup in our master caseTypes list
         const masterData = caseTypes.find(
-          (t) =>
-            t.caseTypeId === caseItem.caseTypeId ||
-            t.feeScheduleId === caseItem.caseTypeId
+          (t) => t.caseTypeId === caseItem.caseTypeId
         );
-        const typeName = nestedName || masterData?.name || "Standard Case";
+
+        // 3. Fallback: Check if the ID matches a feeSchedule directly
+        const feeScheduleData = caseTypes.find(
+          (t) => t.feeScheduleId === caseItem.caseTypeId
+        );
+
+        const typeName =
+          nestedName ||
+          masterData?.name ||
+          feeScheduleData?.name ||
+          "Standard Case";
+
         return <span className="capitalize">{typeName.toLowerCase()}</span>;
       }
     },
@@ -100,12 +113,18 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       header: "Document",
       render: (caseItem) => {
         const hasDocs = caseItem.documents && caseItem.documents.length > 0;
-        return hasDocs ? (
-          <span className="text-violet-600 underline cursor-pointer text-sm">
-            {caseItem.documents[0].name}
-          </span>
-        ) : (
-          <span className="text-gray-400">N/A</span>
+        if (!hasDocs) return <span className="text-gray-400">N/A</span>;
+
+        const doc = caseItem.documents[0];
+        return (
+          <a
+            href={doc.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-violet-600 hover:text-violet-800 underline transition-colors text-sm font-medium"
+          >
+            {doc.name || "View File"}
+          </a>
         );
       }
     }

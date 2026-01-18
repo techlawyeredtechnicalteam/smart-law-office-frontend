@@ -11,7 +11,7 @@ export function DocumentsPanel() {
   const documentsToShow = documents.slice(0, 3);
 
   return (
-    <Card className="shadow-sm border border-gray-100">
+    <Card className="shadow-sm border border-gray-100 h-full">
       {/* ... Header remains the same ... */}
       <CardContent className="p-0">
         <div className="divide-y divide-gray-100">

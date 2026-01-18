@@ -15,17 +15,6 @@ export interface Notification {
   details: string;
 }
 
-export interface Lawyer {
-  id: string;
-  name: string;
-  specialty: string;
-  // Make sure these three properties are present in the store's type:
-  lawyer: string; // Used in the component's inline type
-  avatar: string; // Used in the component's inline type
-  casesCount: number;
-  status: string; //
-}
-
 export interface Counsel {
   id: number;
   fullName: string;
@@ -39,169 +28,138 @@ export interface Counsel {
   role: "STAFF";
 }
 
+// Helper to trasnform API data to counsel interface
+const mapToCounsel = (data: any): Counsel => ({
+  id: data.userId || data.id,
+  firstName: data.firstName || "",
+  lastName: data.lastName || "",
+  fullName:
+    data.fullName || `${data.firstName || ""} ${data.lastName || ""}`.trim(),
+  scn: data.scn,
+  email: data.email,
+  callToBarFile: data.callToBarFile || data.barCertificate,
+  status: data.status || "Inactive",
+  assignedCases: String(data.assignedCases || "0"),
+  role: "STAFF"
+});
+
 export interface ManageCounselStore {
   // State
   counsel: Counsel[];
-  isSubmitting: boolean;
-  callToBarFile: string | null;
   isLoading: boolean;
+  callToBarFile: string | null;
+  notifications: Notification[];
+  lastAddedCounsel: Counsel | null;
 
   // Modal State
   isAddModalOpen: boolean;
   isEditModalOpen: boolean;
   isDeleteModalOpen: boolean;
+  isUpgradeModalOpen: boolean;
   selectedCounsel: Counsel | null;
 
-  // New Modal State
-  isUpgradeModalOpen: boolean;
-
-  // New Modal Actions
-  openUpgradeModal: () => void;
-  closeUpgradeModal: () => void;
-
-  notifications: Notification[];
-  lastAddedCounsel: Counsel | null;
-
-  setLastAddedCounsel: (counsel: Counsel | null) => void;
-
-  // New Action
-  addNotification: (notification: Notification) => void;
-
   // Actions
-  setCounsels: (data: Counsel[]) => void;
-  setIsSubmitting: (status: boolean) => void;
   setFile: (file: string | null) => void;
-  // Modal Control
+  addNotification: (notif: Omit<Notification, "timestamp">) => void;
   openAddModal: () => void;
   closeAddModal: () => void;
   openEditModal: (counsel: Counsel) => void;
   closeEditModal: () => void;
   openDeleteModal: (counsel: Counsel) => void;
   closeDeleteModal: () => void;
-
-  // API Operations (Placeholders for component use)
+  closeUpgradeModal: () => void;
+  fetchCounsels: () => Promise<void>;
   addCounsel: (payload: CounselPayload) => Promise<void>;
   updateCounsel: (
     id: number,
     updatedFields: Partial<CounselPayload>
   ) => Promise<void>;
+  setLastAddedCounsel: (counsel: Counsel | null) => void;
+
   deleteCounsel: (id: number) => Promise<void>;
-  fetchCounsels: () => Promise<void>;
 }
 
 const store: StateCreator<ManageCounselStore> = (set, get) => ({
   counsel: [],
-  isSubmitting: false,
-  callToBarFile: null,
+  notifications: [],
+  lastAddedCounsel: null,
   isLoading: false,
-
+  callToBarFile: null,
   isAddModalOpen: false,
   isEditModalOpen: false,
   isDeleteModalOpen: false,
   selectedCounsel: null,
+  isUpgradeModalOpen: false,
+
+  setLastAddedCounsel: (counsel) => set({ lastAddedCounsel: counsel }),
 
   setFile: (file: string | null) => set({ callToBarFile: file }),
 
-  setCounsels: (data) => set({ counsel: data }),
-  setIsSubmitting: (status) => set({ isSubmitting: status }),
+  addNotification: (notif) =>
+    set((state) => ({
+      notifications: [
+        { ...notif, timestamp: new Date() },
+        ...state.notifications
+      ].slice(0, 20)
+    })),
 
-  isUpgradeModalOpen: false, // New State
-
-  // New Modal Control
-  openUpgradeModal: () => set({ isUpgradeModalOpen: true }),
-  closeUpgradeModal: () => set({ isUpgradeModalOpen: false }),
-
-  // Refactor openAddModal to check subscription
+  // Modal Logic
   openAddModal: () => {
-    // Placeholder for subscription check
-    const hasActiveSubscription = true; // Simulate no active subscription
-
-    if (hasActiveSubscription) {
-      set({ isAddModalOpen: true });
-    } else {
-      set({ isUpgradeModalOpen: true });
-    }
+    const hasActiveSubscription = true;
+    hasActiveSubscription
+      ? set({ isAddModalOpen: true })
+      : set({ isUpgradeModalOpen: true });
   },
 
-  closeAddModal: () => set({ isAddModalOpen: false }),
+  closeAddModal: () => set({ isAddModalOpen: false, callToBarFile: null }),
+
   openEditModal: (counsel) =>
     set({ isEditModalOpen: true, selectedCounsel: counsel }),
+
   closeEditModal: () => set({ isEditModalOpen: false, selectedCounsel: null }),
+
   openDeleteModal: (counsel) =>
     set({ isDeleteModalOpen: true, selectedCounsel: counsel }),
+
   closeDeleteModal: () =>
     set({ isDeleteModalOpen: false, selectedCounsel: null }),
 
-  // --- API/Data Logic (Placeholder for full integration) ---
+  closeUpgradeModal: () => set({ isUpgradeModalOpen: false }),
+
+  // --- API/Data Logic
   fetchCounsels: async () => {
+    if (get().isLoading) return;
     set({ isLoading: true });
     try {
       const response = await fetchCounsel();
-      console.log("Fetch counsel response:", response);
-
       // Handle different response structures
-      let counselData = [];
-      if (response.data) {
-        counselData = Array.isArray(response.data)
-          ? response.data
-          : response.data.data || [];
-      } else if (response.data !== undefined) {
-        counselData = response.data || [];
-      }
-
-      const staffOnly = counselData.filter(
-        (user: any) => user.role === "STAFF"
-      );
-
-      // Map API response to Counsel interface
-      const mappedCounselData = staffOnly.map((counsel: any) => ({
-        id: counsel.id,
-        fullName:
-          counsel.fullName ||
-          `${counsel.firstName || ""} ${counsel.lastName || ""}`.trim(),
-        scn: counsel.scn,
-        email: counsel.email,
-        callToBarFile: counsel.callToBarFile || counsel.barCertificate,
-        status: counsel.status || "Inactive",
-        assignedCases: counsel.assignedCases || "0",
-        role: "STAFF" as const
-      }));
-
-      console.log("Mapped counsel data:", mappedCounselData);
-      set({ counsel: mappedCounselData });
+      const rawData = response.data?.data || response.data || [];
+      const staff = rawData.filter((u: any) => u.role === "STAFF");
+      set({ counsel: staff.map(mapToCounsel) });
     } catch (error) {
-      console.error("Failed to fetch counsels:", error);
       toast.error("Failed to load counsels");
     } finally {
       set({ isLoading: false });
     }
   },
 
-  notifications: [],
-  lastAddedCounsel: null,
-
-  setLastAddedCounsel: (counsel: Counsel | null) =>
-    set({ lastAddedCounsel: counsel }),
-
-  addNotification: (notification) =>
-    set((state) => ({ notifications: [notification, ...state.notifications] })),
-
   addCounsel: async (payload: CounselPayload) => {
-    set({ isSubmitting: true });
+    set({ isLoading: true });
     try {
       const response = await addCounsel(payload);
 
-      const newCounsel: Counsel = response.data;
+      const newCounsel = mapToCounsel(response.data?.data || response.data);
 
       await get().fetchCounsels();
 
-      // SUCCESS ACTIONS
+      // 1. Set the last added counsel for the banner
+      set({
+        lastAddedCounsel: newCounsel,
+        isAddModalOpen: false //
+      });
       toast.success("Counsel Added!", {
         description: "You have successfully added a new counsel to your team."
       });
-
-      // 1. Set the last added counsel for the banner
-      set({ lastAddedCounsel: newCounsel });
 
       // 2. Add to header notifications
       get().addNotification({
@@ -210,16 +168,14 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
         details: `${newCounsel.fullName} was successfully added to your team.`
       });
     } catch (error) {
-      console.error("Failed to add counsel:", error);
       toast.error("Failed to add counsel. Please try again.");
-      throw error;
     } finally {
-      set({ isSubmitting: false });
+      set({ isLoading: false });
     }
   },
 
   updateCounsel: async (id, updatedFields) => {
-    set({ isSubmitting: true });
+    set({ isLoading: true });
     try {
       await updateCounsel(String(id));
       await get().fetchCounsels();
@@ -234,30 +190,33 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
         duration: 3000
       });
     } catch (error) {
-      console.error("Update counsel error:", error);
       toast.error("Failed to update counsel.");
     } finally {
-      set({ isSubmitting: false });
+      set({ isLoading: false });
     }
   },
 
   deleteCounsel: async (id) => {
-    set({ isSubmitting: true });
+    set({ isLoading: true });
+    const counselToRemove = get().counsel.find((c) => c.id === id);
+
     try {
-      const response = await deleteCounsel(String(id));
-      console.log("Delete counsel response:", response);
-
-      // Refetch the data to get the updated state from server
+      await deleteCounsel(String(id));
       await get().fetchCounsels();
-
       set({ isDeleteModalOpen: false, selectedCounsel: null });
+
       toast.success("Counsel removed successfully.");
+      get().addNotification({
+        type: "info",
+        message: "Counsel Removed",
+        details: `${
+          counselToRemove?.fullName || "A Staff member"
+        } has been deactivated`
+      });
     } catch (error) {
-      console.error("Delete counsel error:", error);
       toast.error("Failed to delete counsel.");
-      throw error;
     } finally {
-      set({ isSubmitting: false });
+      set({ isLoading: false });
     }
   }
 });

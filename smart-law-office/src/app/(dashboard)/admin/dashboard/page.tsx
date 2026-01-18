@@ -10,87 +10,131 @@ import { MessagesPanel } from "@/components/dashboard/dashboard/MessagePanel";
 import { PerformanceReviewPanel } from "@/components/dashboard/dashboard/PerformanceReviewPanel";
 import React, { useEffect } from "react";
 import { useDocumentStore } from "@/store/documentStore";
+import { useAuthStore } from "@/store/authStore";
 
 export default function AdminDashboardPage() {
-  // 1. Fetch data on load and subscribe to real-time updates (by Zustand)
   const { cases, fetchCases } = useCaseStore();
   const { counsel, fetchCounsels } = useCounselStore();
-  const { documents, isAddModalOpen, setIsAddModalOpen } = useDocumentStore();
-  const totalDocuments = documents.length;
-  // Assuming you have a document store or a way to get docu
-  // ments (not fully provided, so we'll simulate it)
+  const { documents } = useDocumentStore();
+
+  const { user } = useAuthStore();
+  const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
-    // Fetch data immediately when the component mounts
     fetchCases();
-    fetchCounsels();
+    // only if admin need to fetch the full counsel list for metrixs
+    if (isAdmin) {
+      fetchCounsels();
+    }
     // In a real app, you'd also fetch documents/payments/etc.
-  }, [fetchCases, fetchCounsels]);
+  }, [fetchCases, fetchCounsels, isAdmin]);
 
   // 2. Prepare data for the OverviewMetrics component
   const totalCases = cases.length;
   const totalCounsels = counsel.length;
-  // Assuming documents are stored in a separate store or derived from cases.
-  // For now, we'll use a placeholder/derived value.
 
-  // Derive Payments count (SIMULATED - requires a payments store for real data)
   const totalPayments = 0;
 
-  const overviewData = {
-    totalCases,
-    totalDocuments: totalDocuments,
-    totalPayments,
-    totalCounsels
-    // The '% since last month' indicators require backend data comparison
-  };
+  // const overviewData = {
+  //   totalCases,
+  //   totalDocuments,
+  //   totalPayments,
+  //   totalCounsels
+  //   // The '% since last month' indicators require backend data comparison
+  // };
 
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-semibold text-gray-800">Overview</h2>
+      <h2 className="text-2xl font-semibold text-gray-800">Dashboard</h2>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* TOP LEFT 4 METRICS & PERFORMANCE */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <OverviewMetrics
-              title="Total Cases"
-              value={overviewData.totalCases}
-              percentChange="+0.0% since last month"
-              isPositive={true}
-            />
-            <OverviewMetrics
-              title="Documents"
-              value={overviewData.totalDocuments}
-              subtext="2 unread documents"
-            />
-            <OverviewMetrics
-              title="Payments"
-              value={overviewData.totalPayments}
-              percentChange="+0.0% since last month"
-              isPositive={true}
-            />
-            <OverviewMetrics
-              title="Counsel"
-              value={overviewData.totalCounsels}
-              subtext={`${overviewData.totalCounsels} counsel onboarded`}
-            />
+      {/* Main Wrapper: 3-column grid for Admin, 1-column stack for Staff */}
+      <div
+        className={`grid gap-6 ${isAdmin ? "lg:grid-cols-3" : "grid-cols-1"}`}
+      >
+        {/* LEFT/MAIN COLUMN */}
+        <div
+          className={`${isAdmin ? "lg:col-span-2" : "col-span-1"} space-y-6`}
+        >
+          {/* 1. Metrics Bar */}
+          <div
+            className={`grid gap-4 ${
+              isAdmin
+                ? "grid-cols-2" // Admin: 2x2 inside the 2/3 column
+                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" // Staff: Straight 4-card line
+            }`}
+          >
+            <OverviewMetrics title="Total Cases" value={cases.length} />
+            {isAdmin ? (
+              <OverviewMetrics title="Counsel" value={counsel.length} />
+            ) : (
+              <OverviewMetrics title="Consultations" value={cases.length} />
+            )}
+            <OverviewMetrics title="Documents" value={documents.length} />
+            <OverviewMetrics title="Payments" value={0} />
           </div>
-
-          {/* PERFORMANCE REVIEW (Top Right in image) - Using lg:col-span-2 for layout adjustment */}
-          {/* <PerformanceReviewPanel /> */}
         </div>
 
-        {/* Documents & Cases (Middle of image) - Side-by-Side in Desktop */}
-        <div className="space-y-6 lg:col-span-1">
-          <DocumentsPanel /> {/* Limit to 3 for visual match */}
-        </div>
+        {isAdmin && (
+          <div className="lg:col-span-1">
+            <PerformanceReviewPanel />
+          </div>
+        )}
       </div>
 
-      {/* CASES TABLE (Middle of image) */}
-      <CaseTablePanel cases={cases} />
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <CaseTablePanel cases={cases} />
+        <DocumentsPanel />
+      </div>
 
-      {/* MESSAGES (Bottom) */}
-      <MessagesPanel />
+      <div className="w-full">
+        <MessagesPanel />
+      </div>
     </div>
+    // <div className="p-6 space-y-6">
+    //   <h2 className="text-2xl font-semibold text-gray-800">Dashboard</h2>
+
+    //   <div className={`flex flex-col gap-6`}>
+    //     {/* Left Column*/}
+    //     <div className="w-full">
+    //       <div
+    //         className={`grid gap-4 ${
+    //           isAdmin
+    //             ? "lg:grid-cols-2 lg:w-2/3" // 2x2 Grid taking up part of the screen
+    //             : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" // Straight horizontal line on desktop
+    //         }`}
+    //       >
+    //         <OverviewMetrics title="Total Cases" value={cases.length} />
+
+    //         {/* Staff sees Consultation, Admin sees Counsel */}
+    //         {isAdmin ? (
+    //           <OverviewMetrics title="Counsel" value={counsel.length} />
+    //         ) : (
+    //           <OverviewMetrics title="Consultations" value={cases.length} />
+    //         )}
+    //         <OverviewMetrics title="Documents" value={documents.length} />
+    //         <OverviewMetrics title="Payments" value={0} />
+    //       </div>
+    //     </div>
+
+    //     {/* RIght Column */}
+    //     {isAdmin && (
+    //       <div className="lg:col-span-1 lg:absolute lg:right-6 lg:top-24 lg:w-1/3">
+    //         <PerformanceReviewPanel />
+    //       </div>
+    //     )}
+
+    //     {/* Bottom Cases */}
+    //     <div className={`${isAdmin ? "lg:col-span-2" : "lg:col-span-1"}`}>
+    //       <CaseTablePanel cases={cases} />
+    //     </div>
+
+    //     {/* Documents & messages */}
+    //     <div className="lg:col-span-1">
+    //       <DocumentsPanel /> {/* Limit to 3 for visual match */}
+    //     </div>
+    //     {/* <div className="lg:col-span-1"></div> */}
+    //   </div>
+    //   <MessagesPanel />
+    // </div>
   );
 }

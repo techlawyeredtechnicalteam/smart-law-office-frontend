@@ -1,123 +1,65 @@
 import { NextRequest, NextResponse } from "next/server";
 import { jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(
-  process.env.NEXT_PUBLIC_JWT_SECRET || "your-secret-key"
-);
-
-// Public routes that don't require authentication
-const publicRoutes = [
-  "/",
-  "/login",
-  "/signup",
-  "/forgot-password",
-  "/forgot-password/reset",
-  "/forgot-password/success",
-  "/forgot-password/verify",
-  "/role",
-  "/success",
-  "/verify"
-];
-
-// ✅ Role-specific route definitions
-const roleBasedRoutes = {
-  ADMIN: [
-    "/dashboard/admin",
-    "/dashboard/admin/overview",
-    "/dashboard/admin/cases",
-    "/dashboard/admin/case-mgmt",
-    "/dashboard/admin/assign-case",
-    "/dashboard/admin/counsel",
-    "/dashboard/admin/comms",
-    "/dashboard/admin/billings",
-    "/firm-profile"
-  ],
-  STAFF: [
-    "/dashboard/staff",
-    "/dashboard/staff/cases",
-    "/dashboard/staff/my-cases",
-    "/dashboard/staff/profile"
-  ],
-  CLIENT: [
-    "/client",
-    "/client/my-case",
-    "/client/documents",
-    "/client/messages",
-    "/client/billing"
-  ]
+const ROLE_GATEWAYS: Record<string, string> = {
+  "/admin": "ADMIN",
+  "/staff": "STAFF",
+  "/client": "CLIENT"
 };
 
-// ✅ Function to check if user has access to route
-function hasAccessToRoute(pathname: string, userRole: string): boolean {
-  // Allow access to general dashboard route
-  if (pathname === "/dashboard") return true;
-
-  // Check role-specific routes
-  const allowedRoutes =
-    roleBasedRoutes[userRole as keyof typeof roleBasedRoutes] || [];
-  return allowedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + "/")
-  );
-}
-
-// ✅ Get default route for role
-function getDefaultRouteForRole(role: string): string {
-  const defaultRoutes = {
-    ADMIN: "/dashboard/admin/overview",
-    STAFF: "/dashboard/staff/cases",
-    CLIENT: "/client/my-case"
-  };
-  return defaultRoutes[role as keyof typeof defaultRoutes] || "/login";
-}
+const JWT_SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || "your-secret-key"
+);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Check if the path is public
-  const isPublicRoute = publicRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + "/")
-  );
-
-  // If it's a public route, allow access
-  if (isPublicRoute) {
-    return NextResponse.next();
-  }
-
-  // Get token from cookies
   const token = request.cookies.get("auth-token")?.value;
+  const backupRole = request.cookies.get("user-role")?.value;
 
-  // No token = redirect to login
-  if (!token) {
-    console.log("❌ No token found, redirecting to login");
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+  // 1. If no token, bounce to /role (public access)
+  if (!token) return NextResponse.next();
 
   try {
-    // Verify JWT token
-    const { payload } = await jwtVerify(token, secret);
-
+    // 2. Verify JWT
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const userRole = (payload.role as string) || backupRole || "";
     const userId = payload.sub as string;
-    const userRole = (payload.role as string) || "";
 
-    console.log("✅ Middleware Verified:", { userId, userRole, pathname });
+    // 3. Prevent loop: If already at their correct home, just proceed
+    const correctHome =
+      userRole === "ADMIN"
+        ? "/admin/dashboard"
+        : userRole === "STAFF"
+          ? "/staff/dashboard"
+          : "/client/manage-case";
 
-    // ✅ Check if user has access to this route
-    if (!hasAccessToRoute(pathname, userRole)) {
-      console.log(`🚫 Access denied: ${userRole} cannot access ${pathname}`);
-
-      // Redirect to their default dashboard
-      const defaultRoute = getDefaultRouteForRole(userRole);
-      return NextResponse.redirect(new URL(defaultRoute, request.url));
+    // If they are on a generic path like "/" or "/login", send to their home
+    if (pathname === "/" || pathname === "/role") {
+      return NextResponse.redirect(new URL(correctHome, request.url));
     }
 
-    // ✅ User has access - proceed
+    // 4. ROLE GUARDING
+    const matchingGateway = Object.entries(ROLE_GATEWAYS).find(([path]) =>
+      pathname.startsWith(path)
+    );
+
+    if (matchingGateway) {
+      const [pathPrefix, requiredRole] = matchingGateway;
+
+      if (userRole !== requiredRole) {
+        console.warn(`🚫 ${userRole} tried to access ${pathPrefix}`);
+        return NextResponse.redirect(new URL(correctHome, request.url));
+      }
+    }
+
+    // 5. SUCCESS: Inject headers for Server Components
     const response = NextResponse.next();
     response.headers.set("x-user-id", userId);
     response.headers.set("x-user-role", userRole);
     return response;
   } catch (error) {
-    console.error("❌ JWT verification failed:", error);
-    const response = NextResponse.redirect(new URL("/login", request.url));
+    console.error("JWT Verification failed:", error);
+    const response = NextResponse.redirect(new URL("/role", request.url));
     response.cookies.delete("auth-token");
     return response;
   }
@@ -125,14 +67,10 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     */
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)"
+    // Protect all admin, staff, and client routes
+    "/admin/:path*",
+    "/staff/:path*",
+    "/client/:path*"
+    // Add other specific routes that need protection
   ]
 };

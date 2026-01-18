@@ -1,7 +1,7 @@
 "use client";
 import { FirmProfileData, useFirmProfileStore } from "@/store/firmProfileStore";
 import { Button } from "../ui/button";
-import { ArrowLeft, DollarSign } from "lucide-react";
+import { ArrowLeft, DollarSign, Loader2 } from "lucide-react";
 import { Input } from "../ui/input";
 import { Label } from "@radix-ui/react-label";
 import { useRouter } from "next/navigation";
@@ -14,23 +14,19 @@ import { shallow } from "zustand/shallow";
 
 const Step3CustomFee = () => {
   const router = useRouter();
-  // ✅ FIX #1: Use the selector pattern correctly
-  const formData = useFirmProfileStore((state) => state.formData);
-  const updateFormData = useFirmProfileStore((state) => state.updateFormData);
-  const SubmitCompleteSignup = useFirmProfileStore(
-    (state) => state.SubmitCompleteSignup
-  );
-  const isSubmitting = useFirmProfileStore((state) => state.isSubmitting);
-  const prevStep = useFirmProfileStore((state) => state.prevStep);
 
-  // ✅ FIX #2: Use the selector pattern correctly for authStore
-  const setRole = useAuthStore((state) => state.setRole);
-  const signupFormTemp = useAuthStore((state) => state.signupFormTemp);
-  const clearSignupFormTemp = useAuthStore((state) => state.setSignupFormTemp);
+  const {
+    formData,
+    updateFormData,
+    isSubmitting,
+    prevStep,
+    SubmitCompleteSignup
+  } = useFirmProfileStore();
+  const { signupFormTemp, clearSignupTemp } = useAuthStore();
 
   const { isCustomFeeEnabled, customFeeAmount } = formData;
 
-  // check if signup data exisit on mount
+  // Security Check: Redirect if the first page of signup is missing
   React.useEffect(() => {
     if (!signupFormTemp) {
       toast.error("Session expired. Please start over");
@@ -42,39 +38,35 @@ const Step3CustomFee = () => {
     updateFormData({ isCustomFeeEnabled: !isCustomFeeEnabled });
   };
 
+  // const isComplete =
+  //   !isCustomFeeEnabled ||
+  //   (isCustomFeeEnabled && customFeeAmount !== null && customFeeAmount > 0);
   const isComplete =
-    !isCustomFeeEnabled ||
-    (isCustomFeeEnabled && customFeeAmount !== null && customFeeAmount > 0);
+    !isCustomFeeEnabled || (isCustomFeeEnabled && (customFeeAmount ?? 0) > 0);
 
   const handleCompleteSignup = async () => {
     if (!isComplete) {
-      toast.error("Please complete all fields");
+      toast.error("Please provide a valid fee amount");
       return;
     }
 
+    // move later to utility
     const validationError = validateFirmProfile(formData, signupFormTemp);
     if (validationError) {
       toast.error(validationError);
-      if (validationError.includes("Session expired")) {
-        router.push("/admin/signup");
-      }
       return;
     }
 
-    const userEmail = signupFormTemp!.email;
-
     try {
-      setRole("ADMIN");
+      // this handles the merge of signipFormTemp + formData internally
       await SubmitCompleteSignup(signupFormTemp);
       toast.success("Account created Successfully! Please verify your email");
 
-      //clear tem data
-      clearSignupFormTemp(null);
+      const email = signupFormTemp!.email;
 
       //route to verify
-      router.push(`/verify?email=${encodeURIComponent(userEmail)}&role=ADMIN`);
+      router.push(`/verify?email=${encodeURIComponent(email)}&role=ADMIN`);
     } catch (error: any) {
-      console.error("Complete signup error:", error);
       handleSignupError(error, router);
     }
   };
@@ -91,7 +83,7 @@ const Step3CustomFee = () => {
       </h3>
 
       {/* Toggle Switch */}
-      <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
+      {/* <div className="flex justify-between items-center bg-gray-50 p-4 rounded-lg border border-gray-200">
         <p className="text-sm text-gray-600">
           Enable to set a custom consultation fee
         </p>
@@ -111,19 +103,57 @@ const Step3CustomFee = () => {
                             }`}
           />
         </button>
+      </div> */}
+      <div
+        className={`p-5 rounded-xl border-2 transition-all ${
+          isCustomFeeEnabled
+            ? "border-violet-200 bg-violet-50/30"
+            : "border-gray-100 bg-gray-50/50"
+        }`}
+      >
+        <div className="flex justify-between items-center">
+          <div>
+            <p className="font-semibold text-gray-800">
+              Custom Consultation Fee
+            </p>
+            <p className="text-xs text-gray-500">
+              Override the default platform fee
+            </p>
+          </div>
+          <button
+            aria-label="CustomFee Toggle"
+            type="button"
+            onClick={handleToggle}
+            className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors ${
+              isCustomFeeEnabled ? "bg-[#7C3AED]" : "bg-gray-300"
+            }`}
+          >
+            <span
+              className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform ${
+                isCustomFeeEnabled ? "translate-x-6" : "translate-x-1"
+              }`}
+            />
+          </button>
+        </div>
+
+        {/* Amount Input (Conditional) */}
+        {isCustomFeeEnabled && (
+          // <div className="pt-2">
+          //   <CustomFeeInput
+          //     customFeeAmount={customFeeAmount}
+          //     updateFormData={updateFormData}
+          //   />
+          // </div>
+          <div className="mt-6 pt-6 border-t border-violet-100 animate-in slide-in-from-top-2">
+            <CustomFeeInput
+              customFeeAmount={customFeeAmount}
+              updateFormData={updateFormData}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Amount Input (Conditional) */}
-      {isCustomFeeEnabled && (
-        <div className="pt-2">
-          <CustomFeeInput
-            customFeeAmount={customFeeAmount}
-            updateFormData={updateFormData}
-          />
-        </div>
-      )}
-
-      <Button
+      {/* <Button
         onClick={handleCompleteSignup}
         className="w-full mt-6"
         disabled={!isComplete || isSubmitting}
@@ -132,6 +162,21 @@ const Step3CustomFee = () => {
       </Button>
       <div className="text-sm text-center">
         <Button variant="link">Contact Support</Button>
+      </div> */}
+      <div className="pt-4">
+        <Button
+          onClick={handleCompleteSignup}
+          className="w-full h-12 text-base font-bold bg-[#7C3AED] hover:bg-[#6D28D9]"
+          disabled={!isComplete || isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing up...
+            </>
+          ) : (
+            "Complete & Sign up"
+          )}
+        </Button>
       </div>
     </div>
   );

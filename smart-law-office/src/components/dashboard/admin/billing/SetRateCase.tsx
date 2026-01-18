@@ -24,17 +24,11 @@ const SetRateCase = () => {
     // getAdminCaseType,
     saveRate,
     feeSchedules,
-    addCaseRate,
     isSetRateCaseModalOpen,
     closeSetRateCaseModal,
     openSetRateCaseModal,
     openSetRateModal
   } = useBillingStore();
-
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  // Debug: Log feeSchedules to see what data we have
-  console.log("SetRateCase - feeSchedules:", feeSchedules);
 
   const form = useForm<setRateBillFormData>({
     resolver: zodResolver(setRateBillSchema),
@@ -43,9 +37,9 @@ const SetRateCase = () => {
       serviceType: "Case",
       caseTypeId: "",
       subServiceId: "",
-      caseRate: undefined,
+      caseRate: 0,
       duration: "",
-      consultationRate: undefined
+      consultationRate: 0
     }
   });
 
@@ -53,9 +47,9 @@ const SetRateCase = () => {
   const watchedServiceType = form.watch("serviceType");
   const watchedSubServiceId = form.watch("subServiceId");
 
-  // logic to find the sub-service from your flat array
+  // Find the selected schedule object based on the ID in the dropdown
   const selectedSchedule = feeSchedules.find(
-    (f) => String(f.feeScheduleId) === String(watchedSubServiceId)
+    (f) => String(f.feeScheduleId || f.id) === String(watchedSubServiceId)
   );
 
   const handleServiceTypeChange = (value: string) => {
@@ -104,24 +98,15 @@ const SetRateCase = () => {
       return;
     }
 
-    // Ensure we are passing the ID that exists on the object
-    const idToSend = selectedSchedule.feeScheduleId || selectedSchedule.id;
-
-    if (!idToSend || idToSend.startsWith("mock-")) {
-      toast.error(
-        "Cannot save mock data to server. Please select a real case type."
-      );
-      return;
-    }
-
     const payload = {
       serviceType: "Case",
-      feeScheduleId: selectedSchedule.feeScheduleId,
-      subServiceType: selectedSchedule.name, // THIS IS WHAT THE TABLE NEEDS
+      feeScheduleId: selectedSchedule.feeScheduleId || selectedSchedule.id,
+      subServiceType: selectedSchedule.name || selectedSchedule.feeScheduleName,
       caseRate: data.caseRate
     };
-    await saveRate(payload);
-    if (payload) {
+
+    const success = await saveRate(payload);
+    if (success) {
       form.reset();
       closeSetRateCaseModal();
     }
@@ -157,68 +142,48 @@ const SetRateCase = () => {
                 { label: "Case", value: "Case" },
                 { label: "Consultation", value: "Consultation" }
               ]}
-              onChange={handleServiceTypeChange}
               className="w-full"
+              onChange={(val) => {
+                if (val === "Consultation") {
+                  closeSetRateCaseModal();
+                  openSetRateModal(); // Switch to the other modal
+                }
+              }}
             />
 
             {watchedServiceType === "Case" && (
               <>
-                {feeSchedules.length === 0 ? (
-                  <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800">
-                      No case types available. Please ensure case types are
-                      configured.
-                    </p>
-                  </div>
-                ) : (
-                  <CustomSelectField
-                    control={form.control}
-                    name="subServiceId"
-                    label="Sub-service"
-                    placeholder="Select a sub-service"
-                    className="w-full"
-                    options={feeSchedules.map((f, index) => {
-                      return {
-                        label:
-                          f.name || f.feeScheduleName || `Service ${index + 1}`,
-                        value:
-                          f.feeScheduleId ||
-                          f.id ||
-                          f.caseTypeId ||
-                          String(index)
-                      };
-                    })}
-                    onChange={(val) => {
-                      // Manually update caseTypeId to satisfy your Zod schema
-                      form.setValue("caseTypeId", val, {
-                        shouldValidate: true
-                      });
-                    }}
-                  />
-                )}
+                <CustomSelectField
+                  control={form.control}
+                  name="subServiceId"
+                  label="Sub-service"
+                  placeholder={
+                    feeSchedules.length === 0
+                      ? "No case types available"
+                      : "Select a sub-service"
+                  }
+                  options={feeSchedules.map((f) => ({
+                    label: f.name || f.feeScheduleName,
+                    value: String(f.feeScheduleId || f.id)
+                  }))}
+                  onChange={(val) =>
+                    form.setValue("caseTypeId", val, { shouldValidate: true })
+                  }
+                  className="w-full"
+                />
 
-                {/* Logical Display: Show LPRO Range if a sub-service is picked */}
-                {/* {selectedSchedule && (
-                  <div className="p-3 bg-violet-50 border border-violet-100 rounded-lg">
-                    <p className="text-xs text-violet-600 font-medium">
-                      LPRO Rate Range
-                    </p>
-                    <p className="text-sm font-bold text-violet-900">
-                      ₦{selectedSchedule.lproRateRange}
-                    </p>
-                  </div>
-                )} */}
                 {selectedSchedule && (
                   <div className="p-3 bg-violet-50 border border-violet-100 rounded-lg">
                     <p className="text-xs text-violet-600 font-medium">
                       LPRO Rate Range
                     </p>
                     <p className="text-sm font-bold text-violet-900">
-                      ₦{selectedSchedule.rateMin.toLocaleString()} - ₦
-                      {selectedSchedule.rateMax.toLocaleString()}
+                      ₦{selectedSchedule.rateMin?.toLocaleString()} - ₦
+                      {selectedSchedule.rateMax?.toLocaleString()}
                     </p>
                   </div>
                 )}
+
                 <CustomFormField
                   control={form.control}
                   name="caseRate"
@@ -234,7 +199,6 @@ const SetRateCase = () => {
                 type="button"
                 variant="outline"
                 onClick={closeSetRateCaseModal}
-                disabled={form.formState.isSubmitting}
               >
                 Cancel
               </Button>
@@ -243,7 +207,7 @@ const SetRateCase = () => {
                 className="bg-violet-600"
                 disabled={form.formState.isSubmitting}
               >
-                Save
+                {form.formState.isSubmitting ? "Saving..." : "Save"}
               </Button>
             </div>
           </form>

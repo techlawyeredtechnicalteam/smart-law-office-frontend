@@ -130,7 +130,7 @@ const UserRole = () => {
       >
         Already have an account?{" "}
         <a
-          href="/admin/login"
+          href="/login"
           className="font-semibold text-[#7C3AED] hover:underline"
         >
           Sign in

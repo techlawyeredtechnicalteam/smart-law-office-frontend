@@ -8,12 +8,22 @@ import FileUpload from "../shared/FileUpload";
 import { toast } from "sonner";
 
 const Step2Branding = () => {
-  const { formData, updateFormData, nextStep, prevStep, setFile } =
-    useFirmProfileStore();
-  const availableColors = React.useMemo(
-    () => ["#0A84FF", "#FFD433", "#4CAF50", "#000000", "#7c3AED"],
-    []
-  );
+  // ✅ 1. Use Selectors to get exactly what we need
+  const formData = useFirmProfileStore((state) => state.formData);
+  const updateFormData = useFirmProfileStore((state) => state.updateFormData);
+  const nextStep = useFirmProfileStore((state) => state.nextStep);
+  const prevStep = useFirmProfileStore((state) => state.prevStep);
+  const setFile = useFirmProfileStore((state) => state.setFile);
+
+  // ✅ 2. Define the missing colors array (renamed from 'presets' to 'availableColors' to match your JSX)
+  const availableColors = [
+    "#7C3AED", // Violet
+    "#2563EB", // Blue
+    "#059669", // Green
+    "#DC2626", // Red
+    "#D97706", // Amber
+    "#000000" // Black
+  ];
 
   const isComplete = formData.logoFile && formData.cacFile;
 
@@ -65,21 +75,21 @@ const Step2Branding = () => {
       </div>
 
       {/* Brand Color Selection */}
-      <div className="space-y-2">
-        <h3 className="text-lg font-semibold text-gray-600">
+      <div className="space-y-3">
+        <h3 className="text-sm font-bold text-gray-700 uppercase tracking-tight">
           Select Brand Colour
         </h3>
-        <div className="flex space-x-3">
+        <div className="flex flex-wrap gap-3">
           {availableColors.map((color) => (
             <div
               key={color}
               style={{ backgroundColor: color }}
               className={`w-10 h-10 rounded-full cursor-pointer transition-all duration-200 flex items-center justify-center
-                                ${
-                                  formData.brandColor === color
-                                    ? "ring-4 ring-offset-2 ring-gray-300"
-                                    : "hover:ring-2 hover:ring-gray-300"
-                                }`}
+                ${
+                  formData.brandColor === color
+                    ? "ring-4 ring-offset-2 ring-violet-200 scale-110"
+                    : "hover:scale-105 border border-gray-100"
+                }`}
               onClick={() => updateFormData({ brandColor: color })}
             >
               {formData.brandColor === color && (
@@ -87,24 +97,21 @@ const Step2Branding = () => {
               )}
             </div>
           ))}
-          {/* Add Custom Color Button */}
-          <div
-            className="w-10 h-10 rounded-full cursor-pointer border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 hover:border-gray-600 transition-colors"
-            onClick={() =>
-              toast.info(
-                "Custom color picker feature is not implemented in this demo."
-              )
-            }
-          >
-            +
+
+          {/* Custom Color Input - simplified for better UX */}
+          <div className="relative w-10 h-10">
+            <input
+              aria-label="Color Input"
+              type="color"
+              value={formData.brandColor}
+              onChange={(e) => updateFormData({ brandColor: e.target.value })}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+            />
+            <div className="w-10 h-10 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400">
+              +
+            </div>
           </div>
         </div>
-        <p className="text-sm text-gray-500 mt-2">
-          Selected Color:{" "}
-          <span className={`${formData.brandColor}`}>
-            {formData.brandColor}
-          </span>
-        </p>
       </div>
 
       {/* CAC upload  */}

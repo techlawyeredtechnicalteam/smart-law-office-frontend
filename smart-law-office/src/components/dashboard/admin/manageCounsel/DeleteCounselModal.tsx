@@ -6,28 +6,27 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { User, XCircle } from "lucide-react"; // Changed icon for removal
 import React from "react";
-// 
+//
 const DeleteCounselModal = () => {
   const {
     isDeleteModalOpen,
     closeDeleteModal,
     selectedCounsel,
     deleteCounsel,
-    isSubmitting,
+    isLoading
   } = useCounselStore();
 
   const handleDelete = async () => {
-    if (selectedCounsel) {
-      try {
-        await deleteCounsel(selectedCounsel.id);
-        // Success toast is handled in the store
-      } catch (error) {
-        console.error("Delete failed:", error);
-      }
+    if (!selectedCounsel) return;
+
+    try {
+      // the store handles the CloseDeleteModal and toast internally
+      await deleteCounsel(selectedCounsel.id);
+      // Success toast is handled in the store
+    } catch (error) {
+      console.error("Delete failed:", error);
     }
   };
-
-  if (!selectedCounsel) return null;
 
   return (
     <Dialog open={isDeleteModalOpen} onOpenChange={closeDeleteModal}>
@@ -49,34 +48,34 @@ const DeleteCounselModal = () => {
         </p>
 
         {/* Counsel Info Box - Matching deletemanageCounse.png */}
-        <div className="bg-violet-50 p-3 rounded-lg inline-block mb-6 border border-violet-200">
-          <p className="font-bold text-lg text-violet-800">
-            {selectedCounsel.fullName}
-          </p>
-          <p className="text-sm text-violet-600">SCN-{selectedCounsel.scn}</p>
-        </div>
+        {selectedCounsel && (
+          <div className="bg-violet-50 p-3 rounded-lg inline-block mb-6 border border-violet-200">
+            <p className="font-bold text-lg text-violet-800">
+              {selectedCounsel.fullName}
+            </p>
+            <p className="text-sm text-violet-600">SCN-{selectedCounsel.scn}</p>
+          </div>
+        )}
 
-        <p className="text-xs text-red-600 mb-6">
+        <p className="text-xs text-red-600 mb-6 font-medium">
           This will result in the immediate loss of their access to all cases,
-          documents and communications. Their assigned cases will need to be
-          reassigned.
+          documents and communications.
         </p>
 
-        {/* Buttons - Matching deletemanageCounse.png */}
         <div className="flex justify-center space-x-4">
           <Button
             variant="outline"
             onClick={closeDeleteModal}
-            disabled={isSubmitting}
+            disabled={isLoading}
           >
             Cancel
           </Button>
           <Button
-            className="bg-red-600 hover:bg-red-700" // Use red for removal action
+            className="bg-red-600 hover:bg-red-700 text-white"
             onClick={handleDelete}
-            disabled={isSubmitting}
+            disabled={isLoading}
           >
-            {isSubmitting ? "Removing..." : "Remove"}
+            {isLoading ? "Removing..." : "Remove"}
           </Button>
         </div>
       </DialogContent>

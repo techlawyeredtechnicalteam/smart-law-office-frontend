@@ -37,6 +37,15 @@ interface CustomFormFieldProps<T extends FieldValues> {
   className?: string;
   onChange?: (value: any) => void;
   isFieldValid?: boolean;
+  inputMode?:
+    | "none"
+    | "text"
+    | "tel"
+    | "url"
+    | "email"
+    | "numeric"
+    | "decimal"
+    | "search";
 }
 
 export function CustomFormField<T extends FieldValues>({

@@ -22,51 +22,30 @@ export function AssignedCasesTable() {
   // 2. Refined Search Logic
   const filteredCases = assignedCases.filter((ac) => {
     const search = searchQuery.toLowerCase();
-    const typeName =
-      caseTypes.find((t) => t.caseTypeId === ac.caseTypeId)?.name || "";
+    //safe string checking
+    const fieldsToSearch = [
+      ac.caseTypeId,
+      ac.id,
+      ac.clientEmail,
+      ac.staffEmail,
+      ac.status
+    ].map((field) => (field || "").toLowerCase());
 
-    return (
-      (ac.caseCode || "").toLowerCase().includes(search) ||
-      ac.id.toLowerCase().includes(search) ||
-      ac.clientName.toLowerCase().includes(search) ||
-      typeName.toLowerCase().includes(search) ||
-      (ac.staffEmail || "").toLowerCase().includes(search)
-    );
+    return fieldsToSearch.some((val) => val.includes(search));
   });
 
   const columns: TableColumn<(typeof assignedCases)[0]>[] = [
-    // {
-    //   key: "case-client",
-    //   header: "Case/Client",
-    //   headerClassName: "rounded-l-lg",
-    //   render: (item) => (
-    //     <div>
-    //       <div className="font-bold text-gray-900">{item.caseId}</div>
-    //       <div className="text-gray-500 text-xs">{item.clientName}</div>
-    //     </div>
-    //   )
-    // },
-    // {
-    //   key: "caseType",
-    //   header: "Case Type",
-    //   render: (item) => <div className="text-gray-700">{item.caseType}</div>
-    // },
-    // {
-    //   key: "dateTime",
-    //   header: "Date/Time",
-    //   render: (item) => <div className="text-gray-700">{item.dateTime}</div>
-    // },
     {
       key: "case-client",
       header: "Case/Client",
       render: (item) => (
-        <div>
-          <div className="font-bold text-gray-900">
-            {item.id && item.id !== "UNKNOWN"
-              ? item.id.slice(-8).toUpperCase()
-              : "PENDING"}
-          </div>
-          <div className="text-gray-500 text-xs">{item.clientName}</div>
+        <div className="flex flex-col">
+          <span className="font-bold text-violet-700">
+            {item.caseTypeId || item.id?.slice(-8).toUpperCase() || "PENDING"}
+          </span>
+          <span className="text-gray-500 text-xs font-medium uppercase tracking-tight">
+            {item.clientEmail || ""}
+          </span>
         </div>
       )
     },
@@ -74,18 +53,31 @@ export function AssignedCasesTable() {
       key: "caseType",
       header: "Case Type",
       render: (item) => {
+        // 🚀 Use the unified billing store for the lookup
         const type = caseTypes.find((t) => t.caseTypeId === item.caseTypeId);
         return (
-          <div className="text-gray-700">{type?.name || "Standard Case"}</div>
+          <div className="text-gray-700 font-medium">
+            {type?.name || "Standard Case"}
+          </div>
         );
       }
     },
     {
-      key: "dateTime",
-      header: "Assigned To",
+      key: "assignedTo",
+      header: "Assigned Counsel",
       render: (item) => (
-        <div className="text-xs text-purple-600 font-medium">
-          {item.staffEmail || "Not Specified"}
+        <div className="flex items-center gap-2">
+          <div className="h-8 w-8 rounded-full bg-violet-100 flex items-center justify-center text-violet-700 text-xs font-bold">
+            {item.staffEmail?.charAt(0).toUpperCase() || "S"}
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-gray-900">
+              {item.staffEmail}
+            </span>
+            <span className="text-[10px] text-gray-400 italic">
+              Counsel Assigned
+            </span>
+          </div>
         </div>
       )
     },
@@ -93,23 +85,30 @@ export function AssignedCasesTable() {
       key: "status",
       header: "Status",
       render: (item) => (
-        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 border font-medium">
-          {item.status}
+        <span
+          className={`px-2.5 py-0.5 text-[10px] rounded-full border font-bold uppercase ${
+            item.status === "Active"
+              ? "bg-green-50 text-green-700 border-green-200"
+              : "bg-blue-50 text-blue-700 border-blue-200"
+          }`}
+        >
+          {item.status || "Assigned"}
         </span>
       )
     },
     {
       key: "action",
-      header: "Action",
+      header: "View",
       headerClassName: "text-right",
       cellClassName: "text-right",
-      render: () => (
+      render: (item) => (
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
-          className="bg-purple-50 text-purple-700"
+          className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 font-bold"
+          onClick={() => console.log("Navigate to case:", item.id)}
         >
-          View Case
+          Manage
         </Button>
       )
     },

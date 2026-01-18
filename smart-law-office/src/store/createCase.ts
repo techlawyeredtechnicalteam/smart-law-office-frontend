@@ -1,20 +1,17 @@
-import {
-  adminCreateCase,
-  createCase,
-  deleteCase,
-  getAllCases,
-  getCaseById,
-  getCases
-} from "@/app/api/cases.api";
-import axios, { AxiosError } from "axios";
+import { createCaseSchema } from "@/types/case.schema";
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { useAuthStore } from "./authStore";
 import {
-  getAdminCaseTypesById,
-  getAdminCaseTypes
-} from "@/app/api/caseType.api";
-import { createCaseSchema } from "@/types/case.schema";
-import { id } from "date-fns/locale";
+  adminCreateCase,
+  getAllCases,
+  getStaffCases,
+  staffCreateCase
+} from "@/app/api/cases.api";
+import { getAdminCaseTypes } from "@/app/api/caseType.api";
+import { useBillingStore } from "./setRateBill";
+import { caseDocument } from "@/app/api/document.api";
+import { useDocumentStore } from "./documentStore";
 
 export interface CaseType {
   caseTypeId: string;
@@ -35,33 +32,17 @@ export interface CaseType {
   updatedAt: string;
 }
 
-// Backend response structure for Case
-// export interface Case {
-//   id: string;
-//   userId: string;
-//   consultId: string;
-//   title: string;
-//   caseTypeId: string;
-//   caseCode?: string;
-//   createdAt: string;
-//   updatedAt: string;
-// }
 export interface Case {
-  id: string;
-  clientName: string;
-  status: string;
-  caseTypeId: string;
-  notes?: string;
-  documents: { name: string; url: string }[];
-  caseType?: {
-    feeSchedule?: {
-      name: string;
-    };
-  };
   // ADD THESE FIELDS
-  staffEmail?: string;
-  staffId?: string;
-  caseCode?: string;
+  id: string;
+  title?: string;
+  staffEmail: string;
+  clientEmail: string;
+  clientName?: string;
+  notes: string;
+  documents: { name: string; url: string }[];
+  caseTypeId: string;
+  status: string;
 }
 
 export interface CreateCasePayload {
@@ -84,30 +65,28 @@ export interface AdminCreateCasePayload {
   caseTypeId: string;
 }
 
-interface BackendCasePayload {
-  userId: string;
-  consultId: string;
-  title: string;
-  caseTypeId: string;
-  status: string;
-  date_executed: string;
-  notes: string;
-  document: string;
-  //
-  staffEmail: string;
-  clientEmail: string;
-}
-
 interface CaseState {
   cases: Case[];
   caseTypes: CaseType[];
   isLoading: boolean;
   error: string | null;
 
+  stats: {
+    total: number;
+    completed: number;
+    pending: number;
+    meetingHours: number;
+  };
   // API Interactions
   fetchCases: () => Promise<void>;
   fetchCaseTypes: () => Promise<void>;
+  calculateStats: (allCases: Case[]) => void;
   executeCreate: (values: createCaseSchema, role: string) => Promise<boolean>;
+  uploadDocumentToCase: (
+    caseId: string,
+    name: string,
+    file: string
+  ) => Promise<boolean>;
 
   // Helper to reset error
   clearError: () => void;
@@ -118,169 +97,229 @@ export const useCaseStore = create<CaseState>((set, get) => ({
   caseTypes: [],
   isLoading: false,
   error: null,
+  stats: {
+    total: 0,
+    completed: 0,
+    pending: 0,
+    meetingHours: 0
+  },
 
+  calculateStats: (allCases: Case[]) => {
+    const total = allCases.length;
+    // Ensure these strings match your backend response exactly (e.g., "COMPLETED" vs "Completed")
+    const completed = allCases.filter((c) => c.status === "COMPLETED").length;
+    const pending = allCases.filter(
+      (c) => c.status === "PENDING" || c.status === "IN_PROGRESS"
+    ).length;
+
+    set({
+      stats: {
+        total,
+        completed,
+        pending,
+        meetingHours: 335 // Placeholder for now
+      }
+    });
+  },
+
+  // fetch cases base on role
+  fetchCases: async () => {
+    set({ isLoading: true, error: null });
+
+    const user = useAuthStore.getState().user;
+    const role = user?.role;
+
+    console.log("Current user:", user);
+    console.log("User role:", role);
+
+    // 🚩 BYPASS LOGIC: If Staff, don't even try the API yet
+    if (role === "STAFF") {
+      console.warn(
+        "Staff role detected: Bypassing unauthorized API and loading mock data."
+      );
+      const mockStaffCases: Case[] = [
+        {
+          id: "staff-mock-1",
+          staffEmail: user?.email || "staff@firm.com",
+          clientEmail: "mock-client@example.com",
+          notes: "This is a mock case for Staff view development.",
+          documents: [],
+          caseTypeId: "mock-id",
+          status: "Discovery"
+        }
+      ];
+      set({ cases: mockStaffCases, isLoading: false });
+      return; // Exit early so we don't hit the 401
+    }
+
+    // 🟢 ADMIN LOGIC: Hit the real endpoint
+    try {
+      console.log("Calling getAllCases()....");
+      const response = await getAllCases();
+      console.log("Raw API response:", response);
+      console.log("Response data:", response.data);
+
+      const rawData = response.data || [];
+      console.log("Raw data length:", rawData.length);
+      console.log("Raw data:", rawData);
+
+      const normalizedCases: Case[] = rawData.map((c: any) => ({
+        id: c.directCaseId || c.caseId || c.id,
+        staffEmail: c.staffEmail || c.staff?.email,
+        clientEmail:
+          c.clientEmail || c.client?.email || c.clientName || c.client?.name,
+        notes: c.note || c.notes || "",
+        documents: Array.isArray(c.documents)
+          ? c.documents
+          : c.document
+            ? [{ name: "Case Document", url: c.document }]
+            : [],
+        caseTypeId: c.caseTypeId,
+        status: c.status || "PENDING"
+      }));
+
+      console.log("Normalized cases:", normalizedCases);
+      set({ cases: normalizedCases, isLoading: false });
+      get().calculateStats(normalizedCases);
+    } catch (error: any) {
+      set({
+        error: error.response?.data?.message || "Failed to load Admin cases",
+        isLoading: false
+      });
+    }
+
+    //   try {
+    //     const user = useAuthStore.getState().user;
+    //     const role = user?.role;
+
+    //     // determine which API to call based on role
+    //     let response;
+    //     if (role === "ADMIN") {
+    //       response = await getAllCases();
+    //       console.log("Get All Admin Cases:", getAllCases);
+    //     } else {
+    //       response = await getStaffCases();
+    //       console.log("Get all staff assigned caases:", getStaffCases);
+    //     }
+
+    //     const rawData = response.data;
+    //     const normalizedCases: Case[] = rawData.map((c: any) => ({
+    //       id: c.directCaseId || c.caseId || c.id,
+    //       staffEmail: c.staffEmail || c.staff?.email,
+    //       clientEmail:
+    //         c.clientEmail || c.client?.email || c.clientName || c.client?.name,
+    //       notes: c.note || c.notes || "",
+    //       documents: Array.isArray(c.documents)
+    //         ? c.documents
+    //         : c.document
+    //         ? [{ name: "Case Document", url: c.document }]
+    //         : [],
+    //       caseTypeId: c.caseTypeId,
+    //       status: c.status || "PENDING"
+    //     }));
+    //     set({ cases: normalizedCases, isLoading: false });
+    //   } catch (error: any) {
+    //     set({
+    //       error: error.response?.data?.message || "Failed to load cases",
+    //       isLoading: false
+    //     });
+    //   }
+  },
+
+  // Role Creation
   executeCreate: async (values, role) => {
     set({ isLoading: true, error: null });
 
     try {
-      const backendPayload = {
-        clientEmail: values.clientEmail,
-        caseTypeId: values.caseTypeId,
-        staffEmail:
-          role === "ADMIN"
-            ? values.staffEmail
-            : useAuthStore.getState().user?.email || "",
-        note: values.notes,
-        document: values.file, // Backend likely expects 'document'
+      const basePayload = {
+        ...values,
+        document: values.document,
         lastAdjournedAt: values.lastAdjournedDate || null,
-        nextAdjournedAt: values.nextAdjournedDate || null,
-        status: values.status || "Discovery"
+        nextAdjournedAt: values.nextAdjournedDate || null
       };
-      let response;
-      //  admin
-      if (role === "ADMIN") {
-        response = await adminCreateCase(backendPayload);
-      } else {
-        response = await createCase({
-          ...backendPayload,
-          title: values.title || `Case: ${values.clientEmail}`,
-          status: values.status,
-          date: values.date || new Date().toISOString().split("T")[0]
+
+      const response =
+        role === "ADMIN"
+          ? await adminCreateCase(basePayload)
+          : await staffCreateCase(basePayload);
+
+      // update local state immediately
+      const newCase = response.data;
+
+      if (newCase) {
+        // FIX: Define updatedCases so calculateStats can use the fresh data
+        const updatedCases = [newCase, ...get().cases];
+
+        set({
+          cases: updatedCases,
+          isLoading: false
         });
+
+        // Trigger the real-time update
+        get().calculateStats(updatedCases);
+      } else {
+        await get().fetchCases();
       }
-      const rawNewCase = response.data;
-      // const normalizedNewCase: Case = {
-      //   id: rawNewCase.id || rawNewCase.caseId,
-      //   clientName: rawNewCase.clientEmail?.split("@")[0] || "New Client",
-      //   staffEmail: rawNewCase.staffEmail,
-      //   clientEmail: rawNewCase.clientEmail,
-      //   caseTypeId: rawNewCase.caseTypeId,
-      //   status: rawNewCase.status || "Discovery",
-      //   notes: rawNewCase.note || rawNewCase.notes || "",
-      //   documents: rawNewCase.document
-      //     ? [{ name: "Uploaded Doc", url: rawNewCase.document }]
-      //     : [],
-      //   caseType: {
-      //     feeSchedule: {
-      //       // Try to find the name from our existing caseTypes list in the store
-      //       name:
-      //         get().caseTypes.find(
-      //           (t) => t.caseTypeId === rawNewCase.caseTypeId
-      //         )?.feeSchedule?.name || "Standard Case"
-      //     }
-      //   }
-      // };
-      const normalizedNewCase: Case = {
-        id: rawNewCase.directCaseId || rawNewCase.id || rawNewCase.caseId,
-        caseCode: rawNewCase.caseCode,
-        // Use the email the user just typed in the form
-        clientName: values.clientEmail.split("@")[0] || "New Client",
-        caseTypeId: rawNewCase.caseTypeId,
-        status: values.status || rawNewCase.status || "Discovery",
-        // Map 'note' from backend to 'notes' for the UI
-        notes: rawNewCase.note || values.notes || "",
-        documents: rawNewCase.document
-          ? [{ name: "Case Document", url: rawNewCase.document }]
-          : []
-      };
-      set((state) => ({
-        cases: [normalizedNewCase, ...state.cases],
-        isLoading: false
-      }));
+
       return true;
     } catch (err: any) {
       set({
-        error: err.response?.data?.message || "Acion failed",
+        error: err.response?.data?.message || "Action failed",
+        isLoading: false
+      });
+
+      return false;
+    }
+  },
+
+  fetchCaseTypes: async () => {
+    // This triggers the billing store to fetch case types
+    await useBillingStore.getState().fetchBillingInitialData();
+  },
+
+  uploadDocumentToCase: async (caseId, name, file) => {
+    set({ isLoading: true, error: null });
+    try {
+      const payload = {
+        caseId,
+        name,
+        document: file // This should be your Base64 string or File object
+      };
+
+      const response = await caseDocument(payload);
+
+      // Get the new document from response
+      const newDoc = response.data?.data || response.data;
+
+      // Update the specific case in the store
+      set((state) => ({
+        cases: state.cases.map((c) =>
+          c.id === caseId
+            ? {
+                ...c,
+                documents: [
+                  ...(c.documents || []),
+                  {
+                    name: newDoc.name || name,
+                    url: newDoc.url || newDoc.document || file,
+                    date: new Date().toISOString()
+                  }
+                ]
+              }
+            : c
+        ),
+        isLoading: false
+      }));
+
+      return true;
+    } catch (err: any) {
+      set({
+        error: err.response?.data?.message || "Document upload failed",
         isLoading: false
       });
       return false;
     }
   },
 
-  //
-  fetchCases: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await getAllCases();
-      console.log("DEBUG: Raw Backend Cases:", response.data[0]);
-
-      const rawData = response.data;
-      // NORMALIZE THE DATA: Ensure every case has an 'id'
-      // const normalizedCases: Case[] = rawData.map((c: any) => ({
-      //   // Use whatever ID field the backend provides
-      //   id: c.id || c.caseId || c.caseCode || "UNKNOWN",
-
-      //   // If clientName is empty, fallback to clientEmail or user.firstName
-      //   clientName:
-      //     c.clientName ||
-      //     c.client?.name ||
-      //     c.clientEmail?.split("@")[0] ||
-      //     "Client",
-
-      //   status: c.status || "Discovery",
-      //   notes: c.notes || c.note || "",
-
-      //   // Ensure documents is always an array
-      //   documents: Array.isArray(c.documents)
-      //     ? c.documents
-      //     : c.document
-      //     ? [{ name: "Document", url: c.document }]
-      //     : []
-      // }));
-      const normalizedCases: Case[] = rawData.map((c: any) => ({
-        // Use the ID fields we saw in your logs
-        id: c.directCaseId || c.caseId || c.id || "UNKNOWN",
-        caseCode: c.caseCode,
-
-        // FIX: Look for 'client' object OR 'clientEmail'
-        clientName:
-          c.client?.name ||
-          c.clientName ||
-          c.clientEmail?.split("@")[0] ||
-          "Client",
-
-        // FIX: Ensure this matches the ID format in your CaseTypes list
-        caseTypeId: c.caseTypeId,
-
-        status: c.status || "PENDING",
-
-        // FIX: Check singular 'note' (backend) vs 'notes' (frontend)
-        notes: c.note || c.notes || "",
-
-        // FIX: Convert string URL to the object array your UI expects
-        documents: Array.isArray(c.documents)
-          ? c.documents
-          : c.document
-          ? [{ name: "Case Document", url: c.document }]
-          : [],
-
-        // IMPORTANT: For the Assigned Table to work
-        staffEmail: c.staffEmail || c.staff?.email || ""
-      }));
-      set({ cases: normalizedCases, isLoading: false });
-    } catch (error) {
-      set({ error: "Failed to load cases", isLoading: false });
-    }
-  },
-
-  fetchCaseTypes: async () => {
-    set({ isLoading: true, error: null });
-    try {
-      const response = await getAdminCaseTypes();
-      console.log("fetch case types:", response);
-      // set({ caseTypes: response.data, isLoading: false });
-
-      const data = response.data;
-
-      set({
-        caseTypes: Array.isArray(data) ? data : [],
-        isLoading: false
-      });
-    } catch (error) {
-      set({ error: "Failed to load case types", isLoading: false });
-    }
-  },
-
-  //
   clearError: () => set({ error: null })
 }));

@@ -17,18 +17,33 @@ const SuccessPage = () => {
   const [isFinishing, setIsFinishing] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    // simulate acct delay
+    // If user is null, the store might still be hydrating from localStorage
+    if (!user && isFinishing) return;
+
     const timer = setTimeout(() => {
       setIsFinishing(false);
 
-      // Redirect after short delay
+      const getTargetRoute = () => {
+        if (!user) return "/role"; // Final fallback
+
+        switch (user.role) {
+          case "ADMIN":
+          case "STAFF":
+            return "/admin/dashboard";
+          case "CLIENT":
+            return "/client/manage-case";
+          default:
+            return "/role";
+        }
+      };
+
       setTimeout(() => {
-        router.push("/dashboard");
+        router.push(getTargetRoute());
       }, 1500);
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [router]);
+  }, [router, user, isFinishing]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center bg-violet-50">
@@ -38,36 +53,42 @@ const SuccessPage = () => {
         <Dot delay="0.4s" />
       </div>
 
-      <p className="textlg font-medium text-gray-800">
-        {isFinishing
-          ? "Creating your account"
-          : `Account created successfully ${
-              user?.email ? `, ${user?.email}` : ""
-            }!`}
-      </p>
+      <div className="space-y-2">
+        <h1 className="text-2xl font-bold text-gray-900">
+          {isFinishing ? "Finalizing your workspace" : "Welcome aboard!"}
+        </h1>
+        <p className="text-gray-600 max-w-xs mx-auto">
+          {isFinishing
+            ? "We're setting up your legal tools and secure environment."
+            : `Your account (${user?.email}) is ready to go.`}
+        </p>
+      </div>
 
       {/* placeholder for visual  */}
       <div
-        className="mt-16 w-11/12 max-w-lg h-64 rounded-2xl transition-all duration-500"
+        className="mt-12 w-full max-w-sm h-48 rounded-2xl transition-all duration-700 flex flex-col items-center justify-center border shadow-sm"
         style={{
-          backgroundColor: isFinishing
-            ? "rgba(124, 58, 237, 0.1)"
-            : "rgba(16, 185, 129, 0.1)",
-          border: isFinishing
-            ? "2px solid rgba(124, 58, 237, 0.2)"
-            : "2px solid rgba(16, 185, 129, 0.2)"
+          backgroundColor: isFinishing ? "white" : "rgba(16, 185, 129, 0.05)",
+          borderColor: isFinishing ? "#E5E7EB" : "rgba(16, 185, 129, 0.2)"
         }}
       >
-        <div className="flex flex-col items-center justify-center h-full">
-          {isFinishing ? (
+        {isFinishing ? (
+          <div className="flex flex-col items-center gap-4">
             <Loader2 className="w-10 h-10 text-[#7C3AED] animate-spin" />
-          ) : (
-            <div className="flex flex-col items-center">
-              <CheckCircle className="w-10 h-10 text-green-600" />
-              <p className="text-gray-600">Redirecting you now...</p>
+            <span className="text-xs font-medium text-gray-400 uppercase tracking-widest">
+              Securing Database
+            </span>
+          </div>
+        ) : (
+          <div className="flex flex-col items-center animate-in zoom-in duration-500">
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle className="w-8 h-8 text-green-600" />
             </div>
-          )}
-        </div>
+            <p className="text-sm font-medium text-green-700">
+              Redirecting to Dashboard...
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

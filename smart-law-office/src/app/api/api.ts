@@ -1,11 +1,16 @@
 import axios from "axios";
-import { getCookie } from "@/lib/cookies";
+import { deleteAuthCookie, getAuthCookie } from "@/lib/cookies";
 
 const baseURL =
   process.env.NEXT_PUBLIC_API_BASE ||
-  "https://api.legalflow.cyntonisca.com/api/v1";
+  "https://virtuallaw-backend-1.onrender.com/api/v1";
 
-const AUTH_EXEMPT_ENDPOINTS = ["/auths/signin", "/auths/signup"];
+const AUTH_EXEMPT_ENDPOINTS = [
+  "/auths/signin",
+  "/auths/signup",
+  "/auths/verify-otp",
+  "/auths/finalize-signup"
+];
 
 const api = axios.create({
   baseURL,
@@ -13,73 +18,64 @@ const api = axios.create({
   headers: { "Content-Type": "application/json" }
 });
 
-// Request Interceptor - Get token from cookie
+//
 api.interceptors.request.use(
   (config) => {
+    // Optimization: Quick check for exempt endpoints
     const isAuthExempt = AUTH_EXEMPT_ENDPOINTS.some((endpoint) =>
       config.url?.includes(endpoint)
     );
 
-    if (isAuthExempt) {
-      url: config.url;
-      return config;
-    }
+    if (isAuthExempt) return config;
 
-    // Get token from cookie
-    const token = getCookie("auth-token");
-
-    // // ADD THIS:
-    // console.log("🔍 Token Check:", {
-    //   tokenExists: !!token,
-    //   tokenLength: token?.length,
-    //   url: config.url
-    // });
+    // Get token from cookie (Ensure you're using 'auth-token' consistently)
+    const token = getAuthCookie();
 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
-      // console.log("📤 Request with auth:", {
-      //   method: config.method?.toUpperCase(),
-      //   url: config.url,
-      //   hasAuth: true
-      // });
     } else {
-      console.warn("⚠️ NO TOKEN FOUND for:", config.url);
+      // In a production app, you might want to redirect to /login if no token
+      // but only on protected routes
+      console.warn("⚠️ Request made without token to:", config.url);
     }
 
     return config;
   },
-  (error) => {
-    console.error("❌ Request Error:", error);
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response Interceptor
+// --- RESPONSE INTERCEPTOR ---
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // 1. If the request was aborted, DON'T log out.
-    if (error.message === "Request aborted" || axios.isCancel(error)) {
-      console.warn("📨 Request aborted mid-flight. Ignoring logout.");
+    // 1. Handle Aborted Requests
+    if (error.message === "CanceledError" || axios.isCancel(error)) {
       return Promise.reject(error);
     }
 
-    // 2. Only log out if the server says 401 AND we have a role/token issue
+    // 2. Handle 401 Unauthorized (Token Expired or Invalid)
     if (error.response?.status === 401) {
-      console.error("🚫 Real 401 Unauthorized detected.");
+      console.error("🚫 401 Unauthorized - Session Expired");
 
-      // const { useAuthStore } = await import("@/store/authStore");
-      // // Only logout if we are not on a public page
-      // if (
-      //   typeof window !== "undefined" &&
-      //   window.location.pathname !== "/role"
-      // ) {
-      //   useAuthStore.getState().logout();
-      //   window.location.href = "/role";
-      // }
+      // Clean up cookies
+      deleteAuthCookie();
+
+      // Prevent redirect loops: only redirect if not already on the login page
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.includes("/role")
+      ) {
+        // We use window.location for a hard refresh to clear all Zustand state
+        window.location.href = "/role?error=session_expired";
+      }
     }
+
+    // 3. Handle 403 Forbidden (Role mismatch)
+    if (error.response?.status === 403) {
+      console.error("❌ 403 Forbidden - Insufficient Permissions");
+    }
+
     return Promise.reject(error);
   }
 );
-
 export default api;

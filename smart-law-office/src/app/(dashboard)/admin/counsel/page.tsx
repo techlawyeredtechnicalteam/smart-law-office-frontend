@@ -24,7 +24,7 @@ const ManageCounselPage = () => {
 
   React.useEffect(() => {
     fetchCounsels();
-  }, []);
+  }, [fetchCounsels]);
 
   const handleSendInvitation = () => {
     toast.info("Invitation Sent!", {

@@ -1,6 +1,11 @@
 import api from "./api";
 
-export const caseDocument = (data: any) => api.post("/case-documents", data);
+// export const caseDocument = (data: any) => api.post("/case-documents", data);
+export const caseDocument = (payload: {
+  caseId: string;
+  document: string | File;
+  name: string;
+}) => api.post("/case-documents", payload);
 
 export const getDocument = () => api.get("/api/v1/case-documents");
 

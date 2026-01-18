@@ -38,7 +38,7 @@ export const ALL_LINKS: Record<string, NavItems> = {
         icon: Briefcase,
         name: "Create New Case",
         route: "/admin/create-case",
-        roles: ["ADMIN"]
+        roles: ["ADMIN", "STAFF"]
       },
       {
         name: "Assign Cases",
@@ -96,8 +96,8 @@ export const ALL_LINKS: Record<string, NavItems> = {
   //clients links
   myCases: {
     icon: FileText,
-    name: "My Cases",
-    route: "/client/my-case",
+    name: "Manage cases",
+    route: "/client/manage-case",
     roles: ["CLIENT"]
   },
   // createCase: {

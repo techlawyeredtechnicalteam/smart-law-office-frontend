@@ -1,60 +1,103 @@
+// @/app/dashboard/case-management/page.tsx
 "use client";
 
-import { AssignCaseModal } from "@/components/dashboard/admin/assignCase/AssignCaseModal";
-import { AssignedCasesTable } from "@/components/dashboard/admin/assignCase/AssignCaseTable";
-import { CaseDashboard } from "@/components/dashboard/admin/createCase/CaseDashboardTable";
-import { CreateCaseModal } from "@/components/dashboard/admin/createCase/CreateCaseModal";
-import { CaseSuccessModal } from "@/components/dashboard/admin/createCase/CreateSuccessModal";
+import React, { useEffect } from "react";
 import { useCaseStore } from "@/store/createCase";
-import { Briefcase } from "lucide-react";
-import React from "react";
+import useConsultationStore from "@/store/consultationStore"; // Import your consult store
+import { CaseStats } from "@/components/dashboard/admin/caseManagement/CaseStats"; // The stat cards component
+import { AssignedCasesTable } from "@/components/dashboard/admin/assignCase/AssignCaseTable";
+// import { ConsultationDashboardTable } from "";
+import { AssignCaseModal } from "@/components/dashboard/admin/assignCase/AssignCaseModal";
+import { Briefcase, Loader2 } from "lucide-react";
+import { CreateCaseModal } from "@/components/dashboard/admin/createCase/CreateCaseModal";
+import { CreateModal } from "@/components/shared/CreateModal";
 
 const CaseManagementPage = () => {
-  const { cases, isLoading, error } = useCaseStore();
+  const { cases, stats, isLoading, fetchCases } = useCaseStore();
+  const { consultations, fetchConsultations } = useConsultationStore();
   const [isSuccessModalOpen, setIsSuccessModalOpen] = React.useState(false);
 
-  const handleSuccessClose = () => setIsSuccessModalOpen(false);
+  // Sync data on mount
+  useEffect(() => {
+    fetchCases();
+    // fetchConsultations(); // Fetch the table data for the top section
+  }, []);
+
   return (
-    <div>
-      <div className="p-8 space-y-6">
-        <header className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Case</h1>
-          {/* Button that triggers the Create Case Modal */}
-          <AssignCaseModal
-            isSuccessOpen={isSuccessModalOpen}
-            setSuccessOpen={setIsSuccessModalOpen}
-          />
-        </header>
+    <div className="p-8 space-y-8 bg-gray-50/50 min-h-screen">
+      {/* 1. Top Header */}
+      <header className="flex justify-end items-center">
+        <CreateCaseModal
+          isSuccessOpen={isSuccessModalOpen}
+          setSuccessOpen={setIsSuccessModalOpen}
+        />
+      </header>
 
-        {/* Conditional rendering for the dashboard */}
-        {isLoading && <p>Loading cases...</p>}
-        {error && <p className="text-red-500">Error: {error}</p>}
+      {/* 2. Stat Cards (The 4 cards from the image) */}
+      <CaseStats stats={stats} />
 
-        {cases.length === 0 && !isLoading ? (
-          <div className="flex flex-col items-center justify-center p-20 bg-purple-50 rounded-2xl text-center shadow-lg max-w-lg mx-auto">
-            {/* Icon */}
-            <Briefcase className="h-16 w-16 text-purple-600 mb-4" />
-            {/* Heading */}
-            <h2 className="text-2xl font-semibold mb-3">Case</h2>
-            {/* Descritption */}
-            <p className="text-gray-800 mb-4 max-w-sm">
-              Start by assigning a case to a lawyer or legal team. This helps
-              streamline workflow, track progress, and keep everyone aligned.
-            </p>
-            <span className="text-gray-400 font-light font-sm max-w-sm mb-8">
-              We cannot access funds without your permission
-            </span>
-            <AssignCaseModal
-              isSuccessOpen={isSuccessModalOpen}
-              setSuccessOpen={setIsSuccessModalOpen}
-            />
+      {/* 3. Consultations Section (Top Table in PNG) */}
+      <section className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-bold text-gray-800">Consultations</h2>
+          <button className="text-sm text-purple-600 font-medium">
+            View All
+          </button>
+        </div>
+        <div className="bg-white rounded-xl shadow-sm border">
+          {/* Create a simple table or reuse a component for Consultations */}
+          {/* <ConsultationDashboardTable data={consultations.slice(0, 3)} /> */}
+        </div>
+      </section>
+
+      {/* 4. Active Cases Section (Bottom Table in PNG) */}
+      <section className="space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-bold text-gray-800">Cases</h2>
+          <button className="text-sm text-purple-600 font-medium">
+            View All
+          </button>
+        </div>
+
+        {isLoading ? (
+          <div className="flex justify-center p-10">
+            <Loader2 className="animate-spin text-purple-600" />
           </div>
+        ) : cases.length === 0 ? (
+          <EmptyState
+            setIsSuccessModalOpen={setIsSuccessModalOpen}
+            isSuccessModalOpen={isSuccessModalOpen}
+          />
         ) : (
-          <AssignedCasesTable />
+          <div className="bg-white rounded-xl shadow-sm border">
+            <AssignedCasesTable />
+          </div>
         )}
-      </div>
+      </section>
+
+      {/* 5. Recent Activity (Matching the sidebar/bottom design) */}
+      {/* You can add your Activity Feed component here */}
     </div>
   );
 };
+
+// Helper for the empty state
+const EmptyState = ({ setIsSuccessModalOpen, isSuccessModalOpen }: any) => (
+  <div className="flex flex-col items-center justify-center p-12 bg-white rounded-2xl text-center border border-dashed border-gray-200">
+    <Briefcase className="h-12 w-12 text-purple-200 mb-4" />
+    <h2 className="text-xl font-semibold mb-2">No active cases</h2>
+    <p className="text-gray-500 mb-6 max-w-xs">
+      Start by assigning a consultation to a lawyer to create an active case.
+    </p>
+    <CreateCaseModal
+      isSuccessOpen={isSuccessModalOpen}
+      setSuccessOpen={setIsSuccessModalOpen}
+    />
+    {/* <AssignCaseModal
+      isSuccessOpen={isSuccessModalOpen}
+      setSuccessOpen={setIsSuccessModalOpen}
+    /> */}
+  </div>
+);
 
 export default CaseManagementPage;

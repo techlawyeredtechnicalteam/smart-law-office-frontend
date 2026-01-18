@@ -19,7 +19,7 @@ const mockMessages = [
 
 export function MessagesPanel() {
   return (
-    <Card className="shadow-sm border border-gray-100">
+    <Card className="shadow-sm border border-gray-100 h-full">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-xl font-semibold flex items-center space-x-2">
           <MessageSquare className="h-5 w-5 text-violet-600" />

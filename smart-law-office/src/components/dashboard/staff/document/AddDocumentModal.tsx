@@ -12,7 +12,7 @@ import FileUpload from "@/components/shared/FileUpload";
 import { Form } from "@/components/ui/form";
 import { CustomSelectField } from "@/components/shared/CustomSelectField";
 import React from "react";
-import { getCaseById } from "@/app/api/cases.api";
+// import { getCaseById } from "@/app/api/cases.api";
 import { getAdminCaseTypes } from "@/app/api/caseType.api";
 
 const STATUS_OPTIONS = [

@@ -1,16 +1,19 @@
 "use client";
 import {
-  useBillingStore,
+  CaseRate,
   ConsultationRate,
-  CaseRate
+  useBillingStore
 } from "@/store/setRateBill";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, Pencil, Trash2 } from "lucide-react";
 import { TableModal, TableColumn } from "@/components/shared/TableModal";
+import { useRouter } from "next/navigation";
 
 const ConfiguredServiceRateTable = () => {
-  const { rates, openSetRateModal } = useBillingStore();
+  const router = useRouter();
+  const { rates, openSetRateModal, feeSchedules } = useBillingStore();
 
+  // Type-safe filters for the two tables
   const consultationRates = rates.filter(
     (r): r is ConsultationRate => r.serviceType === "Consultation"
   );
@@ -18,10 +21,22 @@ const ConfiguredServiceRateTable = () => {
     (r): r is CaseRate => r.serviceType === "Case"
   );
 
-  // Helper to format currency
   const formatCurrency = (amount: number) =>
     `₦${amount.toLocaleString("en-NG")}`;
 
+  // Helper to get LPRO range from feeSchedules if available
+  const getLproRange = (subServiceType: string) => {
+    const schedule = feeSchedules.find(
+      (f) => (f.name || f.feeScheduleName) === subServiceType
+    );
+    if (schedule) {
+      return `${schedule.rateMin.toLocaleString()} - ${schedule.rateMax.toLocaleString()}`;
+    }
+    // Fallback to your logic if schedule not found
+    return subServiceType?.includes("Appeals")
+      ? "600,000 - 800,000"
+      : "300,000 - 500,000";
+  };
   // Consultation Table Columns
   const consultationColumns: TableColumn<ConsultationRate>[] = [
     {
@@ -39,8 +54,7 @@ const ConfiguredServiceRateTable = () => {
       key: "rate",
       header: "Consultation Rate",
       render: (rate) => formatCurrency(rate.rate),
-      cellClassName: "font-medium",
-      headerClassName: "w-[150px]"
+      cellClassName: "font-medium text-violet-700"
     },
     {
       key: "actions",
@@ -61,55 +75,32 @@ const ConfiguredServiceRateTable = () => {
 
   // Case Table Columns
   const caseColumns: TableColumn<CaseRate>[] = [
-    // {
-    //   key: "serviceType",
-    //   header: "Service Type",
-    //   render: () => "Case"
-    // },
     {
       key: "subServiceType",
       header: "Sub-Service Type",
-      render: (rate) => rate.subServiceType || "N/A" // Fallback if missing
+      render: (rate) => rate.subServiceType || "Standard Case"
     },
-    {
-      key: "subServiceType",
-      header: "Sub-Service Type",
-      render: (rate) => rate.subServiceType
-    },
-    // {
-    //   key: "lproRate",
-    //   header: "LPRO Rate",
-    //   render: (rate) =>
-    //     rate.subServiceType.includes("Appeals")
-    //       ? "600,000 - 800,000"
-    //       : "300,000 - 500,000"
-    // },
     {
       key: "lproRate",
-      header: "LPRO Rate",
-      render: (rate) =>
-        // Use optional chaining here to prevent the crash
-        rate.subServiceType?.includes("Appeals")
-          ? "600,000 - 800,000"
-          : "300,000 - 500,000"
+      header: "LPRO Rate (Ref)",
+      render: (rate) => `₦${getLproRange(rate.subServiceType)}`
     },
     {
       key: "caseRate",
-      header: "Case Rate",
+      header: "Set Case Rate",
       render: (rate) => formatCurrency(rate.caseRate),
-      cellClassName: "font-medium",
-      headerClassName: "w-[150px]"
+      cellClassName: "font-medium text-violet-700"
     },
     {
       key: "actions",
       header: "Action",
       headerClassName: "w-[80px]",
       render: () => (
-        <div className="flex space-x-2">
-          <Button variant="ghost" size="icon" className="h-6 w-6">
+        <div className="flex space-x-1">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-500">
             <Pencil className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500">
+          <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500">
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -118,49 +109,63 @@ const ConfiguredServiceRateTable = () => {
   ];
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-lg space-y-8">
-      {/* Table Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" size="icon">
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="flex items-center space-x-2">
+          <Button variant="ghost" size="icon" onClick={() => router.back()}>
             <ChevronLeft className="h-5 w-5" />
           </Button>
-          <h1 className="text-2xl font-bold">Configured Service Rate</h1>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Configured Service Rate
+          </h1>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline">View Billing</Button>
+        <div className="flex space-x-3 w-full sm:w-auto">
+          <Button variant="outline" className="flex-1 sm:flex-none">
+            View Billing
+          </Button>
           <Button
             onClick={openSetRateModal}
-            className="bg-violet-600 hover:bg-violet-700"
+            className="bg-violet-600 hover:bg-violet-700 flex-1 sm:flex-none"
           >
             Set Rate
           </Button>
         </div>
       </div>
 
-      {/* Consultation Table */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4 border-b pb-2">
-          Consultation
-        </h2>
-        <TableModal
-          data={consultationRates}
-          columns={consultationColumns}
-          emptyMessage="No consultation rates configured"
-          getRowKey={(rate, index) => `consultation-${index}`}
-        />
-      </section>
+      <div className="space-y-10">
+        {/* Consultation Section */}
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">
+              Consultation Rates
+            </h2>
+            <p className="text-sm text-gray-500">
+              Fixed rates for timed sessions
+            </p>
+          </div>
+          <TableModal
+            data={consultationRates}
+            columns={consultationColumns}
+            emptyMessage="No consultation rates configured"
+            getRowKey={(_, index) => `consultation-${index}`}
+          />
+        </section>
 
-      {/* Case Table */}
-      <section>
-        <h2 className="text-xl font-semibold mb-4 border-b pb-2">Case</h2>
-        <TableModal
-          data={caseRates}
-          columns={caseColumns}
-          emptyMessage="No case rates configured"
-          getRowKey={(rate, index) => `case-${index}`}
-        />
-      </section>
+        {/* Case Section */}
+        <section>
+          <div className="mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">Case Rates</h2>
+            <p className="text-sm text-gray-500">Fixed rates per case type</p>
+          </div>
+          <TableModal
+            data={caseRates}
+            columns={caseColumns}
+            emptyMessage="No case rates configured"
+            getRowKey={(_, index) => `case-${index}`}
+          />
+        </section>
+      </div>
     </div>
   );
 };

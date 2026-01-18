@@ -15,7 +15,7 @@ import { FcGoogle } from "react-icons/fc";
 
 const SignUpFormAdmin = () => {
   const router = useRouter();
-  const { setRole, setSignupFormTemp } = useAuthStore();
+  const setSignupFormTemp = useAuthStore((state) => state.setSignupFormTemp);
 
   // sign up form validator
   const form = useForm<SignUpFormData>({
@@ -32,27 +32,19 @@ const SignUpFormAdmin = () => {
 
   const onSubmit = async (data: SignUpFormData) => {
     try {
+      // 1. Store data in Zustand (Persisted In Local Storage)
       setSignupFormTemp({
-        email: data.email,
-        password: data.password,
-        confirmPassword: data.confirmPassword,
-        firstName: data.firstName,
-        lastName: data.lastName,
+        ...data,
         address: "N/A",
-        consent: data.consent,
         role: "ADMIN" as const
       });
-      setRole("ADMIN");
-      toast.success("Please complete your firm profile to continue");
+
+      // Move to the next step
+      toast.success("Personal details saved. Let's set up your firm!");
       router.push("/firm-profile");
     } catch (error: any) {
       console.error("Form error:", error);
     }
-  };
-
-  // Google Setup
-  const handleGoogleSignup = () => {
-    toast.info("Google signup coming soon!");
   };
 
   return (
@@ -65,7 +57,7 @@ const SignUpFormAdmin = () => {
             variant="ghost"
             size="lg"
             className="w-full text-base font-semibold hover:bg-gray-200 cursor-pointer"
-            onClick={handleGoogleSignup}
+            onClick={() => toast.info("Google signup coming soon!")}
           >
             <FcGoogle />
             Continue with Google
@@ -136,10 +128,9 @@ const SignUpFormAdmin = () => {
             {form.formState.isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Continue
               </>
             ) : (
-              "Continue"
+              "Continue to Firm Profile"
             )}
           </Button>
           {/* Terms and Privacy */}
@@ -187,7 +178,7 @@ const SignUpFormAdmin = () => {
       <p className="text-sm mt-6 text-gray-600">
         Already have an account?{" "}
         <a
-          href="/admin/login"
+          href="/login"
           className="font-semibold text-[#7C3AED] hover:underline"
         >
           Sign in

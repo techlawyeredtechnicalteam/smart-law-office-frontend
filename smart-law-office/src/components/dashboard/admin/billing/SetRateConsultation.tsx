@@ -22,9 +22,9 @@ const SetRateConsultation = () => {
   const {
     saveRate,
     openSetRateCaseModal,
-    addConsultationRate,
     isSetRateModalOpen,
-    closeSetRateModal
+    closeSetRateModal,
+    isLoading
   } = useBillingStore();
 
   const form = useForm<setRateBillFormData>({
@@ -43,30 +43,8 @@ const SetRateConsultation = () => {
   // Watch service type to handle switching to Case
   const watchedServiceType = form.watch("serviceType");
 
-  // Handle service type change
-  const handleServiceTypeChange = (value: string) => {
-    if (value === "Case") {
-      closeSetRateModal();
-      openSetRateCaseModal();
-    } else {
-      form.setValue("serviceType", value as "Consultation" | "Case");
-    }
-  };
-
-  // const handleSubmit = (data: setRateBillFormData) => {
-  //   if (!data.duration || !data.consultationRate) return;
-
-  //   addConsultationRate({
-  //     serviceType: "Consultation",
-  //     duration: data.duration,
-  //     rate: data.consultationRate
-  //   });
-
-  //   form.reset();
-  //   closeSetRateModal();
-  // };
-
   const handleSubmit = async (data: setRateBillFormData) => {
+    // Basic validation check
     if (!data.duration || !data.consultationRate) {
       toast.error("Please fill in all fields");
       return;
@@ -75,11 +53,11 @@ const SetRateConsultation = () => {
     const success = await saveRate({
       serviceType: "Consultation",
       duration: data.duration,
-      rate: Number(data.consultationRate)
+      rate: data.consultationRate
     });
 
     if (success) {
-      toast.success("Consultation rate saved!");
+      // Success toast is already handled inside the store's saveRate
       form.reset();
       closeSetRateModal();
     }
@@ -113,38 +91,43 @@ const SetRateConsultation = () => {
               control={form.control}
               name="serviceType"
               label="Service Type"
-              placeholder="Select service type"
+              placeholder="Service Type"
               options={[
                 { label: "Consultation", value: "Consultation" },
                 { label: "Case", value: "Case" }
               ]}
-              onChange={handleServiceTypeChange}
+              onChange={(value) => {
+                if (value === "Case") {
+                  closeSetRateModal();
+                  openSetRateCaseModal();
+                }
+              }}
               className="w-full"
             />
-
             {/* Duration - Only show for Consultation */}
             {watchedServiceType === "Consultation" && (
               <>
-                {/* <CustomFormField
-                  control={form.control}
-                  name="duration"
-                  label="Duration"
-                  placeholder="E.g. 30 minutes"
-                /> */}
                 <CustomFormField
                   control={form.control}
                   name="duration"
                   label="Duration (Minutes)"
-                  // type="number" // Force numeric input
                   placeholder="e.g. 30"
+                  type="text"
+                  inputMode="numeric"
                 />
 
-                {/* Consultation Rate */}
-                <CustomFormField
+                {/* <CustomFormField
                   control={form.control}
                   name="consultationRate"
                   label="Consultation Rate"
                   type="number"
+                  placeholder="E.g. 150000"
+                /> */}
+                <CustomFormField
+                  control={form.control}
+                  name="consultationRate"
+                  label="Consultation Rate"
+                  type="number" // Rate is a number in your schema, so this is fine
                   placeholder="E.g. 150000"
                 />
               </>
@@ -155,14 +138,16 @@ const SetRateConsultation = () => {
                 type="button"
                 variant="outline"
                 onClick={closeSetRateModal}
+                disabled={isLoading}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 className="bg-violet-600 hover:bg-violet-700"
+                disabled={isLoading}
               >
-                Save
+                {isLoading ? "Saving..." : "Save"}
               </Button>
             </div>
           </form>

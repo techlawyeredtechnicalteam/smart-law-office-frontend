@@ -6,12 +6,8 @@ import {
   DialogTitle
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-
 import { useCounselStore } from "@/store/manageCounsel";
-import React from "react";
-// import { UploadFile } from "./UploadFile";
 import { useForm } from "react-hook-form";
 import { AddCounselFormType, AddCounselSchema } from "@/types/counselSchema";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,13 +20,14 @@ import {
   FormMessage
 } from "@/components/ui/form";
 import FileUpload from "../../../shared/FileUpload";
+import { CustomFormField } from "@/components/shared/CustomFormField";
 
 const AddCounselModal = () => {
   const {
     isAddModalOpen,
     closeAddModal,
     addCounsel,
-    isSubmitting,
+    isLoading,
     setFile,
     callToBarFile
   } = useCounselStore();
@@ -94,65 +91,29 @@ const AddCounselModal = () => {
             className="space-y-4"
             onSubmit={form.handleSubmit(handleSubmit)}
           >
-            <div className="space-y-2">
-              <FormField
-                control={form.control}
-                name="fullName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>FullName</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="fullName"
-                        autoComplete="fullName"
-                        placeholder="Enter your name"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <FormField
-                control={form.control}
-                name="scn"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>SCN</FormLabel>
-                    <FormControl>
-                      <Input
-                        // type=""
-                        placeholder="E.g. 123456"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            <div className="space-y-2">
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        // autoComplete="email"
-                        placeholder="christineadewale@gmail.com"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
+            <CustomFormField
+              control={form.control}
+              name="fullName"
+              label="FullName"
+              type="text"
+              autoComplete="fullName"
+              placeholder="Enter your name"
+            />
+
+            <CustomFormField
+              control={form.control}
+              name="scn"
+              label="SCN"
+              placeholder="E.g. 123456"
+            />
+
+            <CustomFormField
+              control={form.control}
+              name="email"
+              label="Email"
+              type="email"
+              placeholder="christineadewale@gmail.com"
+            />
 
             <div className="space-y-2">
               <FormField
@@ -178,8 +139,8 @@ const AddCounselModal = () => {
               />
             </div>
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Adding..." : "Add Counsel"}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              AddCounsel
             </Button>
           </form>
         </Form>

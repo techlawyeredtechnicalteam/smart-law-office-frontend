@@ -1,10 +1,9 @@
 import { create } from "zustand";
-import { CaseType } from "./createCase";
+import { useCaseStore } from "./createCase";
 import { Lawyer } from "@/types/user";
 import { getCounsel } from "@/app/api/manageCounse.api";
 import { assignCase } from "@/app/api/assignCase.api";
-import { getAdminCaseTypes } from "@/app/api/caseType.api";
-import { getAllCases, getCases } from "@/app/api/cases.api";
+import { getAllCases } from "@/app/api/cases.api";
 
 export interface UnassignedCaseForUI {
   id: string;
@@ -165,13 +164,17 @@ export const useAssignStore = create<AssignState>((set, get) => ({
     set({ isAssigning: true, error: null });
 
     try {
-      const payload: AssignCasePayload = {
+      const payload = {
         consultCode,
         staffEmail: counselEmail,
         caseTypeId
       };
 
       await assignCase(payload);
+      // after successful api call, update the main case store to see change immediately
+
+      const fetchMainCases = useCaseStore.getState().fetchCases;
+      await fetchMainCases();
 
       const newAssignment: AssignedCase = {
         id: Math.random().toString(36).substring(2, 9),

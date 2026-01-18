@@ -13,7 +13,6 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import FileUpload from "../../../shared/FileUpload";
-// import { UploadFile } from "./UploadFile";
 
 const EditCounselModal = () => {
   const {
@@ -21,8 +20,9 @@ const EditCounselModal = () => {
     closeEditModal,
     selectedCounsel,
     updateCounsel,
-    isSubmitting,
-    callToBarFile
+    isLoading,
+    callToBarFile,
+    setFile
   } = useCounselStore();
 
   const [form, setForm] = useState<Partial<Counsel>>({});
@@ -33,25 +33,22 @@ const EditCounselModal = () => {
         fullName: selectedCounsel.fullName,
         scn: selectedCounsel.scn,
         email: selectedCounsel.email,
+        // We sync the existing file to the store so FileUpload sees it
         callToBarFile: selectedCounsel.callToBarFile
       });
+      // Pre-set the store's file state with the existing one
+      setFile(selectedCounsel.callToBarFile);
     }
   }, [selectedCounsel]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    e.preventDefault();
     setForm({ ...form, [e.target.name]: e.target.value });
-  };
-
-  const handleFileChange = (fileName: string | null) => {
-    setForm({ ...form, callToBarFile: fileName });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCounsel) {
-      console.error("No selected counsel for editing");
-      return;
-    }
+    if (!selectedCounsel) return;
 
     try {
       // transform form data
@@ -66,9 +63,7 @@ const EditCounselModal = () => {
         ...(form.callToBarFile && { barCertificate: form.callToBarFile })
       };
 
-      console.log("Edit payload:", payload);
       await updateCounsel(selectedCounsel.id, payload);
-      closeEditModal(); // Close modal after successful update
     } catch (error) {
       console.error("Error in handleSubmit:", error);
     }
@@ -129,7 +124,7 @@ const EditCounselModal = () => {
             id="call-to-bar-upload"
             label="Call to Bar Certificate"
             fileData={callToBarFile}
-            onFileChange={handleFileChange}
+            onFileChange={setFile}
             accept="application/pdf"
             maxSize={5}
             fileTypeInfo="PDF only. Max 5MB"
@@ -139,8 +134,8 @@ const EditCounselModal = () => {
             <Button type="button" variant="outline" onClick={closeEditModal}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save Changes"}
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </form>

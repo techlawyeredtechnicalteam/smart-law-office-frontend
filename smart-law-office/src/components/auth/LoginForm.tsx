@@ -16,7 +16,9 @@ import { CustomFormField } from "@/components/shared/CustomFormField";
 
 const UnifiedLoginForm = () => {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const loginSucess = useAuthStore((state) => state.loginSuccess);
+  const isAuthLoading = useAuthStore((state) => state.isAuthLoading);
+  const setAuthLoading = useAuthStore((state) => state.setAuthLoading);
 
   const form = useForm<LoginFormData>({
     resolver: zodResolver(LoginFormValidation),
@@ -35,7 +37,7 @@ const UnifiedLoginForm = () => {
     const routes = {
       ADMIN: "/admin/dashboard",
       STAFF: "/admin/dashboard",
-      CLIENT: "/client/my-case",
+      CLIENT: "/client/manage-case",
       "": "/role"
     };
     return routes[role as keyof typeof routes] || "/role";
@@ -53,7 +55,7 @@ const UnifiedLoginForm = () => {
   };
 
   const onSubmit = async (data: LoginFormData) => {
-    setIsSubmitting(true);
+    setAuthLoading(true);
     try {
       const response = await login({
         email: data.email,
@@ -64,7 +66,7 @@ const UnifiedLoginForm = () => {
       const token = response.data.token;
 
       if (!token) {
-        throw new Error("No token received from server");
+        throw new Error("No token received");
       }
 
       // Create User object matching your User interface
@@ -77,30 +79,17 @@ const UnifiedLoginForm = () => {
         lastName: userData.lastName,
         firmName: userData.firmName
       };
-
       // Store user session
-      useAuthStore.getState().loginSuccess(token, userObject);
-
+      loginSucess(token, userObject);
       // ✅ Display role-specific success message
       toast.success(getRoleMessage(userObject.role));
-
-      // ✅ Redirect based on role from backend
-      const redirectPath = getRedirectPath(userObject.role);
-      console.log(`🔄 Redirecting ${userObject.role} to: ${redirectPath}`);
-
-      router.push(redirectPath);
+      router.push(getRedirectPath(userObject.role));
     } catch (error: any) {
+      setAuthLoading(false); // turn of loading
       const errorMessage =
         error.response?.data?.message || "Invalid Credentials";
       toast.error(errorMessage);
-      console.error("Login failed", error);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
-
-  const handleGoogleSignIn = () => {
-    toast.info("Google sign-in coming soon!");
   };
 
   const isFieldValid = (fieldName: keyof LoginFormData): boolean => {
@@ -123,7 +112,7 @@ const UnifiedLoginForm = () => {
           type="button"
           variant="ghost"
           className="w-full text-base font-semibold mt-8 cursor-pointer hover:bg-gray-200"
-          onClick={handleGoogleSignIn}
+          onClick={() => toast.info("Google sign-in coming soon!")}
         >
           <FcGoogle />
           Continue with Google
@@ -161,12 +150,11 @@ const UnifiedLoginForm = () => {
           type="submit"
           size="lg"
           className="w-full mt-6 text-base py-3 h-auto bg-[#e5e7eb] hover:bg-[#d1d5db] text-gray-900 font-medium"
-          disabled={!isValid || isSubmitting}
+          disabled={!isValid || isAuthLoading}
         >
-          {isSubmitting ? (
+          {isAuthLoading ? (
             <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processing...
+              <Loader2 className="animate-spin" />
             </>
           ) : (
             "Continue"

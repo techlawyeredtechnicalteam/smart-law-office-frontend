@@ -9,7 +9,8 @@ import { useAuthStore } from "@/store/authStore";
 
 const NavLinks = () => {
   const pathname = usePathname();
-  const { role } = useAuthStore();
+  const { user } = useAuthStore();
+  const role = user?.role || "";
   const [extendRoute, setExtendRoute] = React.useState<string[]>([]);
 
   // for sub items

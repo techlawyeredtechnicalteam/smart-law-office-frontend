@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 
 export function VerificationStep() {
   const { setStep, selectedSubscription } = useSubscriptionStore();
-  const { user, checkSessionStatus, updateUserRole } = useAuthStore();
+  // const { user } = useAuthStore();
+  // const role = user?.role
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {

@@ -9,12 +9,13 @@ import { useRouter } from "next/navigation";
 //
 const UpgradeToProModal = () => {
   const router = useRouter();
-  const { isUpgradeModalOpen, closeUpgradeModal, openAddModal } =
-    useCounselStore();
+  const { isUpgradeModalOpen, closeUpgradeModal } = useCounselStore();
 
   const handleUpgrade = () => {
     // Logic for handling the actual upgrade process
     router.push("/subscribe");
+    //  pass a query param so the subscription page knows the user wants to add counsel specifically
+    // router.push("/subscribe?reason=add_counsel")
     console.log("Redirecting for upgrade...");
     closeUpgradeModal();
   };

@@ -1,28 +1,86 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit, LogOut } from "lucide-react";
+import { Edit, LogOut, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { LogoutDialog } from "./LogoutDialog";
+import { deleteFirmProfile, editFirmProfile } from "@/app/api/firmProfile.api";
+import { toast } from "sonner";
+import { DeleteAccountModal } from "./DeleteAccount";
 
 export default function ProfileTab() {
-  const { user } = useAuthStore();
-
+  const { user, logout, updateUserLogo } = useAuthStore();
   const [firstName, setFirstName] = useState(user?.firstName || "");
   const [lastName, setLastName] = useState(user?.lastName || "");
   const [email, setEmail] = useState(user?.email || "");
+  const [logo, setLogo] = useState<string | null>(user?.logo || null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Get current logo from global auth store
+  const currentLogo = user?.firm?.logo || user?.logo;
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Image must be less than 2MB");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onloadend = async () => {
+      const base64String = reader.result as string;
+
+      // 1. Update UI Real-time (Global State)
+      updateUserLogo(base64String);
+
+      // 2. Persist to Backend
+      try {
+        await editFirmProfile({ logo: base64String });
+        toast.success("Logo updated successfully");
+      } catch (error) {
+        toast.error("Failed to save logo to server");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeLogo = async () => {
+    updateUserLogo("");
+    await editFirmProfile({ logo: null });
+  };
 
   const getInitials = (f: string, l: string) =>
     `${f[0] || ""}${l[0] || ""}`.toUpperCase();
 
   const userInitials = getInitials(firstName, lastName);
 
-  const handleUpdate = () => {
-    console.log("Updating profile...", { firstName, lastName, email });
+  const handleUpdate = async () => {
+    try {
+      const payload = { firstName, lastName, email, logo };
+      await editFirmProfile(payload);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      toast.error("Failed to update profile");
+    }
+  };
+
+  const confirmDeleteAccount = async () => {
+    try {
+      await deleteFirmProfile();
+      toast.success("Account deleted successfully");
+      logout();
+    } catch (error) {
+      toast.error("Failed to delete account. Please try again.");
+      console.error(error);
+    }
   };
 
   return (
@@ -31,22 +89,38 @@ export default function ProfileTab() {
       <div className="flex items-center space-x-4 mb-8">
         {" "}
         <Avatar className="h-20 w-20">
-          <AvatarImage src="/christine-adeola-avatar.png" />{" "}
+          <AvatarImage src={currentLogo} className="object-cover" />
           <AvatarFallback className="bg-purple-100 text-[#7C5CFC] text-2xl font-bold">
-            {userInitials}{" "}
-          </AvatarFallback>{" "}
+            {user?.firstName?.[0]}
+            {user?.lastName?.[0]}
+          </AvatarFallback>
         </Avatar>{" "}
         <div className="flex space-x-3">
-          {" "}
+          {/* Hidden Input */}
+          <input
+            aria-label="File Upload"
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
+
           <Button
+            onClick={() => fileInputRef.current?.click()}
             variant="outline"
             className="bg-[#EAE4FE] text-[#7C5CFC] hover:bg-[#DED7FF] border-none"
           >
-            Upload new picture{" "}
-          </Button>{" "}
-          <Button variant="outline" className="text-gray-600 hover:bg-gray-100">
-            Delete{" "}
-          </Button>{" "}
+            Upload new picture
+          </Button>
+
+          <Button
+            variant="outline"
+            onClick={removeLogo}
+            className="text-gray-600 hover:bg-gray-100 border-gray-200"
+          >
+            Delete
+          </Button>
         </div>{" "}
       </div>{" "}
       <h3 className="text-lg font-semibold mb-4 text-gray-700">
@@ -135,6 +209,23 @@ export default function ProfileTab() {
             <span className="text-sm font-medium">Log out</span>{" "}
           </div>{" "}
         </LogoutDialog>{" "}
+        <div
+          onClick={() => setIsDeleteModalOpen(true)}
+          className="flex items-center space-x-3 cursor-pointer text-red-500 hover:text-red-700 transition-colors w-fit group"
+        >
+          <Trash2
+            size={20}
+            className="group-hover:scale-110 transition-transform"
+          />
+          <span className="text-sm font-bold tracking-tight">
+            Delete Account
+          </span>
+        </div>
+        <DeleteAccountModal
+          isOpen={isDeleteModalOpen}
+          onClose={() => setIsDeleteModalOpen(false)}
+          onConfirm={confirmDeleteAccount}
+        />
       </div>{" "}
     </div>
   );

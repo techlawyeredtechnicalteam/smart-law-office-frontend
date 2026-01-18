@@ -32,14 +32,8 @@ const SignUpFormClient = () => {
   const onSubmit = async (data: SignUpFormData) => {
     try {
       const payload = {
-        email: data.email,
-        password: data.password,
-        confirmPassword: data.confirmPassword,
-        firstName: data.firstName,
-        lastName: data.lastName,
-        firmEmail: data.firmEmail,
+        ...data,
         address: "N/A",
-        consent: true,
         role: "CLIENT"
       };
 
@@ -52,11 +46,6 @@ const SignUpFormClient = () => {
     }
   };
 
-  // Google Setup
-  const handleGoogleSignup = () => {
-    toast.info("Google signup coming soon!");
-  };
-
   return (
     <>
       <Form {...form}>
@@ -67,7 +56,7 @@ const SignUpFormClient = () => {
             variant="ghost"
             size="lg"
             className="w-full text-base font-semibold hover:bg-gray-200 cursor-pointer"
-            onClick={handleGoogleSignup}
+            onClick={() => toast.info("Google signin coming soon!")}
           >
             <FcGoogle />
             Continue with Google
@@ -147,7 +136,6 @@ const SignUpFormClient = () => {
             {form.formState.isSubmitting ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Continue
               </>
             ) : (
               "Continue"

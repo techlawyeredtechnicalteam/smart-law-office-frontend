@@ -14,7 +14,7 @@ const PagesLayout = ({ children }: { children: React.ReactNode }) => {
   const twoPaneRoutes = [
     // Firm Routes
     "/admin/signup",
-    "/admin/login",
+    "/login",
     "/client/signup",
     "/client/login",
     "/verify",

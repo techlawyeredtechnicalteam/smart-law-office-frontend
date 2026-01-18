@@ -15,30 +15,45 @@ import { Input } from "@/components/ui/input";
 import { useAuthStore } from "@/store/authStore";
 import { userName } from "@/components/dashboard/admin/Sidebar";
 import NavLinks from "@/components/layout/SmartNavLink";
-import { useSessionInitializer } from "@/hook/useSessionInitializer";
 import { currentTime, currentDate } from "@/utils/time-date";
 import Link from "next/link";
-import { useFirmProfileStore } from "@/store/firmProfileStore";
 import React from "react";
-import api from "../api/api";
 import { useCounselStore } from "@/store/manageCounsel";
+import { useFirmProfileStore } from "@/store/firmProfileStore";
+import api from "../api/api";
+import Image from "next/image";
 
 export default function SmartLawOfficeDashboard({
   children
 }: {
   children: React.ReactNode;
 }) {
-  const isReady = useSessionInitializer();
-  const { user } = useAuthStore();
+  const { user, syncUser } = useAuthStore();
+
+  // React.useEffect(() => {
+  //   const hydrateProfile = async () => {
+  //     // If we are logged in but the logo/firmName is missing (common after re-login)
+  //     if (user && !user.firmName) {
+  //       try {
+  //         // Ping the "get current user" endpoint
+  //         const res = await api.get("/profiles");
+  //         const serverData = res.data.data;
+
+  //         syncUser({
+  //           firmName: serverData.firmName || serverData.firm?.name,
+  //           logo: serverData.logo || serverData.firm?.logo
+  //         });
+  //       } catch (err) {
+  //         console.error("Auto-sync failed:", err);
+  //       }
+  //     }
+  //   };
+
+  //   hydrateProfile();
+  // }, [user, syncUser]);
+
   const { notifications } = useCounselStore();
 
-  if (!isReady) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <Loader2 className="text-purple-600 w-10 h-10 animate-spin" />
-      </div>
-    );
-  }
   const userNameValue = userName(user);
   const userInitials = userNameValue
     ?.split(" ")
@@ -48,16 +63,29 @@ export default function SmartLawOfficeDashboard({
   return (
     <div className="flex h-screen bg-gray-50">
       {/* --- SIDEBAR (Purple) --- */}
-      <aside className="w-64 bg-[#7C5CFC] text-white flex flex-col p-4">
-        <div className="flex items-center gap-2 mb-8 px-2">
-          <span className="font-bold text-lg">Smart Law Office</span>
+      <aside className="w-64 bg-[#7C5CFC] text-white flex flex-col p-4 shadow-xl z-20">
+        <div className="flex items-center gap-3 mb-8 px-2 py-2">
+          <div className="relative w-10 h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
+            <Image
+              src="/logo.png" // Ensure this is your Legal Flow icon
+              alt="Legal Flow"
+              width={32}
+              height={32}
+              className="object-contain"
+            />
+          </div>
+          <span className="font-bold text-xl tracking-tight">LegalFlow</span>
         </div>
 
         {/* User Profile Card */}
         <div className="bg-[#6B46C1] rounded-xl p-3 mb-6 flex items-center gap-3">
-          <Avatar>
-            <AvatarImage src="/avatar-placeholder.png" />
-            <AvatarFallback className="text-black">
+          <Avatar className="h-10 w-10 border-2 border-white/20">
+            <AvatarImage
+              src={user?.firm?.logo || user?.logo} // Syncs with Profile Tab real-time
+              alt={user?.firmName || "Firm Logo"}
+              className="object-cover"
+            />
+            <AvatarFallback className="bg-white text-[#7C5CFC] font-bold">
               {userInitials}
             </AvatarFallback>
           </Avatar>
@@ -65,7 +93,10 @@ export default function SmartLawOfficeDashboard({
             <span className="text-sm font-semibold">
               {user?.firstName} {user?.lastName}{" "}
             </span>
-            <span className="text-xs opacity-70">{user?.role}</span>
+            {/* <span className="text-xs opacity-70">{user?.role}</span> */}
+            <span className="text-xs opacity-70 truncate">
+              {user?.firm?.name || user?.role}
+            </span>
           </div>
         </div>
 
