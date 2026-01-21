@@ -12,6 +12,7 @@ import { getAdminCaseTypes } from "@/app/api/caseType.api";
 import { useBillingStore } from "./setRateBill";
 import { caseDocument } from "@/app/api/document.api";
 import { useDocumentStore } from "./documentStore";
+import { getCaseFormCaseTypes } from "@/app/api/setRateBills.api";
 
 export interface CaseType {
   caseTypeId: string;
@@ -129,56 +130,57 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     const user = useAuthStore.getState().user;
     const role = user?.role;
 
-    console.log("Current user:", user);
-    console.log("User role:", role);
+    // ... (Keep your Staff Bypass Logic)
 
-    // 🚩 BYPASS LOGIC: If Staff, don't even try the API yet
-    if (role === "STAFF") {
-      console.warn(
-        "Staff role detected: Bypassing unauthorized API and loading mock data."
-      );
-      const mockStaffCases: Case[] = [
-        {
-          id: "staff-mock-1",
-          staffEmail: user?.email || "staff@firm.com",
-          clientEmail: "mock-client@example.com",
-          notes: "This is a mock case for Staff view development.",
-          documents: [],
-          caseTypeId: "mock-id",
-          status: "Discovery"
-        }
-      ];
-      set({ cases: mockStaffCases, isLoading: false });
-      return; // Exit early so we don't hit the 401
-    }
-
-    // 🟢 ADMIN LOGIC: Hit the real endpoint
     try {
-      console.log("Calling getAllCases()....");
       const response = await getAllCases();
-      console.log("Raw API response:", response);
-      console.log("Response data:", response.data);
-
       const rawData = response.data || [];
-      console.log("Raw data length:", rawData.length);
-      console.log("Raw data:", rawData);
 
-      const normalizedCases: Case[] = rawData.map((c: any) => ({
-        id: c.directCaseId || c.caseId || c.id,
-        staffEmail: c.staffEmail || c.staff?.email,
-        clientEmail:
-          c.clientEmail || c.client?.email || c.clientName || c.client?.name,
-        notes: c.note || c.notes || "",
-        documents: Array.isArray(c.documents)
-          ? c.documents
-          : c.document
-            ? [{ name: "Case Document", url: c.document }]
-            : [],
-        caseTypeId: c.caseTypeId,
-        status: c.status || "PENDING"
-      }));
+      // Get the actual fee schedules from the billing store for cross-referencing
+      const feeSchedules = useBillingStore.getState().feeSchedules;
 
-      console.log("Normalized cases:", normalizedCases);
+      const normalizedCases: Case[] = rawData.map((c: any) => {
+        // 1. Resolve Case Type Name
+        // We look up the name in the feeSchedules list using the caseTypeId
+        const matchedSchedule = feeSchedules.find(
+          (fs) => fs.feeScheduleId === c.caseTypeId
+        );
+
+        const caseTypeDisplay =
+          matchedSchedule?.name ||
+          c.feeSchedule?.name ||
+          c.title ||
+          "General Case";
+
+        // 2. Resolve Client Name
+        // Backend usually returns 'client' object for Admin. We check all possibilities.
+        const clientDisplayName =
+          c.client?.name ||
+          c.client?.fullName ||
+          c.clientName ||
+          c.clientEmail ||
+          "New Client";
+
+        return {
+          id: c.directCaseId || c.caseId || c.id,
+          // Ensure caseCode exists for the table's ID column
+          caseCode: c.caseCode || (c.id ? c.id.slice(-8).toUpperCase() : "---"),
+          staffEmail: c.staffEmail || c.staff?.email || "Unassigned",
+          clientEmail: c.clientEmail || c.client?.email,
+          clientName: clientDisplayName,
+          caseType: caseTypeDisplay,
+          notes: c.note || c.notes || "",
+          status: c.status || "PENDING",
+          documents: Array.isArray(c.documents)
+            ? c.documents
+            : c.document
+              ? [{ name: "Case Document", url: c.document }]
+              : [],
+          createdAt: c.createdAt
+        };
+      });
+
+      console.log("Success! Normalized cases:", normalizedCases);
       set({ cases: normalizedCases, isLoading: false });
       get().calculateStats(normalizedCases);
     } catch (error: any) {
@@ -187,43 +189,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
         isLoading: false
       });
     }
-
-    //   try {
-    //     const user = useAuthStore.getState().user;
-    //     const role = user?.role;
-
-    //     // determine which API to call based on role
-    //     let response;
-    //     if (role === "ADMIN") {
-    //       response = await getAllCases();
-    //       console.log("Get All Admin Cases:", getAllCases);
-    //     } else {
-    //       response = await getStaffCases();
-    //       console.log("Get all staff assigned caases:", getStaffCases);
-    //     }
-
-    //     const rawData = response.data;
-    //     const normalizedCases: Case[] = rawData.map((c: any) => ({
-    //       id: c.directCaseId || c.caseId || c.id,
-    //       staffEmail: c.staffEmail || c.staff?.email,
-    //       clientEmail:
-    //         c.clientEmail || c.client?.email || c.clientName || c.client?.name,
-    //       notes: c.note || c.notes || "",
-    //       documents: Array.isArray(c.documents)
-    //         ? c.documents
-    //         : c.document
-    //         ? [{ name: "Case Document", url: c.document }]
-    //         : [],
-    //       caseTypeId: c.caseTypeId,
-    //       status: c.status || "PENDING"
-    //     }));
-    //     set({ cases: normalizedCases, isLoading: false });
-    //   } catch (error: any) {
-    //     set({
-    //       error: error.response?.data?.message || "Failed to load cases",
-    //       isLoading: false
-    //     });
-    //   }
   },
 
   // Role Creation

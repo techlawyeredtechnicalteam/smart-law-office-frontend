@@ -1,45 +1,23 @@
 "use client";
 
-import { useSubscriptionStore } from "@/store/subscriptionStore";
-import { ManageSubscription } from "@/components/dashboard/subscription/ManageSubscription";
-import { ReviewPlanDetails } from "@/components/dashboard/subscription/ReviewPlanDetails";
-import { SubscriptionPayment } from "@/components/dashboard/subscription/SubscriptionPayment";
-import { PaymentSummary } from "@/components/dashboard/subscription/PaymentSummary";
-import { VerificationStep } from "@/components/dashboard/subscription/VerificationStep";
-import { UpgradeSuccessModal } from "@/components/dashboard/subscription/UpgradeSuccessModal";
+import dynamic from "next/dynamic";
+import { Loader2 } from "lucide-react";
+
+// This tells Next.js to skip Prerendering for the content
+const SubscriptionContent = dynamic(() => import("./SubscriptionContent"), {
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex flex-col items-center gap-4">
+        <Loader2 className="w-12 h-12 animate-spin text-[#6f42c1]" />
+        {/* <p className="text-gray-500 font-medium animate-pulse">
+          Loading your subscription portal...
+        </p> */}
+      </div>
+    </div>
+  )
+});
 
 export default function SubscriptionPage() {
-  const { step } = useSubscriptionStore();
-
-  return (
-    <main className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="max-w-6xl mx-auto">
-        {/* Step-based Content Switcher */}
-        {(() => {
-          switch (step) {
-            case "manage":
-              return <ManageSubscription />;
-            // return <div className="p-10 text-center">Plan Selection Component</div>;
-            case "review":
-              return <ReviewPlanDetails />;
-            // return <div className="p-10 text-center">Review Plan Component</div>;
-            case "payment":
-              return <SubscriptionPayment />;
-            case "summary":
-              return <PaymentSummary />;
-            case "verify":
-              return <VerificationStep />;
-            case "success":
-              // Show the payment summary background while the success modal is open
-              return <PaymentSummary />;
-            default:
-              return <div className="p-10 text-center">Initial State</div>;
-          }
-        })()}
-
-        {/* The Success Modal stays outside the switch to overlay correctly */}
-        <UpgradeSuccessModal />
-      </div>
-    </main>
-  );
+  return <SubscriptionContent />;
 }

@@ -13,7 +13,6 @@ const NavLinks = () => {
   const role = user?.role || "";
   const [extendRoute, setExtendRoute] = React.useState<string[]>([]);
 
-  // for sub items
   const toggleExtendRoute = (route: string) => {
     setExtendRoute((prev) =>
       prev.includes(route)
@@ -22,105 +21,70 @@ const NavLinks = () => {
     );
   };
 
-  // FIlters links based on the current user role
   const visibleLinks = Object.values(ALL_LINKS).filter((link) =>
     link.roles.includes(role)
   );
 
-  //  Filter sub items too based on role
-  const filteredLinksWithSubItems = visibleLinks.map((link) => {
-    if (link.subItems) {
-      return {
-        ...link,
-        subItems: link.subItems.filter((subItem) =>
-          subItem.roles.includes(role)
-        )
-      };
-    }
-    return link;
-  });
-
   return (
     <nav className="flex-1 space-y-1">
-      {filteredLinksWithSubItems.map((link) => {
+      {visibleLinks.map((link) => {
         const isExtended = extendRoute.includes(link.route);
         const isActive =
           pathname === link.route ||
-          (link.subItems &&
-            link.subItems.some((sub) => pathname === sub.route));
+          link.subItems?.some((sub) => pathname === sub.route);
 
         return (
-          <div key={link.route}>
-            {/* Parent Link/Button */}
-            {link.subItems && link.subItems.length > 0 ? (
-              // If has sub-items, make it a link with a separate toggle button
-              <div className="flex items-center">
-                <Link href={link.route} className="flex-1">
-                  <button
-                    type="button"
-                    className={`flex items-center w-full p-2.5 rounded-lg transition-all duration-200 text-left ${
-                      isActive
-                        ? "bg-white text-violet-600 font-semibold"
-                        : "text-white hover:bg-white hover:text-violet-600"
-                    }`}
-                  >
-                    <link.icon className="w-5 h-5 mr-3 shrink-0" />
-                    {link.name}
-                  </button>
-                </Link>
+          <div key={link.route} className="relative group">
+            <div className="flex items-center">
+              <Link href={link.route} className="flex-1">
+                <button
+                  type="button"
+                  className={`flex items-center w-full p-2.5 rounded-lg transition-all duration-200 text-left ${
+                    isActive
+                      ? "bg-white text-violet-600 font-semibold"
+                      : "text-white hover:bg-white/10"
+                  }`}
+                >
+                  <link.icon className="w-5 h-5 md:mr-3 shrink-0" />
+                  <span className="hidden md:block text-sm">{link.name}</span>
+                </button>
+              </Link>
+
+              {/* Chevron only visible on Desktop */}
+              {link.subItems && link.subItems.length > 0 && (
                 <button
                   type="button"
                   onClick={() => toggleExtendRoute(link.route)}
-                  className={`p-2.5 rounded-lg transition-all duration-200 ${
-                    isActive
-                      ? "text-violet-600"
-                      : "text-white hover:text-violet-600"
-                  }`}
+                  className="hidden md:block p-2.5 text-white"
                 >
                   {isExtended ? (
-                    <ChevronDown className="w-4 h-4 shrink-0" />
+                    <ChevronDown size={14} />
                   ) : (
-                    <ChevronRight className="w-4 h-4 shrink-0" />
+                    <ChevronRight size={14} />
                   )}
                 </button>
-              </div>
-            ) : (
-              // If no sub-items, make it a link
-              <Link href={link.route}>
-                <button
-                  type="button"
-                  className={`flex items-center justify-between w-full p-3 rounded-lg transition-all duration-200 text-left ${
-                    isActive
-                      ? "bg-white text-violet-600 font-semibold"
-                      : "text-white hover:bg-white hover:text-violet-600"
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <link.icon className="w-5 h-5 mr-3 shrink-0" />
-                    {link.name}
-                  </div>
-                </button>
-              </Link>
-            )}
+              )}
+            </div>
 
-            {/* Sub items */}
-            {link.subItems && link.subItems.length > 0 && isExtended && (
-              <div className="ml-8 mt-1 space-y-1">
-                {link.subItems.map((subItem) => (
-                  <Link key={subItem.route} href={subItem.route}>
-                    <button
-                      type="button"
-                      className={`flex items-center w-full p-2 pl-3 rounded-lg transition-all duration-200 text-left text-sm ${
-                        pathname === subItem.route
-                          ? "bg-white text-[#7C5CFC] px-3 py-2 rounded-md text-sm font-medium shadow-sm cursor-pointer"
-                          : "text-purple-200 hover:bg-white hover:text-violet-600"
-                      }`}
-                    >
-                      <subItem.icon className="w-4 h-4 mr-2 shrink-0" />
-                      {subItem.name}
-                    </button>
-                  </Link>
-                ))}
+            {/* Sub-items hidden on mobile/collapsed */}
+            {link.subItems && isExtended && (
+              <div className="hidden md:block ml-8 mt-1 space-y-1">
+                {link.subItems
+                  .filter((s) => s.roles.includes(role))
+                  .map((subItem) => (
+                    <Link key={subItem.route} href={subItem.route}>
+                      <button
+                        className={`flex items-center w-full p-2 pl-3 rounded-lg text-xs ${
+                          pathname === subItem.route
+                            ? "bg-white text-violet-600"
+                            : "text-purple-100 hover:bg-white/10"
+                        }`}
+                      >
+                        <subItem.icon className="w-4 h-4 mr-2" />
+                        {subItem.name}
+                      </button>
+                    </Link>
+                  ))}
               </div>
             )}
           </div>

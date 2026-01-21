@@ -34,6 +34,5 @@ export type SubscriptionStep =
   | "manage"
   | "review"
   | "payment"
-  | "summary"
   | "verify"
   | "success";

@@ -54,7 +54,7 @@ export function AssignedCasesTable() {
       header: "Case Type",
       render: (item) => {
         // 🚀 Use the unified billing store for the lookup
-        const type = caseTypes.find((t) => t.caseTypeId === item.caseTypeId);
+        const type = caseTypes.find((t) => t.name === item.title);
         return (
           <div className="text-gray-700 font-medium">
             {type?.name || "Standard Case"}
@@ -111,23 +111,23 @@ export function AssignedCasesTable() {
           Manage
         </Button>
       )
-    },
-    {
-      key: "assignedTo", // Changed key to be unique
-      header: "Assigned To",
-      render: (item) => (
-        <div className="flex flex-col">
-          <div className="text-sm text-purple-700 font-semibold">
-            {item.staffEmail || "Staff Member"}
-          </div>
-          {(item as any).staffId && !item.staffEmail && (
-            <div className="text-[10px] text-gray-400 font-mono">
-              ID: {(item as any).staffId.slice(-6)}
-            </div>
-          )}
-        </div>
-      )
     }
+    // {
+    //   key: "assignedTo", // Changed key to be unique
+    //   header: "Assigned To",
+    //   render: (item) => (
+    //     <div className="flex flex-col">
+    //       <div className="text-sm text-purple-700 font-semibold">
+    //         {item.staffEmail || "Staff Member"}
+    //       </div>
+    //       {(item as any).staffId && !item.staffEmail && (
+    //         <div className="text-[10px] text-gray-400 font-mono">
+    //           ID: {(item as any).staffId.slice(-6)}
+    //         </div>
+    //       )}
+    //     </div>
+    //   )
+    // }
   ];
 
   return (

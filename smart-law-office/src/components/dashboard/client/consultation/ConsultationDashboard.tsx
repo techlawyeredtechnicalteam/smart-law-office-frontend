@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import useConsultationStore from "@/store/consultationStore";
-import { Consultation, ConsultationStatus } from "@/types/Consultation.schema";
+import { ConsultationStatus } from "@/types/Consultation.schema";
 import { cn } from "@/lib/utils";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Calendar, Clock } from "lucide-react";
+import { format, parseISO, isValid } from "date-fns";
 
 // Shadcn UI Components
 import { Button } from "@/components/ui/button";
@@ -14,23 +15,17 @@ import { TableColumn, TableModal } from "@/components/shared/TableModal";
 
 // Helper function to render status badge
 const StatusBadge = ({ status }: { status: ConsultationStatus }) => {
-  let className = "";
-  switch (status) {
-    case "Scheduled":
-      className = "bg-blue-100 text-blue-600 border-blue-200";
-      break;
-    case "Pending":
-      className = "bg-yellow-100 text-yellow-600 border-yellow-200";
-      break;
-    case "Completed":
-      className = "bg-green-100 text-green-600 border-green-200";
-      break;
-  }
+  const styles: Record<string, string> = {
+    Scheduled: "bg-blue-100 text-blue-600 border-blue-200",
+    Pending: "bg-yellow-100 text-yellow-600 border-yellow-200",
+    Completed: "bg-green-100 text-green-600 border-green-200"
+  };
+
   return (
     <span
       className={cn(
-        "px-2 py-0.5 text-xs font-semibold rounded-full border",
-        className
+        "px-2.5 py-0.5 text-[10px] font-bold uppercase rounded-full border",
+        styles[status] || styles.Pending
       )}
     >
       {status}
@@ -38,13 +33,13 @@ const StatusBadge = ({ status }: { status: ConsultationStatus }) => {
   );
 };
 
-// Helper function to get initials for the Avatar
-const getInitials = (name: string): string => {
-  const parts = name.split(" ");
-  if (parts.length > 1) {
-    return parts[0][0] + parts[1][0];
-  }
-  return parts[0][0];
+// Helper for initials
+const getInitials = (name?: string): string => {
+  if (!name) return "??";
+  const parts = name.trim().split(/\s+/);
+  return parts.length > 1
+    ? (parts[0][0] + parts[1][0]).toUpperCase()
+    : parts[0][0].toUpperCase();
 };
 
 interface ConsultationDashboardProps {
@@ -56,69 +51,50 @@ export function ConsultationDashboard({
   onBookConsultation,
   onViewDetails
 }: ConsultationDashboardProps) {
-  const { consultations, setConsultations } = useConsultationStore();
-  const [isLoading, setIsLoading] = useState(true);
+  const {
+    consultations,
+    fetchConsultations,
+    isLoading: storeLoading
+  } = useConsultationStore();
+  const [internalLoading, setInternalLoading] = useState(false);
 
-  // Check if there are no consultations
-  const hasNoConsultations = consultations.length === 0;
-
-  // Fetch initial data on component mount
   useEffect(() => {
-    const fetchConsultations = async () => {
-      try {
-        // const data = await ConsultService.getConsultations();
-        // setConsultations(data);
-        // For now, simulate loading
-        setTimeout(() => {
-          setIsLoading(false);
-        }, 500);
-      } catch (error) {
-        console.error("Failed to fetch consultations:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // If the store is empty, fetch data. This prevents re-fetching after a new booking.
     if (consultations.length === 0) {
-      fetchConsultations();
-    } else {
-      setIsLoading(false);
+      setInternalLoading(true);
+      fetchConsultations().finally(() => setInternalLoading(false));
     }
-  }, [setConsultations, consultations.length]);
+  }, [fetchConsultations, consultations.length]);
 
-  // Define table columns configuration
-  const columns: TableColumn<Consultation>[] = [
+  const loading = internalLoading || storeLoading;
+
+  // Define table columns based on the STORE'S interface
+  const columns: TableColumn<any>[] = [
     {
-      key: "consultationId",
-      header: "Consultation Id",
-      headerClassName:
-        "w-[100px] bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      cellClassName: "font-medium text-[#6f42c1]",
-      render: (consult) => consult.consultationId
-    },
-    {
-      key: "clientName",
-      header: "Client Name",
+      key: "id",
+      header: "Ref Code",
       headerClassName:
         "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      render: (consult) => (
-        <div className="flex items-center space-x-2">
-          <Avatar className="h-8 w-8 bg-purple-100">
-            <AvatarFallback className="text-sm bg-purple-200 text-[#6f42c1]">
-              {getInitials(consult.clientName)}
-            </AvatarFallback>
-          </Avatar>
-          <span>{consult.clientName}</span>
-        </div>
-      )
+      cellClassName: "font-mono font-bold text-[#6f42c1]",
+      render: (consult) => consult.id?.slice(-8).toUpperCase() || "N/A"
     },
     {
-      key: "caseType",
-      header: "Case Type",
+      key: "client",
+      header: "Client",
       headerClassName:
         "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      render: (consult) => consult.caseType
+      render: (consult) => {
+        const name = consult.clientName || "Current User"; // Adjust based on your API response
+        return (
+          <div className="flex items-center space-x-3">
+            <Avatar className="h-8 w-8 border border-purple-100">
+              <AvatarFallback className="text-[10px] bg-purple-50 text-[#6f42c1] font-bold">
+                {getInitials(name)}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-medium text-gray-700">{name}</span>
+          </div>
+        );
+      }
     },
     {
       key: "status",
@@ -128,66 +104,85 @@ export function ConsultationDashboard({
       render: (consult) => <StatusBadge status={consult.status} />
     },
     {
-      key: "meeting",
-      header: "Meeting",
+      key: "schedule",
+      header: "Schedule",
       headerClassName:
         "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      cellClassName: "text-gray-600",
-      render: (consult) => `${consult.meetingDate} ${consult.meetingTime}`
+      render: (consult) => {
+        if (!consult.consultAt) return "Not set";
+        const date = parseISO(consult.consultAt);
+        return (
+          <div className="flex flex-col text-[11px]">
+            <span className="flex items-center gap-1 font-bold text-gray-900">
+              <Calendar className="w-3 h-3 text-gray-400" />{" "}
+              {format(date, "MMM dd, yyyy")}
+            </span>
+            <span className="flex items-center gap-1 text-gray-500">
+              <Clock className="w-3 h-3 text-gray-400" />{" "}
+              {format(date, "hh:mm a")}
+            </span>
+          </div>
+        );
+      }
     },
     {
-      key: "notes",
-      header: "Notes",
+      key: "note",
+      header: "Reason",
       headerClassName:
         "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      cellClassName: "max-w-[200px] truncate text-gray-600",
-      render: (consult) => consult.notesSummary
+      cellClassName: "max-w-[180px] truncate text-gray-500 italic text-xs",
+      render: (consult) => consult.note || "No notes provided"
     },
     {
       key: "action",
       header: "Action",
       headerClassName:
-        "text-right w-[100px] bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
+        "text-right bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
       cellClassName: "text-right",
       render: (consult) => (
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => onViewDetails(consult.consultationId)}
-          className="text-[#6f42c1] hover:bg-purple-100"
+          onClick={() => onViewDetails(consult.id)}
+          className="text-[#6f42c1] hover:bg-purple-50 hover:text-[#5a369e] font-bold text-xs"
         >
-          View <ArrowRight className="ml-1 h-3 w-3" />
+          Details <ArrowRight className="ml-1 h-3 w-3" />
         </Button>
       )
     }
   ];
 
-  // Show loading state
-  if (isLoading) {
+  if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-lg border p-6">
-        <div className="text-center py-20 text-gray-500">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          Loading consultations...
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12">
+        <div className="flex flex-col items-center justify-center space-y-4">
+          <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#6f42c1]"></div>
+          <p className="text-gray-500 font-medium">
+            Synchronizing consultations...
+          </p>
         </div>
       </div>
     );
   }
 
-  // / Show empty state when there are no consultations
-  if (hasNoConsultations) {
+  if (consultations.length === 0) {
     return <ConsultationEmptyState onBookConsultation={onBookConsultation} />;
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-lg border p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Consultation</h2>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-6 gap-4 border-b border-gray-50">
+        <div>
+          <h2 className="text-xl font-bold text-gray-900">Consultations</h2>
+          <p className="text-xs text-gray-500 mt-1">
+            Manage and track your legal appointments
+          </p>
+        </div>
         <Button
           onClick={onBookConsultation}
-          className="bg-[#6f42c1] hover:bg-[#5a369e] text-white font-semibold flex items-center"
+          className="bg-[#6f42c1] hover:bg-[#5a369e] text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-purple-100 transition-all active:scale-95"
         >
-          + Book a Consultation
+          + New Booking
         </Button>
       </div>
 
@@ -195,8 +190,8 @@ export function ConsultationDashboard({
         <TableModal
           data={consultations}
           columns={columns}
-          getRowKey={(consult) => consult.consultationId}
-          containerClassName="min-w-full hover:bg-purple-50 transition-colors"
+          getRowKey={(consult) => consult.id}
+          containerClassName="min-w-full"
           emptyMessage="No consultations found"
         />
       </div>

@@ -16,7 +16,7 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { toast } from "sonner";
 
 const SetRateCase = () => {
@@ -27,8 +27,17 @@ const SetRateCase = () => {
     isSetRateCaseModalOpen,
     closeSetRateCaseModal,
     openSetRateCaseModal,
-    openSetRateModal
+    openSetRateModal,
+    fetchBillingInitialData,
+    isLoading,
+    isSaving
   } = useBillingStore();
+
+  useEffect(() => {
+    if (isSetRateCaseModalOpen && feeSchedules.length === 0) {
+      fetchBillingInitialData();
+    }
+  }, [isSetRateCaseModalOpen, feeSchedules.length, fetchBillingInitialData]);
 
   const form = useForm<setRateBillFormData>({
     resolver: zodResolver(setRateBillSchema),
@@ -52,45 +61,15 @@ const SetRateCase = () => {
     (f) => String(f.feeScheduleId || f.id) === String(watchedSubServiceId)
   );
 
+  // Unified loading state for the button
+  const isPending = isSaving || form.formState.isSubmitting;
+
   const handleServiceTypeChange = (value: string) => {
     if (value === "Consultation") {
       closeSetRateCaseModal();
       openSetRateCaseModal();
     }
   };
-
-  // const handleSubmit = (data: setRateBillFormData) => {
-  //   if (selectedSchedule) {
-  //     addCaseRate({
-  //       serviceType: "Case",
-  //       subServiceType: selectedSchedule.name,
-  //       caseRate: Number(data.caseRate)
-  //     });
-  //     form.reset();
-  //     closeSetRateCaseModal();
-  //   }
-  // };
-  // const handleSubmit = async (data: setRateBillFormData) => {
-  //   if (!selectedSchedule) {
-  //     toast.error("Please select a sub-service first");
-  //     return;
-  //   }
-
-  //   // Ensure caseRate is a number
-  //   const payload = {
-  //     serviceType: "Case",
-  //     subServiceType: selectedSchedule.name,
-  //     caseRate: Number(data.caseRate),
-  //     feeScheduleId: selectedSchedule.feeScheduleId
-  //   };
-
-  //   const success = await saveRate(payload);
-  //   if (success) {
-  //     toast.success("Case rate saved successfully!");
-  //     form.reset();
-  //     closeSetRateCaseModal();
-  //   }
-  // };
 
   const handleSubmit = async (data: setRateBillFormData) => {
     if (!selectedSchedule) {
@@ -158,17 +137,25 @@ const SetRateCase = () => {
                   name="subServiceId"
                   label="Sub-service"
                   placeholder={
-                    feeSchedules.length === 0
-                      ? "No case types available"
-                      : "Select a sub-service"
+                    isLoading
+                      ? "Fetching case types..."
+                      : feeSchedules.length === 0
+                        ? "No case types available"
+                        : "Select a sub-service"
                   }
                   options={feeSchedules.map((f) => ({
-                    label: f.name || f.feeScheduleName,
+                    // Use a fallback to ensure something always shows up
+                    label:
+                      f.name ||
+                      f.feeScheduleName ||
+                      f.description ||
+                      "Unknown Type",
                     value: String(f.feeScheduleId || f.id)
                   }))}
                   onChange={(val) =>
                     form.setValue("caseTypeId", val, { shouldValidate: true })
                   }
+                  disabled={isLoading}
                   className="w-full"
                 />
 
@@ -205,9 +192,9 @@ const SetRateCase = () => {
               <Button
                 type="submit"
                 className="bg-violet-600"
-                disabled={form.formState.isSubmitting}
+                disabled={isPending}
               >
-                {form.formState.isSubmitting ? "Saving..." : "Save"}
+                {isPending ? "Saving..." : "Save"}
               </Button>
             </div>
           </form>

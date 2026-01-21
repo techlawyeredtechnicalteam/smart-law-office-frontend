@@ -1,13 +1,3 @@
-// export const setAuthCookie = (token: string) => {
-//   if (typeof window === "undefined") return;
-//   const isProduction = process.env.NODE_ENV === "production";
-
-//   // ✅ FIXED: All attributes on ONE line, separated by semicolons
-//   document.cookie = `auth-token=${token}; path=/; max-age=${
-//     30 * 24 * 60 * 60
-//   }; ${isProduction ? "secure; " : ""}samesite=strict`;
-// };
-
 export const getAuthCookie = (): string | undefined => {
   if (typeof window === "undefined") return undefined;
 

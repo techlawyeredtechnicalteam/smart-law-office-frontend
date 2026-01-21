@@ -8,6 +8,8 @@ import {
   fetchCounsel,
   updateCounsel
 } from "@/app/api/manageCounse.api";
+import { Lawyer } from "@/types/user";
+import { useAssignStore } from "./assignCaseStore";
 
 export interface Notification {
   type: "success" | "info" | "error";
@@ -26,57 +28,66 @@ export interface Counsel {
   status: "Active" | "Inactive";
   assignedCases: string;
   role: "STAFF";
+  caseCount?: number;
 }
 
 // Helper to trasnform API data to counsel interface
-const mapToCounsel = (data: any): Counsel => ({
-  id: data.userId || data.id,
-  firstName: data.firstName || "",
-  lastName: data.lastName || "",
-  fullName:
-    data.fullName || `${data.firstName || ""} ${data.lastName || ""}`.trim(),
-  scn: data.scn,
-  email: data.email,
-  callToBarFile: data.callToBarFile || data.barCertificate,
-  status: data.status || "Inactive",
-  assignedCases: String(data.assignedCases || "0"),
-  role: "STAFF"
-});
+const mapToCounsel = (data: any): Lawyer => {
+  // Force conversion to number to prevent "string vs number" overlap errors
+  const count = Number(data.assignedCases || data.casesCount || 0);
+
+  return {
+    id: String(data.userId || data.id),
+    userId: String(data.userId || data.id),
+    firstName: data.firstName || "",
+    lastName: data.lastName || "",
+    name:
+      data.fullName || `${data.firstName || ""} ${data.lastName || ""}`.trim(),
+    email: data.email,
+    role: "STAFF",
+    specialty:
+      data.specialty || (data.scn ? `SCN: ${data.scn}` : "General Practice"),
+    scn: data.scn || "",
+    casesCount: count, // This is now a true number
+    status: count >= 5 ? "Busy" : "Active", // Safe number comparison
+    callToBarFile: data.callToBarFile || data.barCertificate || null
+  };
+};
 
 export interface ManageCounselStore {
   // State
-  counsel: Counsel[];
+  counsel: Lawyer[];
   isLoading: boolean;
   callToBarFile: string | null;
   notifications: Notification[];
-  lastAddedCounsel: Counsel | null;
+  lastAddedCounsel: Lawyer | null;
 
   // Modal State
   isAddModalOpen: boolean;
   isEditModalOpen: boolean;
   isDeleteModalOpen: boolean;
   isUpgradeModalOpen: boolean;
-  selectedCounsel: Counsel | null;
+  selectedCounsel: Lawyer | null;
 
   // Actions
   setFile: (file: string | null) => void;
   addNotification: (notif: Omit<Notification, "timestamp">) => void;
   openAddModal: () => void;
   closeAddModal: () => void;
-  openEditModal: (counsel: Counsel) => void;
+  openEditModal: (counsel: Lawyer) => void;
   closeEditModal: () => void;
-  openDeleteModal: (counsel: Counsel) => void;
+  openDeleteModal: (counsel: Lawyer) => void;
   closeDeleteModal: () => void;
   closeUpgradeModal: () => void;
   fetchCounsels: () => Promise<void>;
   addCounsel: (payload: CounselPayload) => Promise<void>;
   updateCounsel: (
-    id: number,
+    id: string,
     updatedFields: Partial<CounselPayload>
   ) => Promise<void>;
-  setLastAddedCounsel: (counsel: Counsel | null) => void;
+  setLastAddedCounsel: (counsel: Lawyer | null) => void;
 
-  deleteCounsel: (id: number) => Promise<void>;
+  deleteCounsel: (id: string) => Promise<void>;
 }
 
 const store: StateCreator<ManageCounselStore> = (set, get) => ({
@@ -165,7 +176,7 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
       get().addNotification({
         type: "success",
         message: "Counsel Added",
-        details: `${newCounsel.fullName} was successfully added to your team.`
+        details: `${newCounsel.name} was successfully added to your team.`
       });
     } catch (error) {
       toast.error("Failed to add counsel. Please try again.");
@@ -174,19 +185,18 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
     }
   },
 
-  updateCounsel: async (id, updatedFields) => {
+  updateCounsel: async (id: string, updatedFields) => {
     set({ isLoading: true });
     try {
-      await updateCounsel(String(id));
+      await updateCounsel(id);
       await get().fetchCounsels();
+      await useAssignStore.getState().fetchData();
 
       set({ isEditModalOpen: false, selectedCounsel: null });
 
       // Custom Success Toast
       toast("Update Successful", {
         description: "The Counsel's details have been saved.",
-        // icon: <CheckCircle className="h-4 w-4 text-white" />,
-        // className: "bg-white text-black border-l-4 border-green-500",
         duration: 3000
       });
     } catch (error) {
@@ -210,7 +220,7 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
         type: "info",
         message: "Counsel Removed",
         details: `${
-          counselToRemove?.fullName || "A Staff member"
+          counselToRemove?.name || "A Staff member"
         } has been deactivated`
       });
     } catch (error) {

@@ -1,189 +1,152 @@
 "use client";
 
-import { useState } from "react";
-import useConsultationStore from "@/store/consultationStore";
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { Card } from "@/components/ui/card";
+import {
+  Copy,
+  UploadCloud,
+  FileText,
+  CheckCircle2,
+  Loader2
+} from "lucide-react";
+import useConsultationStore from "@/store/consultationStore";
+import FileUpload from "@/components/shared/FileUpload";
 import { toast } from "sonner";
-import { ConsultService } from "@/app/api/consultation.api";
+import { useFirmProfileStore } from "@/store/firmProfileStore";
+import { useBillingStore } from "@/store/setRateBill";
 
-const NairaSymbol = ({ className = "" }) => (
-  <span className={cn("font-medium text-xl align-top", className)}>₦</span>
-);
-
-export function PaymentGateway() {
+export function PaymentVerification() {
   const {
     formData,
-    isBookingOpen,
-    resetBooking,
-    setStep,
-    addConsultation,
-    setLastCreatedConsultCode
+    setStep,    
+    submitConsultation,
+    isLoading: isStoreLoading
   } = useConsultationStore();
+  const { formData: firmProfile, fetchProfile } = useFirmProfileStore();
+  const [receipt, setReceipt] = useState<string>("");
 
-  const isPaymentStep =
-    isBookingOpen && useConsultationStore.getState().step === "payment";
+  // 1. Initialize bank profile if missing
+  React.useEffect(() => {
+    if (!firmProfile.bankAccountNumber) {
+      fetchProfile();
+    }
+  }, [firmProfile.bankAccountNumber, fetchProfile]);
 
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "mobile">("card");
-  const [isLoading, setIsLoading] = useState(false);
-  const [cardDetails, setCardDetails] = useState({
-    number: "",
-    expiry: "",
-    cvv: ""
-  });
+  const totalAmount = formData?.feeDetails?.rate || 0;
 
-  if (!formData || !isPaymentStep) return null;
+  const handleCopy = (text: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text);
+    toast.success("Account number copied!");
+  };
 
-  const clientEmail = formData.email || "client@example.com";
-  const fee = formData.consultationFee || 0;
-
-  const handleSimulatedPay = async () => {
-    setIsLoading(true);
+  const handleSubmit = async () => {
+    // Validation
+    const receipt = formData?.paymentReceipt;
+    if (!receipt) {
+      toast.error("Please upload your payment receipt before proceeding.");
+      return;
+    }
 
     try {
-      // 1. Create the consultation and get the consultCode
-      const response = await ConsultService.createConsultation(formData);
-      const consultCode = response.data.code || response.data; // Adjust based on your API response structure
-
-      console.log("Consultation created with code:", consultCode);
-
-      // 2. Store the consultCode for later use in case assignment
-      setLastCreatedConsultCode(consultCode);
-
-      // 3. Add the consultation to the dashboard list
-      addConsultation({
-        consultationId: consultCode,
-        clientName: formData.clientName || "N/A",
-        caseType: "General Law",
-        status: "Scheduled",
-        meetingDate: formData.date
-          ? new Date(formData.date).toLocaleDateString()
-          : "N/A",
-        meetingTime: formData.time || "N/A",
-        notesSummary:
-          formData.notes?.substring(0, 50) + "..." || "New Consultation"
-      });
-
-      // 4. Show success message with consultCode
-      toast.success(`Consultation booked! Code: ${consultCode}`);
-
-      // 5. Transition to success screen
-      setStep("success");
-    } catch (error) {
-      console.error("Payment failed:", error);
-      toast.error("Payment failed. Please try again.");
-    } finally {
-      setIsLoading(false);
+      // The store handles the API call, mapping, and step transition to "success"
+      await submitConsultation();
+      toast.success("Consultation booked successfully!");
+    } catch (error: any) {
+      toast.error(
+        error.response?.data?.message || "Failed to submit. Please try again."
+      );
     }
   };
 
   return (
-    <Dialog open={isPaymentStep} onOpenChange={resetBooking}>
-      <DialogContent className="sm:max-w-[800px] h-[70vh] flex p-0">
-        {/* Left Sidebar (Payment Methods) */}
-        <div className="w-1/3 bg-white p-8 border-r flex flex-col">
-          <h2 className="text-xl font-bold mb-6">PAY WITH</h2>
-          <div className="space-y-3">
-            <div
-              className={cn(
-                "cursor-pointer p-2 rounded-lg text-sm font-medium",
-                paymentMethod === "mobile"
-                  ? "text-gray-900"
-                  : "text-gray-500 hover:text-gray-700"
-              )}
-              onClick={() => setPaymentMethod("mobile")}
-            >
-              Mobile Money
-            </div>
-            <div
-              className={cn(
-                "cursor-pointer p-2 rounded-lg text-sm font-medium",
-                paymentMethod === "card"
-                  ? "text-[#6f42c1] font-bold"
-                  : "text-gray-500 hover:text-gray-700"
-              )}
-              onClick={() => setPaymentMethod("card")}
-            >
-              Card
-            </div>
-          </div>
-        </div>
+    <div className="max-w-md mx-auto space-y-6">
+      <div className="text-center space-y-2">
+        <h2 className="text-2xl font-bold text-gray-900">Confirm Payment</h2>
+        <p className="text-sm text-gray-500">
+          Transfer{" "}
+          <span className="font-bold text-[#6f42c1]">
+            ₦{totalAmount.toLocaleString()}
+          </span>{" "}
+          to Firm account
+        </p>
+      </div>
 
-        {/* Right Content (Card Details) */}
-        <div className="w-2/3 p-8 flex flex-col justify-between">
-          <div>
-            <div className="text-right mb-8">
-              <p className="font-semibold text-gray-800">{clientEmail}</p>
-              <p className="text-xl font-bold text-green-600 flex items-center justify-end">
-                Pay Naira <NairaSymbol className="text-2xl ml-1" />
-                {fee.toLocaleString()}
+      <Card className="p-5 border-dashed border-2 bg-purple-50/30 border-purple-100">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-xs uppercase text-gray-500 font-bold">
+              Bank
+            </span>
+            <span className="font-medium">
+              {firmProfile.bankName || "Loading..."}
+            </span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-xs uppercase text-gray-500 font-bold">
+              Account Name
+            </span>
+            <span className="font-medium text-right uppercase text-xs w-2/3">
+              {firmProfile.bankAccountName || "Loading..."}
+            </span>
+          </div>
+          <div className="pt-2 border-t border-purple-100 flex justify-between items-center">
+            <div>
+              <span className="text-xs uppercase text-gray-500 font-bold">
+                Account Number
+              </span>
+              <p className="text-xl font-mono font-bold text-[#6f42c1]">
+                {firmProfile.bankAccountNumber || "----------"}
               </p>
             </div>
-
-            {paymentMethod === "card" && (
-              <div className="space-y-6 mt-10">
-                <h3 className="text-lg font-semibold text-gray-700">
-                  Enter your card details to pay
-                </h3>
-
-                <Input
-                  placeholder="CARD NUMBER: 1234 5678 1234 5678"
-                  value={cardDetails.number}
-                  onChange={(e) =>
-                    setCardDetails({ ...cardDetails, number: e.target.value })
-                  }
-                  className="h-12 text-lg"
-                  maxLength={19}
-                />
-
-                <div className="flex space-x-4">
-                  <Input
-                    placeholder="CARD EXPIRY: 04/25"
-                    value={cardDetails.expiry}
-                    onChange={(e) =>
-                      setCardDetails({ ...cardDetails, expiry: e.target.value })
-                    }
-                    className="flex-1 h-12"
-                    maxLength={5}
-                  />
-
-                  <Input
-                    placeholder="CVV: 000"
-                    value={cardDetails.cvv}
-                    onChange={(e) =>
-                      setCardDetails({ ...cardDetails, cvv: e.target.value })
-                    }
-                    className="flex-1 h-12"
-                    type="password"
-                    maxLength={4}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div>
             <Button
-              onClick={handleSimulatedPay}
-              className="w-full bg-green-600 hover:bg-green-700 text-white text-lg h-12"
-              disabled={isLoading || paymentMethod !== "card"}
+              variant="outline"
+              size="icon"
+              className="border-purple-200 text-[#6f42c1]"
+              onClick={() => handleCopy(firmProfile.bankAccountNumber)}
             >
-              {isLoading
-                ? "Processing..."
-                : `Pay Naira ${fee.toLocaleString()}`}
+              <Copy className="h-4 w-4" />
             </Button>
-
-            <p className="text-center text-xs text-gray-500 mt-3">
-              An additional e-levy fee of 1% may apply to this payment.{" "}
-              <a href="#" className="text-[#6f42c1] underline">
-                Learn more
-              </a>
-            </p>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </Card>
+
+      <div className="space-y-3">
+        <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+          <UploadCloud className="h-4 w-4 text-[#6f42c1]" />
+          Upload Payment Receipt
+        </label>
+        <FileUpload
+          id="receipt-upload"
+          label="Upload receipt (PDF, JPG, PNG)"
+          fileData={receipt}
+          onFileChange={(data) => setReceipt(data || "")}
+          accept=".pdf,.jpg,.png,.jpeg"
+        />
+      </div>
+
+      <div className="flex flex-col gap-3 pt-4">
+        <Button
+          onClick={handleSubmit}
+          disabled={!formData?.paymentReceipt || isStoreLoading}
+          className="w-full bg-[#6f42c1] hover:bg-[#5a369e] h-14 text-lg font-bold shadow-lg shadow-purple-100"
+        >
+          {isStoreLoading ? (
+            <Loader2 className="h-6 w-6 animate-spin" />
+          ) : (
+            "I have made payment"
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          onClick={() => setStep("summary")}
+          disabled={isStoreLoading}
+          className="text-gray-400"
+        >
+          Go Back
+        </Button>
+      </div>
+    </div>
   );
 }

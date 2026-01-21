@@ -2,23 +2,43 @@
 
 import { BookConsultationForm } from "@/components/dashboard/client/consultation/BookConsultForm";
 import { BookingSuccessModal } from "@/components/dashboard/client/consultation/BookingSuccessModal";
-// ... (imports for flow components and store) ...
 import { ConsultationDashboard } from "@/components/dashboard/client/consultation/ConsultationDashboard";
-import { ConsultationDetailsView } from "@/components/dashboard/client/consultation/ConsultationDetailsView";
 import { ConsultationSummary } from "@/components/dashboard/client/consultation/ConsultationSummary";
-import { PaymentGateway } from "@/components/dashboard/client/consultation/PaymentGateway";
+import { PaymentVerification } from "@/components/dashboard/client/consultation/PaymentGateway";
 import { CreateModal } from "@/components/shared/CreateModal";
 import useConsultationStore from "@/store/consultationStore";
+import { useFirmProfileStore } from "@/store/firmProfileStore";
+import { useBillingStore } from "@/store/setRateBill";
 import React from "react";
 
 export default function ConsultationFlowPage() {
   const { step, isBookingOpen, closeBooking, openBooking, resetBooking } =
     useConsultationStore();
+  const { fetchConsultationFeesOnly, rates } = useBillingStore();
+  const { fetchProfile, formData: firmProfile } = useFirmProfileStore();
+
   const [viewMode, setViewMode] = React.useState<"dashboard" | "details">(
     "dashboard"
   );
+
   const [selectedConsultCode, setSelectedConsultCode] =
     React.useState<string>("");
+
+  // 1. Define the variable HERE (above the return)
+  const isFormOpen = isBookingOpen && step === "form";
+  const isSummaryOpen = isBookingOpen && step === "summary";
+  const isPaymentOpen = isBookingOpen && step === "payment";
+
+  React.useEffect(() => {
+    if (rates.length === 0) {
+      fetchConsultationFeesOnly();
+    }
+
+    // Fetch firm bank details if empty
+    if (!firmProfile || !firmProfile.bankAccountNumber) {
+      fetchProfile();
+    }
+  }, [fetchConsultationFeesOnly, rates.length, firmProfile, fetchProfile]);
 
   // Function to handle clicking 'View' on the dashboard
   const handleViewDetails = (id: string) => {
@@ -48,102 +68,34 @@ export default function ConsultationFlowPage() {
           onViewDetails={handleViewDetails}
         />
       )}
-
-      {viewMode === "details" && selectedConsultCode && (
+      {/* {viewMode === "details" && selectedConsultCode && (
         <ConsultationDetailsView
           consultCode={selectedConsultCode}
           onBack={handleBackToDashboard}
         />
-      )}
-
+      )} */}
       {/* --- Modals Orchestration --- */}
-
-      {/* Step 1: Book Consultation Form Modal */}
-      {isBookingOpen && step === "form" && (
-        <CreateModal
-          triggerText=""
-          modalTitle="Book a Consultation"
-          isOpen={isBookingOpen && step === "form"}
-          onOpenChange={(open) => {
-            if (!open) closeBooking();
-          }}
-          customTrigger={<></>}
-        >
-          <BookConsultationForm onClose={closeBooking} />
-        </CreateModal>
-      )}
-
-      {/* Step 2: Consultation Summary Modal */}
-      {isBookingOpen && step === "summary" && (
-        <CreateModal
-          triggerText=""
-          modalTitle="Consultation Summary"
-          isOpen={isBookingOpen && step === "summary"}
-          onOpenChange={(open) => {
-            if (!open) closeBooking();
-          }}
-          customTrigger={<></>}
-        >
-          <ConsultationSummary />
-        </CreateModal>
-      )}
-
-      {/* Step 3: Payment Gateway Modal */}
-      {isBookingOpen && step === "payment" && (
-        <CreateModal
-          triggerText=""
-          modalTitle="Payment"
-          isOpen={isBookingOpen && step === "payment"}
-          onOpenChange={(open) => {
-            if (!open) closeBooking();
-          }}
-          customTrigger={<></>}
-        >
-          <PaymentGateway />
-        </CreateModal>
-      )}
-
+      <CreateModal
+        isOpen={isBookingOpen}
+        onOpenChange={(open) => !open && closeBooking()}
+        triggerText=""
+        customTrigger={<span />}
+        modalTitle={
+          step === "form"
+            ? "Book a Consultation"
+            : step === "summary"
+              ? "Review & Pay"
+              : "Verify Payment"
+        }
+      >
+        <div className="w-full">
+          {step === "form" && <BookConsultationForm onClose={closeBooking} />}
+          {step === "summary" && <ConsultationSummary />}
+          {step === "payment" && <PaymentVerification />}
+        </div>
+      </CreateModal>
       {/* Step 4: Success Modal */}
       {step === "success" && <BookingSuccessModal />}
     </div>
   );
 }
-
-// "use client";
-// import { CreateCaseModal } from "@/components/dashboard/client/mycase/CreateCaseModal";
-// import { TbUserScreen } from "react-icons/tb";
-// import React from "react";
-// import { CreateModal } from "@/components/shared/CreateModal";
-// import { BookConsultationForm } from "@/components/dashboard/client/consultation/BookConsultForm";
-
-// const ConsultationPage = () => {
-//   const [isSuccessModalOpen, setIsSuccessModalOpen] = React.useState(false);
-//   return (
-//     <div className="flex flex-col items-center justify-center p-16 bg-purple-50 rounded-2xl text-center shadow-lg max-w-lg mx-auto">
-//       {/* Icon*/}
-//       <TbUserScreen className="h-16 w-16 text-purple-700 mb-4" />
-
-//       {/* Heading */}
-//       <h2 className="text-2xl font-semibold mb-3 text-gray-800">
-//         Book Consultation
-//       </h2>
-
-//       {/* Description */}
-//       <p className="text-gray-600 mb-8 max-w-sm">
-//         Consultation will appear here. Set up a consultation to manage clients
-//         meetings and sync your availability.
-//       </p>
-
-//       {/* Modal Trigger/Button (Keep your existing component) */}
-//       <CreateModal
-//         triggerText="Book Consultation"
-//         modalTitle="Book a Consultation"
-//         triggerClassName="bg-[#6f42c1] hover:bg-[#5a369e] text-white"
-//       >
-//         <BookConsultationForm />
-//       </CreateModal>
-//     </div>
-//   );
-// };
-
-// export default ConsultationPage;

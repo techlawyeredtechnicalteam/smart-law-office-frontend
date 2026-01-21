@@ -17,33 +17,28 @@ const SuccessPage = () => {
   const [isFinishing, setIsFinishing] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    // If user is null, the store might still be hydrating from localStorage
-    if (!user && isFinishing) return;
-
-    const timer = setTimeout(() => {
-      setIsFinishing(false);
-
-      const getTargetRoute = () => {
-        if (!user) return "/role"; // Final fallback
-
-        switch (user.role) {
-          case "ADMIN":
-          case "STAFF":
-            return "/admin/dashboard";
-          case "CLIENT":
-            return "/client/manage-case";
-          default:
-            return "/role";
-        }
-      };
-
-      setTimeout(() => {
-        router.push(getTargetRoute());
+    // If we have a user, start the transition to "Welcome aboard"
+    if (user && isFinishing) {
+      const timer = setTimeout(() => {
+        setIsFinishing(false);
       }, 1500);
-    }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [user, isFinishing]);
 
-    return () => clearTimeout(timer);
-  }, [router, user, isFinishing]);
+  // Separate effect for navigation
+  React.useEffect(() => {
+    if (!isFinishing && user) {
+      const timer = setTimeout(() => {
+        const route =
+          user.role === "ADMIN" || user.role === "STAFF"
+            ? "/admin/dashboard"
+            : "/client/manage-case";
+        router.push(route);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [isFinishing, user, router]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-center bg-violet-50">

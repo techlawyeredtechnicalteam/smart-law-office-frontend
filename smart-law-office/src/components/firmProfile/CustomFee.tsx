@@ -11,6 +11,7 @@ import React, { useEffect } from "react";
 import { validateFirmProfile, handleSignupError } from "@/utils/adminAuthUtils";
 import { CustomFeeInput } from "./CustomFeeInput";
 import { shallow } from "zustand/shallow";
+import { CustomFormField } from "../shared/CustomFormField";
 
 const Step3CustomFee = () => {
   const router = useRouter();
@@ -38,11 +39,12 @@ const Step3CustomFee = () => {
     updateFormData({ isCustomFeeEnabled: !isCustomFeeEnabled });
   };
 
-  // const isComplete =
-  //   !isCustomFeeEnabled ||
-  //   (isCustomFeeEnabled && customFeeAmount !== null && customFeeAmount > 0);
   const isComplete =
-    !isCustomFeeEnabled || (isCustomFeeEnabled && (customFeeAmount ?? 0) > 0);
+    !isCustomFeeEnabled ||
+    (isCustomFeeEnabled &&
+      (customFeeAmount ?? 0) > 0 &&
+      formData.bankAccountNumber &&
+      formData.bankName);
 
   const handleCompleteSignup = async () => {
     if (!isComplete) {
@@ -138,17 +140,54 @@ const Step3CustomFee = () => {
 
         {/* Amount Input (Conditional) */}
         {isCustomFeeEnabled && (
-          // <div className="pt-2">
-          //   <CustomFeeInput
-          //     customFeeAmount={customFeeAmount}
-          //     updateFormData={updateFormData}
-          //   />
-          // </div>
           <div className="mt-6 pt-6 border-t border-violet-100 animate-in slide-in-from-top-2">
             <CustomFeeInput
               customFeeAmount={customFeeAmount}
               updateFormData={updateFormData}
             />
+
+            {/* Banl Detials */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Bank Name
+                </Label>
+                <Input
+                  placeholder="e.g. Zenith Bank"
+                  value={formData.bankName || ""}
+                  onChange={(e) => updateFormData({ bankName: e.target.value })}
+                  className="border-gray-200 focus:border-violet-500 focus:ring-violet-500"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium text-gray-700">
+                  Account Number
+                </Label>
+                <Input
+                  placeholder="0123456789"
+                  value={formData.bankAccountNumber || ""}
+                  onChange={(e) =>
+                    updateFormData({ bankAccountNumber: e.target.value })
+                  }
+                  className="border-gray-200"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700">
+                Account Name
+              </Label>
+              <Input
+                placeholder="e.g. Legal Flow Ltd"
+                value={formData.bankAccountName || ""}
+                onChange={(e) =>
+                  updateFormData({ bankAccountName: e.target.value })
+                }
+                className="border-gray-200"
+              />
+            </div>
           </div>
         )}
       </div>

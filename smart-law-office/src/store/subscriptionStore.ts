@@ -81,7 +81,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
 
   setPaymentReference: (ref) => set({ paymentReference: ref }),
 
-  setStep: (step) => set({ step }),
+  setStep: (step: SubscriptionStep) => set({ step }),
   setIsLoading: (isLoading) => set({ isLoading }),
 
   selectPlan: (planName) => {
@@ -96,7 +96,11 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
       paymentFormData: { ...state.paymentFormData, ...data }
     })),
 
-  resetFlow: () => set({ ...initialState, paymentReference: null })
+  resetFlow: () =>
+    set({
+      step: "manage",
+      paymentReference: null
+    })
 }));
 
 export { BASIC_PLAN, PRO_PLAN };

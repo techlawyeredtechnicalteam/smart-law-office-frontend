@@ -33,7 +33,6 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       key: "id",
       header: "Case ID",
       render: (caseItem) => (
-        // Prioritize the human-readable caseCode from your debug logs
         <span className="font-mono font-bold text-violet-700">
           {(caseItem as any).caseCode ||
             caseItem.id?.slice(-8).toUpperCase() ||
@@ -48,8 +47,10 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
         <div className="flex items-center gap-2">
           <User className="w-4 h-4 text-gray-400" />
           <span className="font-medium capitalize">
-            {caseItem.clientEmail ||
-              (caseItem as any).clientEmail ||
+            {/* 1. Try the normalized clientName, 2. Fallback to nested backend object, 3. Fallback to email */}
+            {(caseItem as any).clientEmail ||
+              (caseItem as any).client?.name ||
+              caseItem.title ||
               "Unknown Client"}
           </span>
         </div>
@@ -59,27 +60,15 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       key: "caseType",
       header: "Case Type",
       render: (caseItem) => {
-        // 1. Check if the object already has the name nested (from normalization)
-        // .feeSchedule?.name;
-        const nestedName = caseItem.caseTypeId;
-
-        // 2. Lookup in our master caseTypes list
-        const masterData = caseTypes.find(
-          (t) => t.caseTypeId === caseItem.caseTypeId
-        );
-
-        // 3. Fallback: Check if the ID matches a feeSchedule directly
-        const feeScheduleData = caseTypes.find(
-          (t) => t.feeScheduleId === caseItem.caseTypeId
-        );
-
-        const typeName =
-          nestedName ||
-          masterData?.name ||
-          feeScheduleData?.name ||
+        // According to your logs, the type name is in feeSchedule.name
+        // or normalized as 'caseType'
+        const typeDisplay =
+          (caseItem as any).caseType ||
+          (caseItem as any).feeSchedule?.name ||
+          caseItem.title ||
           "Standard Case";
 
-        return <span className="capitalize">{typeName.toLowerCase()}</span>;
+        return <span className="text-sm font-medium">{typeDisplay}</span>;
       }
     },
     {
@@ -87,9 +76,7 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       header: "Status",
       render: (caseItem) => (
         <Badge
-          className={`${getStatusBadgeVariant(
-            caseItem.status
-          )} border shadow-sm`}
+          className={`${getStatusBadgeVariant(caseItem.status)} border shadow-sm`}
         >
           {caseItem.status || "PENDING"}
         </Badge>
@@ -99,31 +86,37 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       key: "notes",
       header: "Notes",
       render: (caseItem) => {
-        // Consolidated logic for 'notes' or 'note'
         const noteText = caseItem.notes || (caseItem as any).note;
         if (!noteText)
           return <span className="text-gray-400 italic text-xs">No notes</span>;
-        return noteText.length > 40
-          ? noteText.substring(0, 40) + "..."
-          : noteText;
+        return (
+          <span title={noteText}>
+            {noteText.length > 35
+              ? noteText.substring(0, 35) + "..."
+              : noteText}
+          </span>
+        );
       }
     },
     {
       key: "document",
       header: "Document",
       render: (caseItem) => {
-        const hasDocs = caseItem.documents && caseItem.documents.length > 0;
-        if (!hasDocs) return <span className="text-gray-400">N/A</span>;
+        // Check both 'documents' array and single 'document' field
+        const docUrl =
+          caseItem.documents?.[0]?.url || (caseItem as any).document;
+        const docName = caseItem.documents?.[0]?.name || "View File";
 
-        const doc = caseItem.documents[0];
+        if (!docUrl) return <span className="text-gray-400">N/A</span>;
+
         return (
           <a
-            href={doc.url}
+            href={docUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-violet-600 hover:text-violet-800 underline transition-colors text-sm font-medium"
+            className="text-violet-600 hover:text-violet-800 underline text-sm font-medium"
           >
-            {doc.name || "View File"}
+            {docName}
           </a>
         );
       }

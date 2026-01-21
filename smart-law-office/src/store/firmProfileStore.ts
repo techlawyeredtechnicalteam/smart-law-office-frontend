@@ -2,6 +2,7 @@ import { finalizeSignup, signup } from "@/app/api/signup.api";
 import { create, StateCreator } from "zustand";
 import { persist } from "zustand/middleware";
 import { SignupFormTemp } from "./authStore";
+import { getProfile } from "@/app/api/profile.api";
 
 export interface FirmProfileData {
   otp?: string;
@@ -15,6 +16,9 @@ export interface FirmProfileData {
   fileData?: string | null;
   isCustomFeeEnabled: boolean;
   customFeeAmount: number | null;
+  bankName: string;
+  bankAccountNumber: string;
+  bankAccountName: string;
 }
 
 interface FirmProfileState {
@@ -32,6 +36,7 @@ interface FirmProfileState {
     fileName: string | null
   ) => void;
 
+  fetchProfile: () => Promise<void>;
   SubmitCompleteSignup: (adminData: any) => Promise<any>;
   resetProfile: () => void;
 }
@@ -46,7 +51,10 @@ const initialFormData: FirmProfileData = {
   cacFile: null,
   cacFileName: null,
   isCustomFeeEnabled: false,
-  customFeeAmount: null
+  customFeeAmount: null,
+  bankName: "",
+  bankAccountName: "",
+  bankAccountNumber: ""
 };
 
 export const useFirmProfileStore = create<FirmProfileState>()(
@@ -55,6 +63,37 @@ export const useFirmProfileStore = create<FirmProfileState>()(
       step: 1,
       formData: initialFormData,
       isSubmitting: false,
+
+      fetchProfile: async () => {
+        set({ isSubmitting: true });
+        try {
+          const response = await getProfile();
+          console.log("PRofile API Response:", response.data);
+          const data = response.data;
+
+          const firmData = data.firm;
+
+          if (firmData) {
+            set({
+              formData: {
+                ...get().formData,
+                firmName: firmData.name || "",
+                firmType: firmData.firmType || "",
+                brandColor: firmData.colour || "#7C3AED",
+                bankName: firmData.bankName || "",
+                bankAccountName: firmData.bankAccountName || "",
+                bankAccountNumber: firmData.bankAccountNumber || "",
+                isCustomFeeEnabled: !!firmData.fee,
+                customFeeAmount: firmData.fee || 0
+              }
+            });
+          }
+        } catch (error) {
+          console.error("Failed to fetch profile:", error);
+        } finally {
+          set({ isSubmitting: false });
+        }
+      },
 
       nextStep: () =>
         set((state) => {
@@ -109,6 +148,9 @@ export const useFirmProfileStore = create<FirmProfileState>()(
             fee: formData.isCustomFeeEnabled
               ? Number(formData.customFeeAmount)
               : 0,
+            bankName: formData.bankName,
+            bankAccountNumber: formData.bankAccountNumber,
+            bankAccountName: formData.bankAccountName,
             role: "ADMIN",
             consent: true
           };

@@ -37,9 +37,9 @@ const EditCounselModal = () => {
         callToBarFile: selectedCounsel.callToBarFile
       });
       // Pre-set the store's file state with the existing one
-      setFile(selectedCounsel.callToBarFile);
+      setFile(selectedCounsel.callToBarFile ?? null);
     }
-  }, [selectedCounsel]);
+  }, [selectedCounsel, setFile]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();

@@ -16,20 +16,18 @@ const BillingPage = () => {
     isSetRateCaseModalOpen
   } = useBillingStore();
 
+  // Trigger fetch on Page Mount
   React.useEffect(() => {
-    if (isSetRateModalOpen) {
-      fetchBillingInitialData();
-    }
-  }, [isSetRateModalOpen, fetchBillingInitialData]);
+    fetchBillingInitialData();
+  }, []);
 
   return (
     <div className="p-6">
       {/* Conditional Rendering Logic */}
       <main>
-        {isLoading ? (
+        {isLoading && rates.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[60vh] text-slate-500 gap-3">
             <Loader2 className="h-10 w-10 animate-spin text-[#6f42c1]" />
-            {/* <p className="font-medium">Loading billing configurations...</p> */}
           </div>
         ) : rates.length > 0 ? (
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

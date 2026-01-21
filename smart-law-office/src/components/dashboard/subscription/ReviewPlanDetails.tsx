@@ -17,20 +17,6 @@ export function ReviewPlanDetails() {
     setStep
   } = useSubscriptionStore();
 
-  // const pricing = useMemo(() => {
-  //   const isYearly = billingCycle === "Yearly";
-  //   const base = selectedSubscription.monthlyPrice;
-  //   const total = base * (isYearly ? 12 * 0.8 : 1); // Apply 20% discount if yearly
-
-  //   return {
-  //     monthlyEquivalent: isYearly ? base * 0.8 : base,
-  //     totalToPay: total,
-  //     savings: isYearly ? base * 12 * 0.2 : null
-  //   };
-  // }, [selectedSubscription, billingCycle]);
-  // Pricing hardcoded to 15,000 as per your request
-  // const isYearly = billingCycle === "Yearly";
-  // const discount = isYearly ? 0.8 : 1;
   const subtotal = 15000;
 
   return (

@@ -61,8 +61,11 @@ export function CustomSelectField<T extends FieldValues>({
             disabled={disabled}
           >
             <FormControl>
-              <SelectTrigger className={className}>
-                <SelectValue placeholder={placeholder} />
+              <SelectTrigger className={`${className} w-full overflow-hidden `}>
+                <div className="flex-1 text-left truncate">
+                  <SelectValue placeholder={placeholder} />
+                </div>
+                {/* <SelectValue placeholder={placeholder} /> */}
               </SelectTrigger>
             </FormControl>
             <SelectContent>

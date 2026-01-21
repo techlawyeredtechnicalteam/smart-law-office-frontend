@@ -67,12 +67,22 @@ export const useAuthStore = create<AuthState>()(
           user: state.user ? { ...state.user, ...updatedUser } : null
         }));
       },
-      updateUserLogo: (newLogo: string) =>
-        set((state: any) => ({
-          user: {
-            ...state.user,
-            firm: { ...state.user?.firm, logo: newLogo }
-          }
+      // updateUserLogo: (newLogo: string) =>
+      //   set((state: any) => ({
+      //     user: {
+      //       ...state.user,
+      //       firm: { ...state.user?.firm, logo: newLogo }
+      //     }
+      //   })),
+      updateUserLogo: (newLogo) =>
+        set((state) => ({
+          user: state.user
+            ? {
+                ...state.user,
+                firm: { ...state.user.firm, logo: newLogo },
+                logo: newLogo // sync both locations
+              }
+            : null
         })),
 
       //

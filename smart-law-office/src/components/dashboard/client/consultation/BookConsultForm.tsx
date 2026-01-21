@@ -3,41 +3,20 @@
 import * as z from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { currentDate, currentTime } from "@/utils/time-date";
-import { CalendarIcon } from "lucide-react";
-
-import { cn } from "@/lib/utils";
 import {
   consultationFormSchema,
   ConsultationFormValues
 } from "@/types/Consultation.schema";
 import useConsultationStore from "@/store/consultationStore";
-
 // Custom Components
 import { CustomFormField } from "@/components/shared/CustomFormField";
-
 // Shadcn UI Components
 import { Button } from "@/components/ui/button";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from "@/components/ui/form";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger
-} from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { formatDate } from "date-fns";
-
-// Mock Data for pre-fill
-const MOCK_CLIENT_NAME = "Christine Adeola";
-const MOCK_EMAIL = "christineadeola@gmail.com";
-const MOCK_FEE = 30000; // Naira (₦)
+import { Form, FormField, FormItem, FormMessage } from "@/components/ui/form";
+import { useBillingStore } from "@/store/setRateBill";
+import React, { useMemo } from "react";
+import FileUpload from "@/components/shared/FileUpload";
+import { CustomSelectField } from "@/components/shared/CustomSelectField";
 
 interface BookConsultationFormProps {
   onClose?: () => void;
@@ -45,24 +24,75 @@ interface BookConsultationFormProps {
 
 export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
   const { setFormData, setStep } = useConsultationStore();
+  const { rates, fetchConsultationFeesOnly, isLoading } = useBillingStore();
+
+  // fetch billing data on mount
+  React.useEffect(() => {
+    if (rates.length === 0) {
+      fetchConsultationFeesOnly();
+    }
+  }, [rates.length, fetchConsultationFeesOnly]);
+
+  const consultationOptions = useMemo(() => {
+    return rates
+      .filter((r: any) => r.serviceType === "Consultation")
+      .map((rate: any) => ({
+        label: `${rate.consultType} (${rate.duration} mins) — ₦${rate.rate.toLocaleString()}`,
+        value: rate.id || rate._id || rate.consultType
+      }));
+  }, [rates]);
 
   const form = useForm<ConsultationFormValues>({
     resolver: zodResolver(consultationFormSchema),
     defaultValues: {
-      clientName: MOCK_CLIENT_NAME,
-      email: MOCK_EMAIL,
-      consultationFee: MOCK_FEE,
-      date: new Date(),
-      time: "10:00",
-      notes: "Initial consultation notes for the client."
+      consultationFeeId: "",
+      date: "",
+      time: "",
+      note: "",
+      document: null
     },
     mode: "onChange"
   });
 
   function onSubmit(values: ConsultationFormValues) {
-    setFormData(values);
+    if (!values.time || !values.date || !values.consultationFeeId) {
+      return;
+    }
+
+    // const selectedRate = rates.find(
+    //   (r: any) =>
+    //     String(r.id || r._id || r.consultType) === values.consultationFeeId
+    // );
+
+    // FIX: More robust finding logic
+    const selectedRate = rates.find((r: any) => {
+      const idMatch = String(r.id || r._id) === values.consultationFeeId;
+      const typeMatch = r.consultType === values.consultationFeeId;
+      return idMatch || typeMatch;
+    });
+
+    if (!selectedRate) {
+      return;
+    }
+
+    const [hours, minutes] = values.time.split(":");
+    const consultDate = new Date(values.date);
+    consultDate.setHours(parseInt(hours), parseInt(minutes));
+
+    const anyRate = selectedRate as any;
+    const finalPayload = {
+      ...values,
+      consultAt: consultDate.toISOString(),
+      feeDetails: {
+        id: anyRate.id || anyRate._id,
+        consultType: anyRate.consultType,
+        duration: anyRate.duration,
+        rate: anyRate.rate
+      }
+    };
+
+    setFormData(finalPayload);
     setStep("summary");
-    // onClose?.();
   }
 
   const handleCancel = () => {
@@ -73,113 +103,82 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-4 py-4">
-        {/* Client Name - Using CustomFormField */}
-        <CustomFormField
+        {/* Consultation FeeId */}
+        <CustomSelectField
           control={form.control}
-          name="clientName"
-          label="Client Name"
-          placeholder="Enter Client Name"
-          type="text"
-        />
-
-        {/* Email - Using CustomFormField */}
-        <CustomFormField
-          control={form.control}
-          name="email"
-          label="Email Address"
-          placeholder="E.g. christineadeola@gmail.com"
-          type="email"
-          autoComplete="email"
-        />
-
-        {/* Consultation Fee - Using CustomFormField */}
-        <CustomFormField
-          control={form.control}
-          name="consultationFee"
-          label="Consultation fee"
-          placeholder="30,000"
-          type="number"
-          readOnly
-          className="bg-gray-50 border-gray-300"
+          name="consultationFeeId"
+          label="ConsultationFeeId"
+          placeholder={
+            isLoading
+              ? "Fetching available fees..."
+              : consultationOptions.length === 0
+                ? "No consultation fees"
+                : "Select type"
+          }
+          options={consultationOptions}
+          disabled={isLoading || consultationOptions.length === 0}
         />
 
         <div className="grid grid-cols-2 gap-4">
-          {/* Date Field */}
-          <FormField
+          <CustomFormField
             control={form.control}
             name="date"
-            render={({ field }) => (
-              <FormItem className="flex flex-col">
-                <FormLabel>Date</FormLabel>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <FormControl>
-                      <Button
-                        variant={"outline"}
-                        className={cn(
-                          "w-full pl-3 text-left font-normal py-3 h-auto",
-                          !field.value && "text-muted-foreground"
-                        )}
-                      >
-                        {field.value ? (
-                          formatDate(field.value, "dd/MM/yyyy")
-                        ) : (
-                          <span>dd/mm/yy</span>
-                        )}
-                        <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                      </Button>
-                    </FormControl>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={field.value}
-                      onSelect={field.onChange}
-                      disabled={(date) =>
-                        date < new Date() || date > new Date("2026-12-31")
-                      }
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-                <FormMessage />
-              </FormItem>
-            )}
+            label="Date"
+            type="date"
+            placeholder="Pick a date"
           />
 
-          {/* Time - Using CustomFormField */}
           <CustomFormField
             control={form.control}
             name="time"
-            label="Time"
-            placeholder="--:-- PM"
+            label="Choose Time"
             type="time"
+            placeholder="Choose Time"
           />
         </div>
 
-        {/* Notes - Using CustomFormField with textarea */}
         <CustomFormField
           control={form.control}
-          name="notes"
-          label="Notes"
-          placeholder="E.g. contract review inquiry, initial case discussion..."
+          name="note"
+          label="Reason for Consultation"
+          placeholder="Briefly explain..."
           type="textarea"
-          rows={4}
+          rows={3}
         />
 
-        {/* Footer Display */}
-        <div className="flex justify-between items-center text-sm text-gray-500 mt-4">
-          <span>{currentDate}</span>
-          <span>{currentTime}</span>
-        </div>
+        {/* Integrated FileUpload */}
+        <FormField
+          control={form.control}
+          name="document"
+          render={({ field }) => (
+            <FormItem>
+              <FileUpload
+                id="consultation-doc"
+                label="Supporting Document (Optional)"
+                fileData={field.value || null}
+                onFileChange={(data) => field.onChange(data)}
+                maxSize={5}
+                accept=".pdf,image/*"
+              />
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         {/* Action Buttons */}
         <div className="flex justify-end space-x-2 pt-4">
           <Button type="button" variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          <Button type="submit" className="bg-[#6f42c1] hover:bg-[#5a369e]">
+          {/* <Button type="submit" className="bg-[#6f42c1] hover:bg-[#5a369e]">
             Proceed to Pay
+          </Button> */}
+          <Button
+            type="submit"
+            className="bg-[#6f42c1] hover:bg-[#5a369e]"
+            disabled={form.formState.isSubmitting}
+          >
+            {form.formState.isSubmitting ? "Processing..." : "Proceed to Pay"}
           </Button>
         </div>
       </form>

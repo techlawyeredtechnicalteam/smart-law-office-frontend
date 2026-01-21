@@ -58,42 +58,16 @@ const VerifyForm = () => {
 
       const completeUser: User = {
         ...userData,
+        email: userData?.email || userEmail,
         firmName: firmData.firmName,
         logo: firmData.logoFile
       };
-
       loginSuccess(token, completeUser);
 
-      useFirmProfileStore.getState().resetProfile();
-
       toast.success("Account created successfully");
-      window.location.href = "/success";
+      router.push("/success");
 
-      // if (userData && userData.email) {
-      //   const userObject: User = {
-      //     id: userData.userId || userData.id || userData.firmId,
-      //     email: userData.email,
-      //     firstName: userData.firstName,
-      //     lastName: userData.lastName,
-      //     firmId: userData.firmId,
-      //     role: userData.role,
-      //     firmName: firmData.firmName || userData.firmName || userData.name,
-      //     logo: firmData.logoFile || userData.logo
-      //   };
-
-      //   const finalToken = token || "session-active";
-      //   setAuthCookie(finalToken, userData.role);
-
-      //   // Commit to store(set user, authenticate and stop loading)
-      //   loginSuccess(finalToken, userObject);
-      //   useFirmProfileStore.getState().resetProfile();
-
-      //   router.push("/success");
-      // } else {
-      //   throw new Error(
-      //     "Verification succeeded but user data was not returned."
-      //   );
-      // }
+      useFirmProfileStore.getState().resetProfile();
     } catch (err: any) {
       setAuthLoading(false);
       const errorMessage = err.response?.data?.message || "Verification failed";

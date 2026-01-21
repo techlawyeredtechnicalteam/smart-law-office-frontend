@@ -1,22 +1,9 @@
 import { z } from "zod";
 
-// export const setRateBillSchema = z.object({
-//   invoiceId: z.string().min(1, "Invoice ID is required"),
-//   serviceType: z.enum(["Consultation", "Case"]),
-
-//   // Consultation specific
-//   duration: z.string().min(1, "Duration is required"),
-//   consultationRate: z.number().min(0, "Please entter your consultation rate"),
-
-//   // Case specific
-//   caseTypeId: z.string().min(1, "Please select a case type"),
-//   subServiceId: z.string().min(1, "Please select a sub-service"),
-//   caseRate: z.number().min(0, "Please select your case rate")
-// });
-
 const ConsultationSchema = z.object({
   invoiceId: z.string().min(1, "Invoice ID is required"),
   serviceType: z.literal("Consultation"),
+  consultType: z.string().min(1, "Consult Type is required"),
   duration: z.string().min(1, "Duration is required"),
   consultationRate: z.number().min(1, "Rate must be greater than 0"),
   // These must be optional so the 'Case' data doesn't interfere

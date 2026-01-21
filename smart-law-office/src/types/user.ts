@@ -1,12 +1,17 @@
-// In @/types/user.ts
+// @/types/user.ts
 export interface Lawyer {
-  id: string;
-  name: string;
+  id: string; // Unified ID
+  userId: string;
+  firstName: string;
+  lastName: string;
+  name: string; // Full name
   email: string;
-  role: string;
+  role: "STAFF" | "ADMIN" | "CLIENT";
   specialty: string;
-  casesCount?: number;
-  firstName?: string;
-  lastName?: string;
-  userId?: string;
+  casesCount: number; // Single source of truth for workload
+  scn?: string; // Supreme Court Number
+  status: "Active" | "Inactive" | "Busy";
+  callToBarFile?: string | null;
+  fullName?: string;
+  assignedCases?: string | number;
 }

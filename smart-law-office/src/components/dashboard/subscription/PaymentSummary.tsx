@@ -1,4 +1,3 @@
-// src/components/subscription/PaymentSummary.tsx
 "use client";
 
 import React, { useState, useMemo } from "react";
@@ -8,7 +7,7 @@ import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
-// import { usePaystackPayment } from "react-paystack";
+import { usePaystackPayment } from "react-paystack";
 
 export function PaymentSummary() {
   const { user } = useAuthStore();
@@ -18,9 +17,9 @@ export function PaymentSummary() {
     setStep,
     setIsLoading,
     isLoading,
-    paymentFormData,
     setPaymentReference
   } = useSubscriptionStore();
+
   const [isAgreed, setIsAgreed] = useState(false);
 
   // calculate amount in Kobo
@@ -43,51 +42,49 @@ export function PaymentSummary() {
     email: user?.email || "",
     amount: paymentDetails.totalAmountKobo,
     publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string,
-    metaData: {
-      customField: [
+    metadata: {
+      // Paystack's type definition specifically looks for custom_fields
+      custom_fields: [
         {
-          display_name: "Subscription Plan",
-          variable_name: "plan",
+          display_name: "User ID",
+          variable_name: "userId",
+          value: user?.id || ""
+        },
+        {
+          display_name: "Plan Name",
+          variable_name: "planName",
           value: selectedSubscription.name
         },
-        { display_name: "User ID", variable_name: "userId", value: user?.id },
-        { display_name: "Type", variable_name: "type", value: "subscription" }
+        {
+          display_name: "Billing Cycle",
+          variable_name: "billingCycle",
+          value: billingCycle
+        }
       ],
-      // adding a flat object in case backend prefers it
-      userId: user?.id,
-      planName: selectedSubscription.name,
-      type: "subscription"
+      // We keep these flat fields for our backend webhook logic
+      userId: user?.id || "",
+      planName: selectedSubscription.name
     }
   };
 
-  // const initializePayment = usePaystackPayment(config);
-
-  const onSuccess = (reference: any) => {
-    setIsLoading(false);
-    toast.success("Payment Successful! Reference: " + reference.reference);
-    setPaymentReference(reference.reference);
-    setStep("verify");
-  };
-
-  const onClose = () => {
-    toast.info("Payment process was not completed.");
-    setIsLoading(false);
-  };
+  const initializePayment = usePaystackPayment(config);
 
   const handlePayment = () => {
-    if (!user?.email) {
-      toast.warning(
-        "Please provide your email address to proceed with payment."
-      );
-      return;
-    }
+    if (!isAgreed) return;
 
     setIsLoading(true);
-    // initializePayment({ onSuccess, onClose });
+    initializePayment({
+      onSuccess: (reference: any) => {
+        setIsLoading(false);
+        setPaymentReference(reference.reference);
+        setStep("verify");
+      },
+      onClose: () => {
+        setIsLoading(false);
+        toast.info("Payment cancelled.");
+      }
+    });
   };
-
-  // If user navigated here directly without filling form, handle undefined
-  if (!paymentFormData) return null;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -103,92 +100,37 @@ export function PaymentSummary() {
         <h1 className="text-xl font-bold">Enter Your Payment Details</h1>
       </div>
 
-      <div className="grid grid-cols-3 gap-8">
-        {/* Left Side: Payment Summary Details */}
-        <div className="col-span-2 shadow-sm p-6">
-          <h2 className="text-lg font-bold mb-4">Payment Details</h2>
-          <div className="p-6 border rounded-lg space-y-4">
-            <div className="grid grid-cols-2 gap-y-3 text-sm">
-              <span className="text-gray-500">Card Number</span>
-              <span className="font-medium text-right">
-                {paymentFormData.cardNumber}
-              </span>
-
-              <span className="text-gray-500">Expiration Date</span>
-              <span className="font-medium text-right">
-                {paymentFormData.cardExpiry}
-              </span>
-
-              <span className="text-gray-500">CVV</span>
-              <span className="font-medium text-right">
-                {paymentFormData.cvv}
-              </span>
+      <div className="grid md:grid-cols-2 gap-10">
+        {/* Order Info */}
+        <div className="space-y-6">
+          <div className="bg-white p-6 rounded-xl border shadow-sm">
+            <h2 className="font-semibold text-gray-500 uppercase text-xs tracking-wider">
+              Plan Summary
+            </h2>
+            <div className="mt-4 flex justify-between items-end">
+              <div>
+                <p className="text-xl font-bold">{selectedSubscription.name}</p>
+                <p className="text-sm text-gray-500">{billingCycle} Billing</p>
+              </div>
+              <p className="text-2xl font-black text-purple-600">
+                ₦{paymentDetails.totalAmountNaira.toLocaleString()}
+              </p>
             </div>
-
-            <div className="border-t pt-4 grid grid-cols-2 gap-y-3 text-sm">
-              <span className="text-gray-500">Billing Address</span>
-              <span className="font-medium text-right">
-                {paymentFormData.billingAddress}
-              </span>
-
-              <span className="text-gray-500">Country</span>
-              <span className="font-medium text-right">
-                {paymentFormData.country}
-              </span>
-
-              <span className="text-gray-500">State</span>
-              <span className="font-medium text-right">
-                {paymentFormData.state}
-              </span>
-
-              <span className="text-gray-500">City</span>
-              <span className="font-medium text-right">
-                {paymentFormData.city}
-              </span>
-
-              <span className="text-gray-500">Zip code</span>
-              <span className="font-medium text-right">
-                {paymentFormData.zipCode}
-              </span>
-            </div>
-
-            <Button
-              variant="outline"
-              className="w-full mt-4"
-              onClick={() => setStep("payment")}
-            >
-              Edit Details
-            </Button>
           </div>
 
-          {/* Total Section */}
-          <div className="mt-6 flex justify-between items-center text-lg font-bold p-4 border-y">
-            {/* <span>Total Due Today ({paymentDetails.termDisplay})</span> */}
-            <span className="text-purple-600">
-              ₦{paymentDetails.totalAmountNaira.toLocaleString()}
-            </span>
-          </div>
-
-          {/* Consent Form */}
-          <div className="flex items-center space-x-3 mt-8">
+          <div className="flex items-start space-x-3">
             <Checkbox
               id="terms"
               checked={isAgreed}
-              onCheckedChange={(checked) => setIsAgreed(checked as boolean)}
-              className=""
+              onCheckedChange={(v) => setIsAgreed(!!v)}
             />
             <label
               htmlFor="terms"
-              className="text-sm font-medium leading-none text-gray-700"
+              className="text-sm text-gray-600 leading-tight"
             >
-              I agree to this Legal{" "}
-              <span className="text-blue-600 cursor-pointer">
-                Terms of Service
-              </span>
-              , and{" "}
-              <span className="text-blue-600 cursor-pointer">
-                Privacy Policy
-              </span>
+              I authorize the charge of ₦
+              {paymentDetails.totalAmountNaira.toLocaleString()} and agree to
+              the Terms of Service.
             </label>
           </div>
         </div>
@@ -235,14 +177,15 @@ export function PaymentSummary() {
 
           <div className="pt-4">
             <Button
-              onClick={handlePayment}
+              size="lg"
+              className="w-full bg-purple-600 hover:bg-purple-700 h-14 text-lg"
               disabled={!isAgreed || isLoading}
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+              onClick={handlePayment}
             >
               {isLoading ? (
-                <Loader2 className="animate-spin w-4 h-4 mr-2" />
+                <Loader2 className="animate-spin" />
               ) : (
-                "Upgrade"
+                `Pay ₦${paymentDetails.totalAmountNaira.toLocaleString()}`
               )}
             </Button>
           </div>

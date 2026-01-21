@@ -24,7 +24,7 @@ const SetRateConsultation = () => {
     openSetRateCaseModal,
     isSetRateModalOpen,
     closeSetRateModal,
-    isLoading
+    isSaving
   } = useBillingStore();
 
   const form = useForm<setRateBillFormData>({
@@ -32,6 +32,7 @@ const SetRateConsultation = () => {
     defaultValues: {
       invoiceId: `INV-${Date.now().toString().slice(-6)}`,
       serviceType: "Consultation",
+      consultType: "",
       caseTypeId: "",
       subServiceId: "",
       caseRate: 0,
@@ -43,26 +44,35 @@ const SetRateConsultation = () => {
   // Watch service type to handle switching to Case
   const watchedServiceType = form.watch("serviceType");
 
+  // Extract isSubmitting from form state
+  const { isSubmitting } = form.formState;
+
+  // Combine both for a "True" loading state
+  const isPending = isSubmitting;
+
   const handleSubmit = async (data: setRateBillFormData) => {
     // Basic validation check
-    if (!data.duration || !data.consultationRate) {
-      toast.error("Please fill in all fields");
-      return;
-    }
+    if (data.serviceType === "Consultation") {
+      // Now TS knows data has 'consultType', 'duration', and 'consultationRate'
+      if (!data.consultType || !data.duration || !data.consultationRate) {
+        toast.error("Please fill in all consultation fields");
+        return;
+      }
 
-    const success = await saveRate({
-      serviceType: "Consultation",
-      duration: data.duration,
-      rate: data.consultationRate
-    });
+      const success = await saveRate({
+        serviceType: "Consultation",
+        consultType: data.consultType,
+        duration: data.duration,
+        rate: data.consultationRate
+      });
 
-    if (success) {
-      // Success toast is already handled inside the store's saveRate
-      form.reset();
-      closeSetRateModal();
+      if (success) {
+        // Success toast is already handled inside the store's saveRate
+        form.reset();
+        closeSetRateModal();
+      }
     }
   };
-
   return (
     <Dialog open={isSetRateModalOpen} onOpenChange={closeSetRateModal}>
       <DialogContent className="sm:max-w-[480px]">
@@ -104,6 +114,13 @@ const SetRateConsultation = () => {
               }}
               className="w-full"
             />
+
+            <CustomFormField
+              control={form.control}
+              name="consultType"
+              label="Consult Type"
+              placeholder="E.g Litigation"
+            />
             {/* Duration - Only show for Consultation */}
             {watchedServiceType === "Consultation" && (
               <>
@@ -138,16 +155,23 @@ const SetRateConsultation = () => {
                 type="button"
                 variant="outline"
                 onClick={closeSetRateModal}
-                disabled={isLoading}
+                disabled={isPending}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-violet-600 hover:bg-violet-700"
-                disabled={isLoading}
+                className="bg-violet-600 hover:bg-violet-700 min-w-[100px]"
+                disabled={isPending}
               >
-                {isLoading ? "Saving..." : "Save"}
+                {isPending ? (
+                  <span className="flex items-center gap-2">
+                    <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Saving...
+                  </span>
+                ) : (
+                  "Save"
+                )}
               </Button>
             </div>
           </form>

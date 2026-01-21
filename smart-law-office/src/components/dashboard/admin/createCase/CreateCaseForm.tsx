@@ -9,10 +9,12 @@ import { createCaseSchema } from "@/types/case.schema";
 import { CustomFormField } from "@/components/shared/CustomFormField";
 import { CustomSelectField } from "@/components/shared/CustomSelectField";
 import * as React from "react";
-import { Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import FileUpload from "@/components/shared/FileUpload";
 import { useAuthStore } from "@/store/authStore";
 import { useBillingStore } from "@/store/setRateBill";
+import { useAssignStore } from "@/store/assignCaseStore";
+import { Value } from "@radix-ui/react-select";
 
 interface CreateCaseFormProps {
   onSuccess: () => void;
@@ -20,35 +22,48 @@ interface CreateCaseFormProps {
 }
 
 const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
-  const { executeCreate, isLoading } = useCaseStore();
-  const { feeSchedules, fetchBillingInitialData } = useBillingStore();
+  const { executeCreate, isLoading: isCreating } = useCaseStore();
+  const { feeSchedules, rates, fetchBillingInitialData } = useBillingStore();
   const { user } = useAuthStore();
+  const {
+    fetchData,
+    counsels,
+    clients,
+    isLoading: isFetchingData
+  } = useAssignStore();
 
   React.useEffect(() => {
     // Ensure we have the latest rates/schedules
     fetchBillingInitialData();
-  }, [fetchBillingInitialData]);
-
-  // const caseTypeOptions = React.useMemo(() => {
-  //   return feeSchedules.flatMap((item: any) =>
-  //     (item.caseTypes || []).map((ct: any) => ({
-  //       label: `${item.name} (₦${item.rateMin.toLocaleString()})`,
-  //       value: ct.caseTypeId // This is the ID the backend needs to create a case
-  //     }))
-  //   );
-  // }, [feeSchedules]);
+    fetchData();
+  }, []);
 
   const caseTypeOptions = React.useMemo(() => {
-    // map directly from the unified freescheduless array
-    return feeSchedules.flatMap((schedule: any) =>
-      (schedule.caseTypes || []).map((type: any) => ({
-        label: `${type.name} - ${
-          schedule.name
-        } (₦${schedule.rateMin?.toLocaleString()})`,
-        value: type.caseTypeId // remain the unique ID
-      }))
-    );
-  }, [feeSchedules]);
+    return rates
+      .filter((r) => r.serviceType === "Case")
+      .map((rate: any) => ({
+        // This is what the user sees
+        label: `${rate.subServiceType} (₦${rate.caseRate?.toLocaleString()})`,
+        // This MUST be the ID the backend expects (the CaseType UUID)
+        value: String((rate as any).caseTypeId || (rate as any).id)
+      }));
+  }, [rates]);
+
+  // Map staff Lawyers
+  const staffOptions = React.useMemo(() => {
+    return counsels.map((c, index) => ({
+      label: `${c.name} (${c.email})`,
+      value: c.email || `missing-email-${c.id || index}`
+    }));
+  }, [counsels]);
+
+  // map clients
+  const clientOptions = React.useMemo(() => {
+    return clients.map((c, index) => ({
+      label: `${c.firstName} ${c.lastName} (${c.email})`,
+      value: c.email || `client-${c.id || index}`
+    }));
+  }, [clients]);
 
   const statusOptions = [
     { label: "Discovery", value: "Discovery" },
@@ -100,25 +115,29 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
         )} */}
 
         {/* Shared Fields */}
-        <CustomFormField
+        {/* <CustomFormField
           control={form.control}
           name="clientEmail"
           label="Client Email"
           placeholder="client@example.com"
+        /> */}
+        <CustomSelectField
+          control={form.control}
+          name="clientEmail"
+          label="Select Client"
+          placeholder="Select a Client"
+          options={clientOptions}
+          disabled={isFetchingData}
         />
 
         <CustomSelectField
-          // key={caseTypeOptions.length}
+          // key={caseTypeOptions.length > 0 ? "loaded" : "loading"}
           control={form.control}
           name="caseTypeId"
           label="Case Type"
-          placeholder={isLoading ? "Loading..." : "Select type"}
+          placeholder="Select Case Type"
           options={caseTypeOptions}
           className="w-full"
-          onChange={(val: string) => {
-            console.log("Selected ID:", val);
-            form.setValue("caseTypeId", val);
-          }}
         />
 
         <CustomSelectField
@@ -133,11 +152,19 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
         {/* Admin Form - Includes staffEmail assignment */}
         {isAdmin && (
           <div className="space-y-4">
-            <CustomFormField
+            {/* <CustomFormField
               control={form.control}
               name="staffEmail"
               label="Assign Staff Email"
               placeholder="staff@firm.com"
+            /> */}
+            <CustomSelectField
+              control={form.control}
+              name="staffEmail"
+              label="Assign Counsel"
+              placeholder="Select Counsel"
+              options={staffOptions}
+              disabled={isFetchingData}
             />
           </div>
         )}
@@ -199,10 +226,17 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           </Button>
           <Button
             type="submit"
-            className="bg-violet-600 hover:bg-violet-700 px-8 rounded-md"
-            disabled={isLoading}
+            className="bg-violet-600 hover:bg-violet-700 px-8"
+            disabled={isCreating}
           >
-            {isLoading ? "Creating..." : "Create Case"}
+            {isCreating ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Case"
+            )}
           </Button>
         </div>
       </form>

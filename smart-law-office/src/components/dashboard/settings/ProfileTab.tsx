@@ -1,29 +1,48 @@
 "use client";
 
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Edit, LogOut, Trash2 } from "lucide-react";
+import { Edit, Loader2, LogOut, Trash2 } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { LogoutDialog } from "./LogoutDialog";
 import { deleteFirmProfile, editFirmProfile } from "@/app/api/firmProfile.api";
 import { toast } from "sonner";
 import { DeleteAccountModal } from "./DeleteAccount";
+import { getProfile } from "@/app/api/profile.api";
 
 export default function ProfileTab() {
-  const { user, logout, updateUserLogo } = useAuthStore();
-  const [firstName, setFirstName] = useState(user?.firstName || "");
-  const [lastName, setLastName] = useState(user?.lastName || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [logo, setLogo] = useState<string | null>(user?.logo || null);
+  const { logout, updateUserLogo } = useAuthStore();
+  const [loading, setLoading] = useState(true);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [logo, setLogo] = useState<string | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  React.useEffect(() => {
+    const loadProfile = async () => {
+      try {
+        const res = await getProfile();
+        const data = res.data;
+        setFirstName(data.firstName || "");
+        setLastName(data.lastName || "");
+        setEmail(data.email || "");
+        setLogo(data.firm?.logo || data.logo || null);
+      } catch (err) {
+        toast.error("Failed to load profile details");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadProfile();
+  }, []);
+
   // Get current logo from global auth store
-  const currentLogo = user?.firm?.logo || user?.logo;
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -37,11 +56,9 @@ export default function ProfileTab() {
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64String = reader.result as string;
+      setLogo(base64String); // Local preview
+      updateUserLogo(base64String); // Global sync
 
-      // 1. Update UI Real-time (Global State)
-      updateUserLogo(base64String);
-
-      // 2. Persist to Backend
       try {
         await editFirmProfile({ logo: base64String });
         toast.success("Logo updated successfully");
@@ -53,14 +70,10 @@ export default function ProfileTab() {
   };
 
   const removeLogo = async () => {
+    setLogo(null);
     updateUserLogo("");
     await editFirmProfile({ logo: null });
   };
-
-  const getInitials = (f: string, l: string) =>
-    `${f[0] || ""}${l[0] || ""}`.toUpperCase();
-
-  const userInitials = getInitials(firstName, lastName);
 
   const handleUpdate = async () => {
     try {
@@ -83,18 +96,25 @@ export default function ProfileTab() {
     }
   };
 
+  if (loading)
+    return (
+      <div className="flex justify-center p-10">
+        <Loader2 className="animate-spin text-purple-600" />
+      </div>
+    );
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg max-w-4xl mx-auto">
       {" "}
       <div className="flex items-center space-x-4 mb-8">
         {" "}
         <Avatar className="h-20 w-20">
-          <AvatarImage src={currentLogo} className="object-cover" />
+          <AvatarImage src={logo || ""} className="object-cover" />
           <AvatarFallback className="bg-purple-100 text-[#7C5CFC] text-2xl font-bold">
-            {user?.firstName?.[0]}
-            {user?.lastName?.[0]}
+            {firstName?.[0]}
+            {lastName?.[0]}
           </AvatarFallback>
-        </Avatar>{" "}
+        </Avatar>
+        {""}
         <div className="flex space-x-3">
           {/* Hidden Input */}
           <input

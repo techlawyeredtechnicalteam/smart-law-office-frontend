@@ -3,13 +3,19 @@
 import { useCounselStore } from "@/store/manageCounsel";
 import { Edit, Trash2, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect } from "react";
+import React, { useEffect } from "react";
+import { useAssignStore } from "@/store/assignCaseStore";
+import { Lawyer } from "@/types/user";
 
 const CounselTable = () => {
-  const { counsel, isLoading, openEditModal, openDeleteModal } =
-    useCounselStore();
+  const { counsels, isLoading, fetchData } = useAssignStore();
+  const { openEditModal, openDeleteModal } = useCounselStore();
 
-  if (isLoading && counsel.length === 0) {
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (isLoading && counsels.length === 0) {
     return <TableSkeleton />;
   }
 
@@ -40,65 +46,71 @@ const CounselTable = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {counsel.length > 0 ? (
-              counsel.map((person) => (
-                <tr
-                  key={person.id}
-                  className="hover:bg-gray-50 transition-colors"
-                >
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">
-                        {person.firstName[0]}
-                        {person.lastName[0]}
+            {counsels.length > 0 ? (
+              counsels.map((person: Lawyer) => {
+                // derived state for woekload
+                const caseCount = Number(person.casesCount) || 0;
+                const isOverloaded = caseCount >= 5;
+
+                return (
+                  <tr
+                    key={person.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">
+                          {person.firstName[0]}
+                          {person.lastName[0]}
+                        </div>
+                        <span className="font-medium text-gray-900">
+                          {person.name}
+                        </span>
                       </div>
-                      <span className="font-medium text-gray-900">
-                        {person.fullName}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {person.scn}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      {person.email}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
+                      <span className="bg-gray-100 px-2.5 py-0.5 rounded-full">
+                        {person.casesCount}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {person.scn}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {person.email}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    <span className="bg-gray-100 px-2.5 py-0.5 rounded-full">
-                      {person.assignedCases}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        person.status === "Active"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {person.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        aria-label="Edit Counsel"
-                        onClick={() => openEditModal(person)}
-                        className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                          person.status === "Active"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
                       >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        aria-label="Delete Counsel"
-                        onClick={() => openDeleteModal(person)}
-                        className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
+                        {person.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          aria-label="Edit Counsel"
+                          onClick={() => openEditModal(person)}
+                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          aria-label="Delete Counsel"
+                          onClick={() => openDeleteModal(person)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             ) : (
               <tr>
                 <td

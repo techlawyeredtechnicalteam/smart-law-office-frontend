@@ -54,15 +54,30 @@ export function AvailableLawyersPanel() {
 }
 
 function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
+  const currentCases = lawyer.casesCount || 0;
+
+  const getInitials = (name: string) => {
+    if (!name) return "??";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+    }
+    return name.slice(0, 2).toUpperCase();
+  };
+
   return (
     <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition">
       <div className="flex gap-3">
-        <Avatar>
+        <Avatar className="h-10 w-10 border border-gray-100 shadow-sm">
           <AvatarImage
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${lawyer.name}`}
+            src={lawyer.firstName || ""}
+            alt={lawyer.name}
+            className="object-cover"
           />
-          <AvatarFallback>
-            {lawyer.name?.slice(0, 2).toUpperCase() || "??"}
+
+          {/* 2. Fallback to Initials if image fails or doesn't exist */}
+          <AvatarFallback className="bg-purple-100 text-[#6f42c1] text-xs font-bold border border-purple-200">
+            {getInitials(lawyer.name)}
           </AvatarFallback>
         </Avatar>
         <div>
@@ -77,7 +92,7 @@ function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
         </div>
       </div>
       <div className="text-right">
-        <div className="text-sm font-bold">{lawyer.casesCount || 0} Cases</div>
+        <div className="text-sm font-bold">{currentCases} Cases</div>
         <div className="flex items-center justify-end gap-1 text-xs text-green-600">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
           Available

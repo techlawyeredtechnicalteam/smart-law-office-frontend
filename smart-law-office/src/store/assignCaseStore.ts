@@ -4,6 +4,7 @@ import { Lawyer } from "@/types/user";
 import { getCounsel } from "@/app/api/manageCounse.api";
 import { assignCase } from "@/app/api/assignCase.api";
 import { getAllCases } from "@/app/api/cases.api";
+import { User } from "./authStore";
 
 export interface UnassignedCaseForUI {
   id: string;
@@ -36,6 +37,7 @@ export interface AssignedCase {
 interface AssignState {
   unassignedCases: UnassignedCaseForUI[];
   counsels: Lawyer[];
+  clients: User[];
   assignedCases: AssignedCase[];
   isAssigning: boolean;
   isLoading: boolean;
@@ -54,6 +56,7 @@ interface AssignState {
 export const useAssignStore = create<AssignState>((set, get) => ({
   unassignedCases: [],
   counsels: [],
+  clients: [],
   assignedCases: [],
   isAssigning: false,
   isLoading: false,
@@ -65,9 +68,6 @@ export const useAssignStore = create<AssignState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      // const [unassignedCasesRes, usersRes] = await Promise.all([
-      //   getAllCases(),
-      //   getCounsel()
       const [bookedCasesRes, usersRes] = await Promise.all([
         // Use an endpoint that returns cases booked by clients
         // If you don't have one, we can filter existing consultations
@@ -75,15 +75,6 @@ export const useAssignStore = create<AssignState>((set, get) => ({
         getCounsel()
       ]);
 
-      // const transformedCases: UnassignedCaseForUI[] =
-      //   unassignedCasesRes.data.map((ct: any, index: number) => ({
-      //     id: ct.caseTypeId || ct.id || `case-${Date.now()}-${index}`,
-      //     clientName: "Pending Assignment",
-      //     caseType: ct.feeSchedule?.name || ct.name || "General Case",
-      //     date: new Date().toLocaleDateString(),
-      //     time: new Date().toLocaleTimeString(),
-      //     status: "Pending Lawyer agreement"
-      //   }));
       const transformedCases: UnassignedCaseForUI[] = bookedCasesRes.data
         .filter((c: any) => c.client || c.clientName) // Only show if a client exists
         .map((ct: any) => ({
@@ -99,50 +90,39 @@ export const useAssignStore = create<AssignState>((set, get) => ({
           status: ct.status || "Pending Assignment"
         }));
 
-      // FIX: Convert object with numeric keys to array
-      let allUsers: any[] = [];
-
-      if (usersRes.data) {
-        // Check if it's an object with numeric keys
-        if (
-          typeof usersRes.data === "object" &&
-          !Array.isArray(usersRes.data)
-        ) {
-          allUsers = Object.values(usersRes.data);
-        } else if (Array.isArray(usersRes.data)) {
-          allUsers = usersRes.data;
-        }
-      } else if (Array.isArray(usersRes)) {
-        allUsers = usersRes;
-      } else if (typeof usersRes === "object") {
-        allUsers = Object.values(usersRes);
-      }
+      // Normalize allUsers to an array
+      const rawUsers = usersRes.data?.data || usersRes.data || usersRes || [];
+      const allUsers = Array.isArray(rawUsers)
+        ? rawUsers
+        : Object.values(rawUsers);
 
       // Filter for STAFF and transform to Lawyer format
       const lawyers: Lawyer[] = allUsers
         .filter((u: any) => u.role === "STAFF")
         .map((u: any) => ({
-          id: u.userId,
-          name: `${u.firstName} ${u.lastName}`,
+          id: String(u.userId || u.id),
+          userId: String(u.userId || u.id),
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          name: u.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim(),
           email: u.email,
-          role: u.role,
+          role: "STAFF",
           specialty: u.scn ? `SCN: ${u.scn}` : "General Practice",
-          casesCount: 0, // You can update this if you have case count data
-          firstName: u.firstName,
-          lastName: u.lastName,
-          userId: u.userId
+          scn: u.scn || "",
+          // Use the property name 'casesCount' everywhere
+          casesCount: Number(u.assignedCases || u.casesCount) || 0,
+          status:
+            Number(u.assignedCases || u.casesCount) >= 5 ? "Busy" : "Active",
+          callToBarFile: u.callToBarFile || null
         }));
 
-      console.log("Transformed lawyers:", lawyers);
+      // Filter for Clients
+      const clients: User[] = allUsers.filter((u: any) => u.role === "CLIENT");
 
-      // set({
-      //   unassignedCases: transformedCases,
-      //   counsels: lawyers,
-      //   isLoading: false
-      // });
       set({
         unassignedCases: transformedCases,
         counsels: lawyers,
+        clients: allUsers.filter((u: any) => u.role === "CLIENT"),
         isLoading: false
       });
     } catch (err) {
@@ -193,6 +173,17 @@ export const useAssignStore = create<AssignState>((set, get) => ({
         unassignedCases: state.unassignedCases.filter(
           (c) => c.id !== caseDetails.id
         ),
+
+        counsels: state.counsels.map((l) =>
+          l.email === counselEmail
+            ? {
+                ...l,
+                casesCount: (l.casesCount || 0) + 1,
+                status: l.casesCount + 1 >= 5 ? "Busy" : "Active"
+              }
+            : l
+        ),
+
         isAssigning: false
       }));
 

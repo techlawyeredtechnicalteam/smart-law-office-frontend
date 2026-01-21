@@ -1,6 +1,7 @@
 import api from "./api";
 
-export const bookConsultation = () => api.post("/consults/book");
+export const bookConsultation = (payload: any) =>
+  api.post("/consults/book", payload);
 
 export const getAllConsult = () => api.post("/all/consults");
 
