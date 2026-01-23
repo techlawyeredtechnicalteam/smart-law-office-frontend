@@ -1,6 +1,6 @@
 import React from "react";
 import { Control, FieldPath, FieldValues } from "react-hook-form";
-import { CalendarIcon, Check, Eye, EyeOff } from "lucide-react";
+import { CalendarIcon, Check, Clock, Eye, EyeOff } from "lucide-react";
 import {
   FormControl,
   FormField,
@@ -115,6 +115,26 @@ export function CustomFormField<T extends FieldValues>({
       );
     }
 
+    // NEW: Time Picker Logic
+    if (type === "time") {
+      return (
+        <div className="relative">
+          <Input
+            type="time"
+            {...fieldProps}
+            className={cn(baseInputClass, "appearance-none")}
+            readOnly={readOnly}
+            onChange={(e) => {
+              fieldProps.onChange(e.target.value);
+              onChange?.(e.target.value);
+            }}
+          />
+          <Clock className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+        </div>
+      );
+    }
+
+    // FIXED: Date Picker (Removed future date restriction)
     if (type === "date") {
       return (
         <Popover>
@@ -135,10 +155,7 @@ export function CustomFormField<T extends FieldValues>({
               <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent
-            className="w-auto p-0 bg-white border rounded-md shadow-md z-50"
-            align="start"
-          >
+          <PopoverContent className="w-auto p-0 bg-white" align="start">
             <Calendar
               mode="single"
               selected={
@@ -149,9 +166,8 @@ export function CustomFormField<T extends FieldValues>({
                 fieldProps.onChange(formattedDate);
                 onChange?.(formattedDate);
               }}
-              disabled={(date) =>
-                date > new Date() || date < new Date("1900-01-01")
-              }
+              // FIXED: Removed "date > new Date()" so future dates are clickable
+              disabled={(date) => date < new Date("1900-01-01")}
               initialFocus
             />
           </PopoverContent>

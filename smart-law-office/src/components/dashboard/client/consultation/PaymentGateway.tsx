@@ -19,8 +19,9 @@ import { useBillingStore } from "@/store/setRateBill";
 export function PaymentVerification() {
   const {
     formData,
-    setStep,    
+    setStep,
     submitConsultation,
+    setFormData,
     isLoading: isStoreLoading
   } = useConsultationStore();
   const { formData: firmProfile, fetchProfile } = useFirmProfileStore();
@@ -120,8 +121,11 @@ export function PaymentVerification() {
         <FileUpload
           id="receipt-upload"
           label="Upload receipt (PDF, JPG, PNG)"
-          fileData={receipt}
-          onFileChange={(data) => setReceipt(data || "")}
+          fileData={formData?.paymentReceipt || ""}
+          onFileChange={(data) => {
+            // 4. FIX: Update the store so the button unlocks
+            setFormData({ paymentReceipt: data || "" });
+          }}
           accept=".pdf,.jpg,.png,.jpeg"
         />
       </div>

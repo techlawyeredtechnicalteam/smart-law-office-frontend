@@ -99,11 +99,12 @@ export const useBillingStore = create<BillingStore>()(
         set({ isLoading: true });
         try {
           const consultRes = await getConsultationFee();
+          console.log("Fetch Consultation:", consultRes);
 
           const consultationHistory: ConsultationRate[] = (
             consultRes?.data || []
           ).map((item: any) => ({
-            id: item.id,
+            id: item.consultationFeeId || item.id,
             serviceType: "Consultation",
             consultType: item.consultType,
             duration: item.duration || 0,

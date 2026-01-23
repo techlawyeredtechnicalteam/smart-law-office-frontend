@@ -4,7 +4,7 @@ import React, { useEffect, useState } from "react";
 import useConsultationStore from "@/store/consultationStore";
 import { ConsultationStatus } from "@/types/Consultation.schema";
 import { cn } from "@/lib/utils";
-import { ArrowRight, Calendar, Clock } from "lucide-react";
+import { ArrowRight, Calendar, Clock, FileText } from "lucide-react";
 import { format, parseISO, isValid } from "date-fns";
 
 // Shadcn UI Components
@@ -12,6 +12,8 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { ConsultationEmptyState } from "./ConsultationEmptyState";
 import { TableColumn, TableModal } from "@/components/shared/TableModal";
+import { useAuthStore } from "@/store/authStore";
+import Link from "next/link";
 
 // Helper function to render status badge
 const StatusBadge = ({ status }: { status: ConsultationStatus }) => {
@@ -56,6 +58,7 @@ export function ConsultationDashboard({
     fetchConsultations,
     isLoading: storeLoading
   } = useConsultationStore();
+  const { user } = useAuthStore();
   const [internalLoading, setInternalLoading] = useState(false);
 
   useEffect(() => {
@@ -68,89 +71,111 @@ export function ConsultationDashboard({
   const loading = internalLoading || storeLoading;
 
   // Define table columns based on the STORE'S interface
-  const columns: TableColumn<any>[] = [
-    {
-      key: "id",
-      header: "Ref Code",
-      headerClassName:
-        "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      cellClassName: "font-mono font-bold text-[#6f42c1]",
-      render: (consult) => consult.id?.slice(-8).toUpperCase() || "N/A"
-    },
-    {
-      key: "client",
-      header: "Client",
-      headerClassName:
-        "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      render: (consult) => {
-        const name = consult.clientName || "Current User"; // Adjust based on your API response
-        return (
-          <div className="flex items-center space-x-3">
-            <Avatar className="h-8 w-8 border border-purple-100">
-              <AvatarFallback className="text-[10px] bg-purple-50 text-[#6f42c1] font-bold">
-                {getInitials(name)}
-              </AvatarFallback>
-            </Avatar>
-            <span className="font-medium text-gray-700">{name}</span>
+  const columns: TableColumn<any>[] = React.useMemo(
+    () => [
+      {
+        key: "id",
+        header: "Consultation Id",
+        headerClassName:
+          "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
+        cellClassName: "font-mono font-small text-[#6f42c1]",
+        render: (consult) => {
+          // Generates #2026-XXXX using the last 4 digits of the ID or a random fallback
+          const suffix = consult.id
+            ? consult.id.slice(-4).toUpperCase()
+            : Math.floor(1000 + Math.random() * 9000);
+          return `#2026-${suffix}`;
+        }
+      },
+      {
+        key: "client",
+        header: "Client",
+        headerClassName:
+          "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
+        render: (consult) => {
+          // Prioritize name from consultation object, fallback to auth store user
+          const name =
+            consult.clientName || user?.firstName || user?.email || "Client";
+          return (
+            <div className="flex items-center space-x-3">
+              <Avatar className="h-8 w-8 border border-purple-100">
+                <AvatarFallback className="text-[10px] bg-purple-50 text-[#6f42c1] font-bold">
+                  {getInitials(name)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="font-medium text-gray-700">{name}</span>
+            </div>
+          );
+        }
+      },
+      {
+        key: "status",
+        header: "Status",
+        headerClassName:
+          "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
+        render: (consult) => <StatusBadge status={consult.status} />
+      },
+      {
+        key: "schedule",
+        header: "Schedule",
+        headerClassName:
+          "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
+        render: (consult) => {
+          if (!consult.consultAt)
+            return <span className="text-gray-400">Not set</span>;
+          try {
+            const date = parseISO(consult.consultAt);
+            return (
+              <div className="flex flex-col text-[11px]">
+                <span className="flex items-center gap-1 font-bold text-gray-900">
+                  <Calendar className="w-3 h-3 text-gray-400" />{" "}
+                  {format(date, "MMM dd, yyyy")}
+                </span>
+                <span className="flex items-center gap-1 text-gray-500">
+                  <Clock className="w-3 h-3 text-gray-400" />{" "}
+                  {format(date, "hh:mm a")}
+                </span>
+              </div>
+            );
+          } catch (e) {
+            return <span className="text-red-400 text-xs">Invalid Date</span>;
+          }
+        }
+      },
+      {
+        key: "note",
+        header: "Notes", // Changed from "Reason" to "Notes"
+        headerClassName:
+          "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
+        cellClassName: "max-w-[180px] truncate text-gray-500 text-xs",
+        render: (consult) => (
+          <div className="flex items-start gap-2">
+            <FileText className="w-3 h-3 mt-0.5 text-gray-400 shrink-0" />
+            <span>{consult.note || "No notes provided"}</span>
           </div>
-        );
+        )
+      },
+      {
+        key: "action",
+        header: "Action",
+        headerClassName:
+          "text-right bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
+        cellClassName: "text-right",
+        render: (consult) => (
+          <Link href={`/client/consultations/${consult.id}`}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-[#6f42c1] hover:bg-purple-50 hover:text-[#5a369e] font-bold text-xs"
+            >
+              Details <ArrowRight className="ml-1 h-3 w-3" />
+            </Button>
+          </Link>
+        )
       }
-    },
-    {
-      key: "status",
-      header: "Status",
-      headerClassName:
-        "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      render: (consult) => <StatusBadge status={consult.status} />
-    },
-    {
-      key: "schedule",
-      header: "Schedule",
-      headerClassName:
-        "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      render: (consult) => {
-        if (!consult.consultAt) return "Not set";
-        const date = parseISO(consult.consultAt);
-        return (
-          <div className="flex flex-col text-[11px]">
-            <span className="flex items-center gap-1 font-bold text-gray-900">
-              <Calendar className="w-3 h-3 text-gray-400" />{" "}
-              {format(date, "MMM dd, yyyy")}
-            </span>
-            <span className="flex items-center gap-1 text-gray-500">
-              <Clock className="w-3 h-3 text-gray-400" />{" "}
-              {format(date, "hh:mm a")}
-            </span>
-          </div>
-        );
-      }
-    },
-    {
-      key: "note",
-      header: "Reason",
-      headerClassName:
-        "bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      cellClassName: "max-w-[180px] truncate text-gray-500 italic text-xs",
-      render: (consult) => consult.note || "No notes provided"
-    },
-    {
-      key: "action",
-      header: "Action",
-      headerClassName:
-        "text-right bg-gray-50 text-gray-600 uppercase text-xs tracking-wider",
-      cellClassName: "text-right",
-      render: (consult) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => onViewDetails(consult.id)}
-          className="text-[#6f42c1] hover:bg-purple-50 hover:text-[#5a369e] font-bold text-xs"
-        >
-          Details <ArrowRight className="ml-1 h-3 w-3" />
-        </Button>
-      )
-    }
-  ];
+    ],
+    [user]
+  );
 
   if (loading) {
     return (

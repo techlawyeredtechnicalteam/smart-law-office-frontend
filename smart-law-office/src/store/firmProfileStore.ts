@@ -6,6 +6,7 @@ import { getProfile } from "@/app/api/profile.api";
 
 export interface FirmProfileData {
   otp?: string;
+  email: string;
   firmName: string;
   firmType: string;
   logoFile: string | null;
@@ -45,6 +46,7 @@ const initialFormData: FirmProfileData = {
   otp: "",
   firmName: "",
   firmType: "",
+  email: "",
   logoFile: null,
   logoFileName: null,
   brandColor: "#7C3AED",
@@ -141,6 +143,7 @@ export const useFirmProfileStore = create<FirmProfileState>()(
 
             // REMAPPING START
             name: formData.firmName,
+            email: formData.email,
             firmType: formData.firmType,
             colour: formData.brandColor,
             logo: formData.logoFile, // base64 string

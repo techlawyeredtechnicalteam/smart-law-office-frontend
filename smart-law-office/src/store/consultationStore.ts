@@ -3,7 +3,7 @@ import {
   ConsultationFormData,
   ConsultationStatus
 } from "@/types/Consultation.schema";
-import { bookConsultation, getAllConsult } from "@/app/api/bookConsult.api";
+import { bookConsultation, getConsults } from "@/app/api/bookConsult.api";
 
 export interface Consultation {
   id: string;
@@ -88,7 +88,7 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
 
   fetchConsultations: async () => {
     try {
-      const response = await getAllConsult();
+      const response = await getConsults();
       set({ consultations: response.data });
     } catch (err) {
       console.error("Failed to fetch consultations", err);
@@ -99,6 +99,7 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
     const { formData, addConsultation, setLastCreatedConsultCode, setStep } =
       get();
 
+    console.log("Submitting with Fee ID:", formData?.consultationFeeId);
     if (!formData) return false;
 
     set({ isLoading: true });

@@ -54,23 +54,17 @@ api.interceptors.response.use(
     }
 
     // 2. Handle 401 Unauthorized (Token Expired or Invalid)
-    // if (error.response?.status === 401) {
-    //   console.error("🚫 401 Unauthorized - Session Expired");
+    if (error.response?.status === 401) {
+      console.error("🚫 401 Unauthorized - Session Expired");
+      deleteAuthCookie();
 
-    //   // Clean up cookies
-    //   deleteAuthCookie();
-
-    //   // Prevent redirect loops: only redirect if not already on the login page
-    //   if (
-    //     typeof window !== "undefined" &&
-    //     !window.location.pathname.includes("/role")
-    //   ) {
-    //     // We use window.location for a hard refresh to clear all Zustand state
-    //     window.location.href = "/role?error=session_expired";
-    //   }
-    // }
-
-    deleteAuthCookie();
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.includes("/role")
+      ) {
+        window.location.href = "/role?error=session_expired";
+      }
+    }
 
     // 3. Handle 403 Forbidden (Role mismatch)
     if (error.response?.status === 403) {

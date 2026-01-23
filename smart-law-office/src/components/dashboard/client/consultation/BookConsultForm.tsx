@@ -33,12 +33,32 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
     }
   }, [rates.length, fetchConsultationFeesOnly]);
 
+  // const consultationOptions = useMemo(() => {
+  //   return rates
+  //     .filter((r: any) => r.serviceType === "Consultation")
+  //     .map((rate: any) => ({
+  //       label: `${rate.consultType} (${rate.duration} mins) — ₦${rate.rate.toLocaleString()}`,
+  //       value: rate.id || rate._id || rate.consultType
+  //     }));
+  // }, [rates]);
+  // const consultationOptions = useMemo(() => {
+  //   return rates
+  //     .filter((r: any) => r.serviceType === "Consultation")
+  //     .map((rate: any) => ({
+  //       label: `${rate.consultType} (${rate.duration} mins) — ₦${rate.rate.toLocaleString()}`,
+  //       // ✅ REMOVE rate.consultType as a fallback.
+  //       // It MUST be the ID for the backend to find the record.
+  //       value: rate.id || rate._id
+  //     }));
+  // }, [rates]);
+
   const consultationOptions = useMemo(() => {
     return rates
       .filter((r: any) => r.serviceType === "Consultation")
       .map((rate: any) => ({
         label: `${rate.consultType} (${rate.duration} mins) — ₦${rate.rate.toLocaleString()}`,
-        value: rate.id || rate._id || rate.consultType
+        // ✅ Force the ID here
+        value: String(rate.id || rate._id)
       }));
   }, [rates]);
 
@@ -65,29 +85,38 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
     // );
 
     // FIX: More robust finding logic
-    const selectedRate = rates.find((r: any) => {
-      const idMatch = String(r.id || r._id) === values.consultationFeeId;
-      const typeMatch = r.consultType === values.consultationFeeId;
-      return idMatch || typeMatch;
-    });
+    // const selectedRate = rates.find((r: any) => {
+    //   const idMatch = String(r.id || r._id) === values.consultationFeeId;
+    //   const typeMatch = r.consultType === values.consultationFeeId;
+    //   return idMatch || typeMatch;
+    // });
+
+    // if (!selectedRate) {
+    //   return;
+    // }
+
+    const selectedRate = rates.find(
+      (r: any) => String(r.id || r._id) === values.consultationFeeId
+    );
 
     if (!selectedRate) {
+      console.error("No valid rate found for ID:", values.consultationFeeId);
       return;
     }
-
     const [hours, minutes] = values.time.split(":");
     const consultDate = new Date(values.date);
     consultDate.setHours(parseInt(hours), parseInt(minutes));
 
-    const anyRate = selectedRate as any;
+    const rateData = selectedRate as any;
     const finalPayload = {
       ...values,
+      consultationFeeId: rateData.id, // This is now the UUID
       consultAt: consultDate.toISOString(),
       feeDetails: {
-        id: anyRate.id || anyRate._id,
-        consultType: anyRate.consultType,
-        duration: anyRate.duration,
-        rate: anyRate.rate
+        id: rateData.id,
+        consultType: rateData.consultType,
+        duration: rateData.duration,
+        rate: rateData.rate
       }
     };
 
@@ -107,7 +136,7 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
         <CustomSelectField
           control={form.control}
           name="consultationFeeId"
-          label="ConsultationFeeId"
+          label="Select Consultation"
           placeholder={
             isLoading
               ? "Fetching available fees..."
@@ -154,7 +183,7 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
             <FormItem>
               <FileUpload
                 id="consultation-doc"
-                label="Supporting Document (Optional)"
+                label="Supporting Document"
                 fileData={field.value || null}
                 onFileChange={(data) => field.onChange(data)}
                 maxSize={5}
