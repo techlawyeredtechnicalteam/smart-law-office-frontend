@@ -143,7 +143,7 @@ export const useFirmProfileStore = create<FirmProfileState>()(
 
             // REMAPPING START
             name: formData.firmName,
-            email: formData.email,
+            email: adminData.email || formData.email,
             firmType: formData.firmType,
             colour: formData.brandColor,
             logo: formData.logoFile, // base64 string

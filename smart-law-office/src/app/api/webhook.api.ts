@@ -1,3 +1,4 @@
 import api from "./api";
 
-export const webHookPayStack = api.post("/webhooks/paystack");
+export const webHookPayStack = (data: { reference: string }) =>
+  api.post("/webhooks/paystack", data);

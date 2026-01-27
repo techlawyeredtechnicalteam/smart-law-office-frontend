@@ -1,6 +1,6 @@
 import api from "./api";
 
-export const staffCreateCase = (data: any) => api.post("/cases", data);
+export const staffCreateCase = (data: any) => api.post("/cases/staff", data);
 
 export const adminCreateCase = (data: any) =>
   api.post("/cases/admin-create", data);

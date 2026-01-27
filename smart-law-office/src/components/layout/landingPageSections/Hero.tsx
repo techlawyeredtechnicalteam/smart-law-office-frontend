@@ -76,17 +76,17 @@ const Hero = () => {
               variants={itemVariants}
               className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-violet-500 font-extrabold mb-6 leading-tight max-w-4xl mx-auto"
             >
-              Deliver Legal Support{" "}
-              <span className="text-black">Anytime, anywhere</span>
+              The Operating System for{" "}
+              <span className="text-black">Modern Law Firms</span>
             </motion.h1>
 
             <motion.p
               variants={itemVariants}
               className="text-lg sm:text-xl text-gray-800 mb-10 max-w-3xl mx-auto"
             >
-              Simplifying how clients access legal support. Book consultations,
-              manage documents and get your legal concerns sorted all in one
-              place.
+              Streamline your practice with LegalFlow. From seamless client
+              onboarding to automated document management, we provide the tools
+              you need to run a 21st-century law office from anywhere.
             </motion.p>
 
             {/* Button Group */}
@@ -95,7 +95,7 @@ const Hero = () => {
               className="flex flex-col sm:flex-row justify-center items-center gap-4 mb-8 lg:mb-12"
             >
               <Button variant="default" className="bg-violet-600">
-                <a href="/role">Get Started</a>
+                <a href="/role">Launch your Law Office</a>
               </Button>
               <Button
                 variant="secondary"

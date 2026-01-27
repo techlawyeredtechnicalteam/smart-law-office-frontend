@@ -24,13 +24,14 @@ interface CreateCaseFormProps {
 const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   const { executeCreate, isLoading: isCreating } = useCaseStore();
   const { feeSchedules, rates, fetchBillingInitialData } = useBillingStore();
-  const { user } = useAuthStore();
   const {
     fetchData,
     counsels,
     clients,
     isLoading: isFetchingData
   } = useAssignStore();
+  const user = useAuthStore((state) => state.user);
+  const isAdmin = user?.role === "ADMIN";
 
   React.useEffect(() => {
     // Ensure we have the latest rates/schedules
@@ -72,10 +73,6 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     { label: "Completed", value: "Completed" }
   ];
 
-  // Check if user is admin or staff
-  const isAdmin = user?.role === "ADMIN";
-  const isStaff = user?.role === "STAFF";
-
   const form = useForm<createCaseSchema>({
     resolver: zodResolver(createCaseSchema),
     defaultValues: {
@@ -108,19 +105,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-            {error}
-          </div>
-        )} */}
-
         {/* Shared Fields */}
-        {/* <CustomFormField
-          control={form.control}
-          name="clientEmail"
-          label="Client Email"
-          placeholder="client@example.com"
-        /> */}
         <CustomSelectField
           control={form.control}
           name="clientEmail"
@@ -131,7 +116,6 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
         />
 
         <CustomSelectField
-          // key={caseTypeOptions.length > 0 ? "loaded" : "loading"}
           control={form.control}
           name="caseTypeId"
           label="Case Type"
@@ -152,12 +136,6 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
         {/* Admin Form - Includes staffEmail assignment */}
         {isAdmin && (
           <div className="space-y-4">
-            {/* <CustomFormField
-              control={form.control}
-              name="staffEmail"
-              label="Assign Staff Email"
-              placeholder="staff@firm.com"
-            /> */}
             <CustomSelectField
               control={form.control}
               name="staffEmail"
@@ -166,6 +144,16 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
               options={staffOptions}
               disabled={isFetchingData}
             />
+          </div>
+        )}
+
+        {/* Staff UI Hint: Show they are self-assigning */}
+        {!isAdmin && (
+          <div className="p-3 bg-violet-50 rounded-lg border border-violet-100">
+            <p className="text-xs text-violet-700 flex items-center">
+              <span className="font-semibold mr-1">Note:</span> This case will
+              be automatically assigned to you.
+            </p>
           </div>
         )}
 

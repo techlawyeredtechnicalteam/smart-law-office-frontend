@@ -24,11 +24,14 @@ interface AssignCasePayload {
 
 export interface AssignedCase {
   id: string;
+  caseCode: string;
   caseId: string;
   clientName: string;
   caseType: string;
   dateTime: string;
   counselName: string;
+  staffEmail?: string;
+  staffName?: string;
   counselSpecialty: string;
   assignedAt: string;
   status: "Active" | "Inactive";
@@ -42,8 +45,9 @@ interface AssignState {
   isAssigning: boolean;
   isLoading: boolean;
   error: string | null;
-
   fetchData: () => Promise<void>;
+  // Helper to find local data by code
+  getEnrichedData: (code: string) => AssignedCase | undefined;
   assignCase: (
     consultCode: string,
     counselEmail: string,
@@ -53,7 +57,26 @@ interface AssignState {
   ) => Promise<boolean>;
 }
 
-export const useAssignStore = create<AssignState>((set, get) => ({
+// interface AssignState {
+//   unassignedCases: UnassignedCaseForUI[];
+//   counsels: Lawyer[];
+//   clients: User[];
+//   assignedCases: AssignedCase[];
+//   isAssigning: boolean;
+//   isLoading: boolean;
+//   error: string | null;
+
+//   fetchData: () => Promise<void>;
+//   assignCase: (
+//     consultCode: string,
+//     counselEmail: string,
+//     caseTypeId: string,
+//     caseDetails: UnassignedCaseForUI,
+//     counselDetails: Lawyer
+//   ) => Promise<boolean>;
+// }
+
+export const useAssignStore = create<AssignState>()((set, get) => ({
   unassignedCases: [],
   counsels: [],
   clients: [],
@@ -61,6 +84,10 @@ export const useAssignStore = create<AssignState>((set, get) => ({
   isAssigning: false,
   isLoading: false,
   error: null,
+
+  getEnrichedData: (code: string) => {
+    return get().assignedCases.find((c) => c.caseId === code || c.id === code);
+  },
 
   fetchData: async () => {
     if (get().isLoading) return;
@@ -146,23 +173,26 @@ export const useAssignStore = create<AssignState>((set, get) => ({
     try {
       const payload = {
         consultCode,
-        staffEmail: counselEmail,
-        caseTypeId
+        staffEmail: counselEmail
       };
 
       await assignCase(payload);
       // after successful api call, update the main case store to see change immediately
+      console.log("AssignCasePayload:", payload);
 
       const fetchMainCases = useCaseStore.getState().fetchCases;
       await fetchMainCases();
 
       const newAssignment: AssignedCase = {
         id: Math.random().toString(36).substring(2, 9),
-        caseId: caseDetails.id,
+        caseId: consultCode, // Use consultCode as the reference
         clientName: caseDetails.clientName,
         caseType: caseDetails.caseType,
         dateTime: `${caseDetails.date} - ${caseDetails.time}`,
         counselName: counselDetails.name,
+        staffEmail: counselEmail,
+        staffName: counselDetails.name,
+        caseCode: caseDetails.id,
         counselSpecialty: counselDetails.specialty,
         assignedAt: new Date().toISOString(),
         status: "Active"
@@ -187,6 +217,7 @@ export const useAssignStore = create<AssignState>((set, get) => ({
         isAssigning: false
       }));
 
+      await useCaseStore.getState().fetchCases();
       return true;
     } catch (err) {
       console.error("Failed to assign case:", err);
@@ -195,6 +226,9 @@ export const useAssignStore = create<AssignState>((set, get) => ({
         isAssigning: false
       });
       return false;
+    }
+    {
+      name: "assignment-persistence";
     }
   }
 }));

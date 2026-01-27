@@ -164,12 +164,12 @@ const MyCasePage = () => {
             Cases and Consultations will appear here. Set up a consultation to
             manage meetings.
           </p>
-          <Button
+          {/* <Button
             onClick={openBooking}
             className="bg-purple-600 hover:bg-purple-700"
           >
             Book First Consultation
-          </Button>
+          </Button> */}
         </div>
       </div>
     );
@@ -181,12 +181,12 @@ const MyCasePage = () => {
       <section className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Consultations</h2>
-          <Button
+          {/* <Button
             onClick={openBooking}
             className="bg-purple-600 hover:bg-purple-700"
           >
             + Book a Consultation
-          </Button>
+          </Button> */}
         </div>
         <TableModal
           data={consultations}

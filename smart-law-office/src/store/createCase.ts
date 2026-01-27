@@ -34,6 +34,8 @@ export interface CaseType {
 }
 
 export interface Case {
+  [x: string]: any;
+  caseCode: any;
   // ADD THESE FIELDS
   id: string;
   title?: string;
@@ -105,21 +107,42 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     meetingHours: 0
   },
 
+  // calculateStats: (allCases: Case[]) => {
+  //   const total = allCases.length;
+  //   // Ensure these strings match your backend response exactly (e.g., "COMPLETED" vs "Completed")
+  //   const completed = allCases.filter((c) => c.status === "COMPLETED").length;
+  //   const pending = allCases.filter(
+  //     (c) => c.status === "PENDING" || c.status === "IN_PROGRESS"
+  //   ).length;
+
+  //   set({
+  //     stats: {
+  //       total,
+  //       completed,
+  //       pending,
+  //       meetingHours: 335 // Placeholder for now
+  //     }
+  //   });
+  // },
   calculateStats: (allCases: Case[]) => {
-    const total = allCases.length;
-    // Ensure these strings match your backend response exactly (e.g., "COMPLETED" vs "Completed")
-    const completed = allCases.filter((c) => c.status === "COMPLETED").length;
-    const pending = allCases.filter(
+    const user = useAuthStore.getState().user;
+
+    // LEAD TIP: Filter the list based on the user BEFORE calculating stats
+    const visibleCases =
+      user?.role === "ADMIN"
+        ? allCases
+        : allCases.filter((c) => c.staffEmail === user?.email);
+
+    const total = visibleCases.length;
+    const completed = visibleCases.filter(
+      (c) => c.status === "COMPLETED"
+    ).length;
+    const pending = visibleCases.filter(
       (c) => c.status === "PENDING" || c.status === "IN_PROGRESS"
     ).length;
 
     set({
-      stats: {
-        total,
-        completed,
-        pending,
-        meetingHours: 335 // Placeholder for now
-      }
+      stats: { total, completed, pending, meetingHours: 0 }
     });
   },
 
@@ -130,18 +153,23 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     const user = useAuthStore.getState().user;
     const role = user?.role;
 
-    // ... (Keep your Staff Bypass Logic)
-
     try {
-      const response = await getAllCases();
-      const rawData = response.data || [];
+      const response =
+        role === "ADMIN" ? await getAllCases() : await getStaffCases();
+
+      let rawData = response.data || [];
+
+      if (user?.role === "STAFF") {
+        rawData = rawData.filter(
+          (c: any) =>
+            c.staffEmail === user.email || c.staff?.email === user.email
+        );
+      }
 
       // Get the actual fee schedules from the billing store for cross-referencing
       const feeSchedules = useBillingStore.getState().feeSchedules;
 
       const normalizedCases: Case[] = rawData.map((c: any) => {
-        // 1. Resolve Case Type Name
-        // We look up the name in the feeSchedules list using the caseTypeId
         const matchedSchedule = feeSchedules.find(
           (fs) => fs.feeScheduleId === c.caseTypeId
         );
@@ -163,7 +191,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
 
         return {
           id: c.directCaseId || c.caseId || c.id,
-          // Ensure caseCode exists for the table's ID column
           caseCode: c.caseCode || (c.id ? c.id.slice(-8).toUpperCase() : "---"),
           staffEmail: c.staffEmail || c.staff?.email || "Unassigned",
           clientEmail: c.clientEmail || c.client?.email,
@@ -180,7 +207,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
         };
       });
 
-      console.log("Success! Normalized cases:", normalizedCases);
       set({ cases: normalizedCases, isLoading: false });
       get().calculateStats(normalizedCases);
     } catch (error: any) {
@@ -196,36 +222,35 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     set({ isLoading: true, error: null });
 
     try {
-      const basePayload = {
-        ...values,
-        document: values.document,
-        lastAdjournedAt: values.lastAdjournedDate || null,
-        nextAdjournedAt: values.nextAdjournedDate || null
-      };
+      let response;
 
-      const response =
-        role === "ADMIN"
-          ? await adminCreateCase(basePayload)
-          : await staffCreateCase(basePayload);
+      if (role === "ADMIN") {
+        response = await adminCreateCase(values);
+      } else {
+        const staffPayload = {
+          clientEmail: values.clientEmail,
+          caseTypeId: values.caseTypeId,
+          note: values.notes,
+          document: values.document,
+          lastAdjournedAt: values.lastAdjournedDate || null,
+          nextAdjournedAt: values.nextAdjournedDate || null,
+          status: values.status
+        };
+        response = await staffCreateCase(staffPayload);
+      }
 
       // update local state immediately
       const newCase = response.data;
 
       if (newCase) {
-        // FIX: Define updatedCases so calculateStats can use the fresh data
         const updatedCases = [newCase, ...get().cases];
-
         set({
           cases: updatedCases,
           isLoading: false
         });
-
         // Trigger the real-time update
         get().calculateStats(updatedCases);
-      } else {
-        await get().fetchCases();
       }
-
       return true;
     } catch (err: any) {
       set({

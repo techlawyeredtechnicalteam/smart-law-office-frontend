@@ -18,6 +18,8 @@ export interface User {
   };
   firmName?: string;
   logo?: string;
+  subscriptionStatus?: "ACTIVE" | "INACTIVE" | "EXPIRED";
+  planType?: "BASIC" | "PRO";
 }
 
 // stores the admin data temporary until on final signup
@@ -52,7 +54,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
-      user: null,
+      user: null as User | null,
       isAuthenticated: false,
       signupFormTemp: null,
       isAuthLoading: false,
@@ -87,8 +89,17 @@ export const useAuthStore = create<AuthState>()(
 
       //
       loginSuccess: (token, user) => {
-        setAuthCookie(token, user.role); // set the cookie for the middleware
-        set({ user, isAuthenticated: true, isAuthLoading: false }); // Set the user for the
+        setAuthCookie(token, user.role);
+        // ensure we store the plan info coming from backend
+        set({
+          user: {
+            ...user,
+            subscriptionStatus: user.subscriptionStatus || "INACTIVE",
+            planType: user.planType || "BASIC"
+          },
+          isAuthenticated: true,
+          isAuthLoading: false
+        });
       },
 
       logout: () => {

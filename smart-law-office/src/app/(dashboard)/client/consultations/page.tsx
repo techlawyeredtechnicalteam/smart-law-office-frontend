@@ -64,8 +64,9 @@ export default function ConsultationFlowPage() {
       {/* Conditional Rendering of Dashboard vs. Details View */}
       {viewMode === "dashboard" && (
         <ConsultationDashboard
-          onBookConsultation={openBooking}
-          onViewDetails={handleViewDetails}
+          isAdminView={false}
+          // onBookConsultation={openBooking}
+          // onViewDetails={handleViewDetails}
         />
       )}
       {/* {viewMode === "details" && selectedConsultCode && (

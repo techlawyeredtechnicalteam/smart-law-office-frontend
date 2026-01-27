@@ -6,50 +6,59 @@ import { Button } from "@/components/ui/button";
 import { Zap } from "lucide-react";
 import React from "react";
 import { useRouter } from "next/navigation";
+import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
+import { useSubscriptionStore } from "@/store/subscriptionStore";
 //
 const UpgradeToProModal = () => {
   const router = useRouter();
   const { isUpgradeModalOpen, closeUpgradeModal } = useCounselStore();
 
+  const { selectPlan } = useSubscriptionStore();
+
   const handleUpgrade = () => {
-    // Logic for handling the actual upgrade process
-    router.push("/subscribe");
-    //  pass a query param so the subscription page knows the user wants to add counsel specifically
-    // router.push("/subscribe?reason=add_counsel")
-    console.log("Redirecting for upgrade...");
+    // Tell the sub system the user wants to upgrade to Pro
+    selectPlan("PRO");
+
+    // redirect to subscription page
+    router.push("/subscribe?reason=add_counsel");
+
+    // clean up
     closeUpgradeModal();
   };
 
   return (
     <Dialog open={isUpgradeModalOpen} onOpenChange={closeUpgradeModal}>
-      <DialogContent className="sm:max-w-[425px] text-center p-8">
-        <div className="flex justify-center mb-6">
-          <div className="rounded-full h-16 w-16 bg-violet-100 flex items-center justify-center">
-            {/* Using a custom icon from the image mockup, but Zap is a good alternative */}
-            {/* The image shows a briefcase/subscription icon */}
-            <Zap className="w-8 h-8 text-violet-600" />
+      <DialogContent className="sm:max-w-[400px] text-center p-8">
+        {/* Accessibility Requirements */}
+        <DialogTitle className="text-xl font-bold">Upgrade to Pro</DialogTitle>
+
+        <div className="flex justify-center my-4">
+          <div className="rounded-full h-16 w-16 bg-violet-100 flex items-center justify-center animate-pulse">
+            <Zap className="w-8 h-8 text-violet-600 fill-violet-600" />
           </div>
         </div>
 
-        <h3 className="text-xl font-semibold mb-2">Upgrade to Pro</h3>
-        <p className="text-gray-500 mb-6 text-center text-sm">
+        <DialogDescription className="text-gray-500 mb-6 text-center text-sm">
           Adding and managing counsel requires the purchase of a seat on a Basic
-          or Pro subscription.
-        </p>
+          or Pro subscription. Upgrade your plan to expand your legal team.
+        </DialogDescription>
 
-        <div className="flex justify-center space-x-4">
-          <Button type="button" variant="outline" onClick={closeUpgradeModal}>
-            Cancel
+        <div className="flex flex-col sm:flex-row justify-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={closeUpgradeModal}
+            className="text-gray-500"
+          >
+            Maybe Later
           </Button>
           <Button
             type="button"
-            className="bg-violet-600 hover:bg-violet-700 relative"
+            className="bg-violet-600 hover:bg-violet-700 relative px-8"
             onClick={handleUpgrade}
           >
-            Upgrade
-            {/* The orange 'T' in the image is likely a tour/tooltip indicator. 
-                I'm simulating it with a small badge for visual reference. */}
-            <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center font-bold">
+            Upgrade Now
+            <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-[10px] rounded-full h-5 w-5 flex items-center justify-center font-bold border-2 border-white shadow-sm">
               T
             </span>
           </Button>

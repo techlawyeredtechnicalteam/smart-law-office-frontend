@@ -3,7 +3,6 @@ import api from "./api";
 export interface AssignCasePayload {
   consultCode: string;
   staffEmail: string;
-  caseTypeId: string;
 }
 
 export const assignCase = (payload: AssignCasePayload) =>

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import { useSubscriptionStore } from "@/store/subscriptionStore";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { ArrowLeft, Check, CheckCircle2, Loader2 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuthStore } from "@/store/authStore";
 import { toast } from "sonner";
@@ -19,8 +19,8 @@ export function PaymentSummary() {
     isLoading,
     setPaymentReference
   } = useSubscriptionStore();
-
   const [isAgreed, setIsAgreed] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   // calculate amount in Kobo
   const paymentDetails = useMemo(() => {
@@ -37,54 +37,73 @@ export function PaymentSummary() {
   }, [selectedSubscription, billingCycle]);
 
   // Payment Configuration
-  const config = {
-    reference: `REF_${new Date().getTime()}`,
-    email: user?.email || "",
-    amount: paymentDetails.totalAmountKobo,
-    publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string,
-    metadata: {
-      // Paystack's type definition specifically looks for custom_fields
-      custom_fields: [
-        {
-          display_name: "User ID",
-          variable_name: "userId",
-          value: user?.id || ""
-        },
-        {
-          display_name: "Plan Name",
-          variable_name: "planName",
-          value: selectedSubscription.name
-        },
-        {
-          display_name: "Billing Cycle",
-          variable_name: "billingCycle",
-          value: billingCycle
-        }
-      ],
-      // We keep these flat fields for our backend webhook logic
-      userId: user?.id || "",
-      planName: selectedSubscription.name
+  const buildConfig = () => {
+    const userId = user?.id ?? "";
+    if (!userId || !selectedSubscription?.name) {
+      toast.error("Missing user or plan. Please try again.");
+      return null;
     }
+    return {
+      email: user?.email ?? "",
+      amount: paymentDetails.totalAmountKobo,
+      publicKey: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY as string,
+      metadata: {
+        custom_fields: [],
+        userId,
+        planName: selectedSubscription.name,
+        billingCycle
+      }
+    };
   };
-
-  const initializePayment = usePaystackPayment(config);
-
   const handlePayment = () => {
     if (!isAgreed) return;
+    const cfg = buildConfig();
+    if (!cfg) return;
 
     setIsLoading(true);
-    initializePayment({
-      onSuccess: (reference: any) => {
-        setIsLoading(false);
-        setPaymentReference(reference.reference);
-        setStep("verify");
-      },
-      onClose: () => {
-        setIsLoading(false);
-        toast.info("Payment cancelled.");
-      }
-    });
+    const initializePayment = usePaystackPayment(cfg);
+
+    const onSuccess = (response: any) => {
+      setIsLoading(false);
+      setPaymentReference(response.reference);
+
+      // syncUser({
+      //   subscriptionStatus: "ACTIVE",
+      //   planType: selectedSubscription.name.toUpperCase() as any
+      // });
+      useAuthStore.getState().syncUser({
+        subscriptionStatus: "ACTIVE",
+        planType: selectedSubscription.name.toUpperCase() as "PRO" | "BASIC"
+      });
+
+      // setShowSuccess(true);
+
+      // toast.success("Payment initiated! We're updating your account...");
+      setStep("verify");
+    };
+    initializePayment({ onSuccess });
   };
+
+  // SUCCESS VIEW
+  if (showSuccess) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
+        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-6 animate-bounce">
+          <CheckCircle2 className="w-12 h-12 text-green-600" />
+        </div>
+        <h2 className="text-3xl font-bold mb-2">Payment Confirmed!</h2>
+        <p className="text-gray-500 mb-8">
+          Your account has been upgraded to {selectedSubscription.name}.
+        </p>
+        <Button
+          onClick={() => setStep("manage")}
+          className="bg-purple-600 px-10"
+        >
+          Go to Dashboard
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -92,7 +111,7 @@ export function PaymentSummary() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setStep("payment")}
+          onClick={() => setStep("review")}
           aria-label="Go back"
         >
           <ArrowLeft className="h-6 w-6 text-gray-600" />

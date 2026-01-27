@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/authStore";
 
 export function ManageSubscription() {
   const {
@@ -18,8 +19,9 @@ export function ManageSubscription() {
     setStep,
     selectPlan
   } = useSubscriptionStore();
+  const { user } = useAuthStore();
 
-  const handleSelect = (planName: "Basic" | "Pro") => {
+  const handleSelect = (planName: "BASIC" | "PRO") => {
     selectPlan(planName);
     setStep("review");
   };
@@ -52,10 +54,12 @@ export function ManageSubscription() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {plans.map((plan) => {
-          const isCurrent = currentSubscription.name === plan.name;
-          // Only show 'Upgrade' if moving from Basic to Pro
-          const isUpgrade =
-            plan.name === "Pro" && currentSubscription.name === "Basic";
+          const isCurrent =
+            user?.planType?.toUpperCase() === plan.name.toUpperCase();
+
+          const isUpgradeOption =
+            plan.name.toUpperCase() === "PRO" &&
+            user?.planType?.toUpperCase() === "BASIC";
 
           return (
             <div
@@ -104,7 +108,8 @@ export function ManageSubscription() {
 
               <Button
                 onClick={() =>
-                  !isCurrent && handleSelect(plan.name as "Basic" | "Pro")
+                  !isCurrent &&
+                  handleSelect(plan.name.toUpperCase() as "BASIC" | "PRO")
                 }
                 disabled={isCurrent}
                 variant={isCurrent ? "outline" : "default"}
@@ -117,9 +122,9 @@ export function ManageSubscription() {
               >
                 {isCurrent
                   ? "Current Plan"
-                  : isUpgrade
-                  ? "Upgrade Now"
-                  : "Switch Plan"}
+                  : isUpgradeOption
+                    ? "Upgrade Now"
+                    : "Switch Plan"}
               </Button>
             </div>
           );

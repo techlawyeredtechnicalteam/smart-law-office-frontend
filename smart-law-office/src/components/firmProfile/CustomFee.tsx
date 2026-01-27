@@ -53,13 +53,17 @@ const Step3CustomFee = () => {
     }
 
     // move later to utility
-    const validationError = validateFirmProfile(formData, signupFormTemp);
+    const validationError: string | null = validateFirmProfile(
+      formData,
+      signupFormTemp
+    );
     if (validationError) {
       toast.error(validationError);
       return;
     }
 
     try {
+      console.log("Admin Data check:", signupFormTemp);
       // this handles the merge of signipFormTemp + formData internally
       await SubmitCompleteSignup(signupFormTemp);
       toast.success("Account created Successfully! Please verify your email");

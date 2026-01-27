@@ -6,7 +6,7 @@ import { useCaseStore } from "@/store/createCase";
 import useConsultationStore from "@/store/consultationStore"; // Import your consult store
 import { CaseStats } from "@/components/dashboard/admin/caseManagement/CaseStats"; // The stat cards component
 import { AssignedCasesTable } from "@/components/dashboard/admin/assignCase/AssignCaseTable";
-// import { ConsultationDashboardTable } from "";
+import { ConsultationDashboard } from "@/components/dashboard/client/consultation/ConsultationDashboard";
 import { AssignCaseModal } from "@/components/dashboard/admin/assignCase/AssignCaseModal";
 import { Briefcase, Loader2 } from "lucide-react";
 import { CreateCaseModal } from "@/components/dashboard/admin/createCase/CreateCaseModal";
@@ -20,7 +20,7 @@ const CaseManagementPage = () => {
   // Sync data on mount
   useEffect(() => {
     fetchCases();
-    // fetchConsultations(); // Fetch the table data for the top section
+    fetchConsultations(); // Fetch the table data for the top section
   }, []);
 
   return (
@@ -46,7 +46,7 @@ const CaseManagementPage = () => {
         </div>
         <div className="bg-white rounded-xl shadow-sm border">
           {/* Create a simple table or reuse a component for Consultations */}
-          {/* <ConsultationDashboardTable data={consultations.slice(0, 3)} /> */}
+          <ConsultationDashboard isAdminView={true} />
         </div>
       </section>
 

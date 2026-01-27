@@ -8,6 +8,7 @@ import {
   SubscriptionPaymentFormValues
 } from "@/types/Subscription.schema";
 import { webHookPayStack } from "@/app/api/webhook.api";
+import { useAuthStore } from "./authStore";
 
 // Add this to your types
 export interface SubscriptionPaymentMetadata {
@@ -17,7 +18,7 @@ export interface SubscriptionPaymentMetadata {
 }
 
 const BASIC_PLAN: SubscriptionPlan = {
-  name: "Basic",
+  name: "BASIC",
   monthlyPrice: 7500, // ₦7,500 (Updated from image subscribe.png)
   billingTerm: "per seat",
   features: [
@@ -32,9 +33,9 @@ const BASIC_PLAN: SubscriptionPlan = {
 };
 
 const PRO_PLAN: SubscriptionPlan = {
-  name: "Pro",
-  monthlyPrice: 15000, // ₦15,000 (Updated from image subscribe.png)
-  billingTerm: "per seat", // Consistent term used
+  name: "PRO",
+  monthlyPrice: 15000,
+  billingTerm: "per seat",
   features: [
     "A personalised user dashboard",
     "Access to assigned cases only",
@@ -64,6 +65,7 @@ interface SubscriptionState {
   setPaymentFormData: (data: Partial<SubscriptionPaymentFormValues>) => void;
   setPaymentReference: (ref: string | null) => void;
   resetFlow: () => void;
+  // verifyPayment: (reference: string) => Promise<boolean>;
 }
 
 const initialState = {
@@ -85,7 +87,7 @@ export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
   setIsLoading: (isLoading) => set({ isLoading }),
 
   selectPlan: (planName) => {
-    const selectedPlan = planName === "Pro" ? PRO_PLAN : BASIC_PLAN;
+    const selectedPlan = planName === "PRO" ? PRO_PLAN : BASIC_PLAN;
     set({ selectedSubscription: selectedPlan });
   },
 

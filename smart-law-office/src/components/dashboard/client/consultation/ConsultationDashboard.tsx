@@ -45,14 +45,16 @@ const getInitials = (name?: string): string => {
 };
 
 interface ConsultationDashboardProps {
-  onBookConsultation: () => void;
-  onViewDetails: (id: string) => void;
+  onBookConsultation?: () => void;
+  onViewDetails?: (id: string) => void;
+  isAdminView?: boolean;
 }
 
 export function ConsultationDashboard({
-  onBookConsultation,
-  onViewDetails
-}: ConsultationDashboardProps) {
+  isAdminView
+}: {
+  isAdminView?: boolean;
+}) {
   const {
     consultations,
     fetchConsultations,
@@ -190,9 +192,13 @@ export function ConsultationDashboard({
     );
   }
 
-  if (consultations.length === 0) {
-    return <ConsultationEmptyState onBookConsultation={onBookConsultation} />;
-  }
+  // if (consultations.length === 0) {
+  //   return (
+  //     <ConsultationEmptyState
+  //       onBookConsultation={onBookConsultation ?? (() => {})}
+  //     />
+  //   );
+  // }
 
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
@@ -200,15 +206,16 @@ export function ConsultationDashboard({
         <div>
           <h2 className="text-xl font-bold text-gray-900">Consultations</h2>
           <p className="text-xs text-gray-500 mt-1">
-            Manage and track your legal appointments
+            {isAdminView
+              ? "Review incoming client bookings"
+              : "Manage your legal appointments"}
           </p>
         </div>
-        <Button
-          onClick={onBookConsultation}
-          className="bg-[#6f42c1] hover:bg-[#5a369e] text-white font-bold h-11 px-6 rounded-xl shadow-lg shadow-purple-100 transition-all active:scale-95"
-        >
-          + New Booking
-        </Button>
+
+        {/* HIDE FOR ADMIN */}
+        {!isAdminView && (
+          <Button className="bg-[#6f42c1] text-white">+ New Booking</Button>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -216,8 +223,11 @@ export function ConsultationDashboard({
           data={consultations}
           columns={columns}
           getRowKey={(consult) => consult.id}
-          containerClassName="min-w-full"
-          emptyMessage="No consultations found"
+          emptyMessage={
+            isAdminView
+              ? "No client consultations yet."
+              : "You haven't booked any consultations."
+          }
         />
       </div>
     </div>

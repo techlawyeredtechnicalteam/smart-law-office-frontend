@@ -1,6 +1,6 @@
 import * as z from "zod";
 
-export const PlanType = z.enum(["Basic", "Pro"]);
+export const PlanType = z.enum(["BASIC", "PRO"]);
 export const BillingCycle = z.enum(["Monthly", "Yearly"]);
 
 // Schema for the payment method selection, including billing address

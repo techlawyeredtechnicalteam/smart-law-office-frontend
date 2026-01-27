@@ -1,5 +1,4 @@
 import { create, StateCreator } from "zustand";
-// import { persist } from "zustand/middleware";
 import { toast } from "sonner";
 import {
   addCounsel,
@@ -10,6 +9,7 @@ import {
 } from "@/app/api/manageCounse.api";
 import { Lawyer } from "@/types/user";
 import { useAssignStore } from "./assignCaseStore";
+import { useAuthStore } from "./authStore";
 
 export interface Notification {
   type: "success" | "info" | "error";
@@ -116,10 +116,8 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
 
   // Modal Logic
   openAddModal: () => {
-    const hasActiveSubscription = true;
-    hasActiveSubscription
-      ? set({ isAddModalOpen: true })
-      : set({ isUpgradeModalOpen: true });
+    // For now allow opening the Add Counsel modal for all admins
+    set({ isAddModalOpen: true });
   },
 
   closeAddModal: () => set({ isAddModalOpen: false, callToBarFile: null }),

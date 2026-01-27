@@ -43,32 +43,37 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
     {
       key: "clientName",
       header: "Client Name",
-      render: (caseItem) => (
-        <div className="flex items-center gap-2">
-          <User className="w-4 h-4 text-gray-400" />
-          <span className="font-medium capitalize">
-            {/* 1. Try the normalized clientName, 2. Fallback to nested backend object, 3. Fallback to email */}
-            {(caseItem as any).clientEmail ||
-              (caseItem as any).client?.name ||
-              caseItem.title ||
-              "Unknown Client"}
-          </span>
-        </div>
-      )
+      render: (caseItem: any) => {
+        // Lead Tip: Log one item here if you're still stuck to see its real shape
+        // console.log("Case Item Shape:", caseItem);
+
+        const name =
+          caseItem.clientName || // Flat property
+          caseItem.client?.name || // Nested object
+          caseItem.client?.fullName || // Common backend variant
+          caseItem.title || // Fallback title
+          caseItem.clientEmail || // Use email as name if all else fails
+          "Unknown Client";
+
+        return (
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-gray-400" />
+            <span className="font-medium capitalize">{name}</span>
+          </div>
+        );
+      }
     },
     {
       key: "caseType",
       header: "Case Type",
-      render: (caseItem) => {
-        // According to your logs, the type name is in feeSchedule.name
-        // or normalized as 'caseType'
-        const typeDisplay =
-          (caseItem as any).caseType ||
-          (caseItem as any).feeSchedule?.name ||
-          caseItem.title ||
+      render: (caseItem: any) => {
+        const type =
+          caseItem.caseType || // Flat property
+          caseItem.feeSchedule?.name || // Nested fee schedule
+          caseItem.case_type?.name || // Common snake_case variant
           "Standard Case";
 
-        return <span className="text-sm font-medium">{typeDisplay}</span>;
+        return <span className="text-sm font-medium">{type}</span>;
       }
     },
     {
