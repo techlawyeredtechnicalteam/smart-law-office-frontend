@@ -14,6 +14,8 @@ import { ConsultationEmptyState } from "./ConsultationEmptyState";
 import { TableColumn, TableModal } from "@/components/shared/TableModal";
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
+import { BookConsultationForm } from "./BookConsultForm";
+import { CreateModal } from "@/components/shared/CreateModal";
 
 // Helper function to render status badge
 const StatusBadge = ({ status }: { status: ConsultationStatus }) => {
@@ -214,7 +216,13 @@ export function ConsultationDashboard({
 
         {/* HIDE FOR ADMIN */}
         {!isAdminView && (
-          <Button className="bg-[#6f42c1] text-white">+ New Booking</Button>
+          // <Button className="bg-[#6f42c1] text-white">+ New Booking</Button>
+          <CreateModal
+            triggerText={"+ BookConsultationForm"}
+            modalTitle={"BookConsultationForm"}
+          >
+            <BookConsultationForm />
+          </CreateModal>
         )}
       </div>
 
