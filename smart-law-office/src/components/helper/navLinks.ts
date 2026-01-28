@@ -58,7 +58,7 @@ export const ALL_LINKS: Record<string, NavItems> = {
     icon: FileText,
     name: "Subscriptions",
     route: "/subscribe",
-    roles: ["ADMIN"]
+    roles: ["ADMIN", "STAFF"]
   },
   manageCounsel: {
     name: "Manage Counsel",
@@ -80,12 +80,12 @@ export const ALL_LINKS: Record<string, NavItems> = {
     route: "/staff/my-cases",
     roles: ["STAFF"]
   },
-  billingTrack: {
-    icon: TbInvoice,
-    name: "TrackBilling",
-    route: "/staff/track-billing",
-    roles: ["STAFF"]
-  },
+  // billingTrack: {
+  //   icon: TbInvoice,
+  //   name: "TrackBilling",
+  //   route: "/staff/track-billing",
+  //   roles: ["STAFF"]
+  // },
   documents: {
     icon: DownloadCloud,
     name: "Document",
