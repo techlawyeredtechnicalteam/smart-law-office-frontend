@@ -116,18 +116,16 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
 
   // Modal Logic
   openAddModal: () => {
-    const user = useAuthStore.getState().user;
+    // const user = useAuthStore.getState().user;
 
-    // Check: Must be ACTIVE AND (PRO or BASIC)
-    const hasAccess =
-      user?.subscriptionStatus === "ACTIVE" &&
-      (user?.planType === "PRO" || user?.planType === "BASIC");
+    // // Check: Must be ACTIVE AND (PRO or BASIC)
+    // const hasAccess =
+    //   user?.subscriptionStatus === "ACTIVE" &&
+    //   (user?.planType === "PRO" || user?.planType === "BASIC");
 
-    if (hasAccess) {
-      set({ isAddModalOpen: true });
-    } else {
-      set({ isUpgradeModalOpen: true });
-    }
+    // if (hasAccess) {
+    // }
+    set({ isAddModalOpen: true });
   },
   // openAddModal: () => {
   //   // For now allow opening the Add Counsel modal for all admins
