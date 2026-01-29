@@ -20,10 +20,10 @@ const UpgradeToProModal = () => {
     selectPlan("PRO");
 
     // redirect to subscription page
+    closeUpgradeModal();
     router.push("/subscribe?reason=add_counsel");
 
     // clean up
-    closeUpgradeModal();
   };
 
   return (

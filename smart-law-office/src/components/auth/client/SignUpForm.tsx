@@ -50,7 +50,7 @@ const SignUpFormClient = () => {
     <>
       <Form {...form}>
         {/* handle onsubmit here*/}
-        <form className="space-y-3" onSubmit={form.handleSubmit(onSubmit)}>
+        <form className="space-y-1" onSubmit={form.handleSubmit(onSubmit)}>
           {/* Continue with Google */}
           <Button
             variant="ghost"

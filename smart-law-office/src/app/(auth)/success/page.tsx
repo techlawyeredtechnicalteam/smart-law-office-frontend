@@ -31,7 +31,7 @@ const SuccessPage = () => {
     if (!isFinishing && user) {
       const timer = setTimeout(() => {
         const route =
-          user.role === "ADMIN" || user.role === "STAFF"
+          user.role === "ADMIN" || user.role === "CLIENT"
             ? "/admin/dashboard"
             : "/client/manage-case";
         router.push(route);

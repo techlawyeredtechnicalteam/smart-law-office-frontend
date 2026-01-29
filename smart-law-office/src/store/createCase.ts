@@ -106,24 +106,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     pending: 0,
     meetingHours: 0
   },
-
-  // calculateStats: (allCases: Case[]) => {
-  //   const total = allCases.length;
-  //   // Ensure these strings match your backend response exactly (e.g., "COMPLETED" vs "Completed")
-  //   const completed = allCases.filter((c) => c.status === "COMPLETED").length;
-  //   const pending = allCases.filter(
-  //     (c) => c.status === "PENDING" || c.status === "IN_PROGRESS"
-  //   ).length;
-
-  //   set({
-  //     stats: {
-  //       total,
-  //       completed,
-  //       pending,
-  //       meetingHours: 335 // Placeholder for now
-  //     }
-  //   });
-  // },
   calculateStats: (allCases: Case[]) => {
     const user = useAuthStore.getState().user;
 
@@ -146,7 +128,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     });
   },
 
-  // fetch cases base on role
   fetchCases: async () => {
     set({ isLoading: true, error: null });
 
@@ -156,54 +137,48 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     try {
       const response =
         role === "ADMIN" ? await getAllCases() : await getStaffCases();
+      const rawData = response.data || [];
 
-      let rawData = response.data || [];
-
-      if (user?.role === "STAFF") {
-        rawData = rawData.filter(
-          (c: any) =>
-            c.staffEmail === user.email || c.staff?.email === user.email
-        );
-      }
-
-      // Get the actual fee schedules from the billing store for cross-referencing
       const feeSchedules = useBillingStore.getState().feeSchedules;
 
-      const normalizedCases: Case[] = rawData.map((c: any) => {
+      const normalizedCases: Case[] = rawData.map((c: any, index: number) => {
+        // 1. Generate the Case ID format: #2026-00XX
+        // We use the index or the last 2 digits of the directCaseId for the XX
+        const suffix = String(index + 1).padStart(2, "0");
+        const caseDisplayId = `#2026-00${suffix}`;
+
+        // 2. Resolve Case Type from Fee Schedules
         const matchedSchedule = feeSchedules.find(
           (fs) => fs.feeScheduleId === c.caseTypeId
         );
+        const caseTypeDisplay = matchedSchedule?.caseTypeId || "General Case";
 
-        const caseTypeDisplay =
-          matchedSchedule?.name ||
-          c.feeSchedule?.name ||
-          c.title ||
-          "General Case";
+        // 3. Resolve Client Name & Email (from nested 'client' object)
+        const clientName = c.client
+          ? `${c.client.firstName} ${c.client.lastName}`.trim()
+          : "Unknown Client";
+        const clientEmail = c.client?.email || "";
 
-        // 2. Resolve Client Name
-        // Backend usually returns 'client' object for Admin. We check all possibilities.
-        const clientDisplayName =
-          c.client?.name ||
-          c.client?.fullName ||
-          c.clientName ||
-          c.clientEmail ||
-          "New Client";
+        // 4. Resolve Staff Name & Email (from nested 'staff' object)
+        const staffName = c.staff
+          ? `${c.staff.firstName} ${c.staff.lastName}`.trim()
+          : "Unassigned";
+        const staffEmail = c.staff?.email || "Unassigned";
 
         return {
+          // Keeping the real UUID for API calls
           id: c.directCaseId || c.caseId || c.id,
-          caseCode: c.caseCode || (c.id ? c.id.slice(-8).toUpperCase() : "---"),
-          staffEmail: c.staffEmail || c.staff?.email || "Unassigned",
-          clientEmail: c.clientEmail || c.client?.email,
-          clientName: clientDisplayName,
+          // Using your custom format for display
+          caseCode: caseDisplayId,
+          staffEmail: staffEmail,
+          staffName: staffName,
+          clientEmail: clientEmail,
+          clientName: clientName,
           caseType: caseTypeDisplay,
-          notes: c.note || c.notes || "",
-          status: c.status || "PENDING",
-          documents: Array.isArray(c.documents)
-            ? c.documents
-            : c.document
-              ? [{ name: "Case Document", url: c.document }]
-              : [],
-          createdAt: c.createdAt
+          status: c.status || "Default",
+          createdAt: c.createdAt,
+          notes: c.note || "",
+          documents: Array.isArray(c.documents) ? c.documents : []
         };
       });
 
@@ -211,7 +186,7 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       get().calculateStats(normalizedCases);
     } catch (error: any) {
       set({
-        error: error.response?.data?.message || "Failed to load Admin cases",
+        error: error.response?.data?.message || "Failed to load cases",
         isLoading: false
       });
     }

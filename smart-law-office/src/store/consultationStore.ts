@@ -4,9 +4,15 @@ import {
   ConsultationStatus
 } from "@/types/Consultation.schema";
 import { bookConsultation, getConsults } from "@/app/api/bookConsult.api";
+import { getAllCasesDirect } from "@/app/api/cases.api";
 
 export interface Consultation {
   id: string;
+  client?: {
+    firstName: string;
+    lastName: string;
+  };
+  clientName?: string;
   consultationFeeId: string;
   consultAt: string;
   note: string;
@@ -24,6 +30,7 @@ interface ConsultationState {
   lastCreatedConsultCode: string | null; // NEW: Store the last created consult code
 
   fetchConsultations: () => Promise<void>;
+  fetchConsultationDirect: () => Promise<void>;
   setFormData: (data: Partial<ConsultationFormData>) => void;
   resetBooking: () => void;
   openBooking: () => void;
@@ -92,6 +99,15 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
       set({ consultations: response.data });
     } catch (err) {
       console.error("Failed to fetch consultations", err);
+    }
+  },
+
+  fetchConsultationDirect: async () => {
+    try {
+      const response = await getAllCasesDirect();
+      set({ consultations: response.data });
+    } catch (err) {
+      console.error("Failed to fetch consultation", err);
     }
   },
 

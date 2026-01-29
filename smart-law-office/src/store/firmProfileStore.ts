@@ -69,8 +69,7 @@ export const useFirmProfileStore = create<FirmProfileState>()(
       fetchProfile: async () => {
         set({ isSubmitting: true });
         try {
-          const response = await getProfile();
-          console.log("PRofile API Response:", response.data);
+          const response = await getProfile();          
           const data = response.data;
 
           const firmData = data.firm;
@@ -138,8 +137,7 @@ export const useFirmProfileStore = create<FirmProfileState>()(
         try {
           // merge: this is the authStore and FIrmProfileStore
           const finalPayload = {
-            ...adminData, // Email, Password, etc. AuthStore
-            // ...formData // Firm details from this store
+            ...adminData, // Email, Password, etc. AuthStore           
 
             // REMAPPING START
             name: formData.firmName,
@@ -160,14 +158,12 @@ export const useFirmProfileStore = create<FirmProfileState>()(
 
           const response = await signup(finalPayload);
 
-          if (response.status === 200 || response.status === 201) {
-            // get().resetProfile();
+          if (response.status === 200 || response.status === 201) {           
 
             return response.data;
           } else {
             throw new Error("Failed to create account");
-          }
-          // Don't reset yet! Wait for the verify page to succeed
+          }          
         } catch (error) {
           console.error("Store Submission Error:", error);
           throw error;

@@ -39,13 +39,22 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     fetchData();
   }, []);
 
+  // const caseTypeOptions = React.useMemo(() => {
+  //   return rates
+  //     .filter((r) => r.serviceType === "Case")
+  //     .map((rate: any) => ({
+  //       // This is what the user sees
+  //       label: `${rate.subServiceType} (₦${rate.caseRate?.toLocaleString()})`,
+  //       // This MUST be the ID the backend expects (the CaseType UUID)
+  //       value: String((rate as any).caseTypeId || (rate as any).id)
+  //     }));
+  // }, [rates]);
   const caseTypeOptions = React.useMemo(() => {
-    return rates
+    // Use optional chaining or fallback to empty array
+    return (rates || [])
       .filter((r) => r.serviceType === "Case")
       .map((rate: any) => ({
-        // This is what the user sees
         label: `${rate.subServiceType} (₦${rate.caseRate?.toLocaleString()})`,
-        // This MUST be the ID the backend expects (the CaseType UUID)
         value: String((rate as any).caseTypeId || (rate as any).id)
       }));
   }, [rates]);
@@ -59,12 +68,14 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   }, [counsels]);
 
   // map clients
-  const clientOptions = React.useMemo(() => {
-    return clients.map((c, index) => ({
-      label: `${c.firstName} ${c.lastName} (${c.email})`,
-      value: c.email || `client-${c.id || index}`
-    }));
-  }, [clients]);
+  const clientOptions = React.useMemo(
+    () =>
+      (clients || []).map((c) => ({
+        label: `${c.firstName} ${c.lastName} (${c.email})`,
+        value: c.email
+      })),
+    [clients]
+  );
 
   const statusOptions = [
     { label: "Discovery", value: "Discovery" },
@@ -85,9 +96,6 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
       document: "",
       // Keep legacy fields for schema compatibility but won't be used
       title: "",
-      // date: "",
-      // time: "",
-      // consultId: "",
       status: "Discovery"
     }
   });

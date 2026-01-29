@@ -51,8 +51,6 @@ const VerifyForm = () => {
         otp: data.otp
       });
 
-      // const userData = response.data?.user || response.data;
-      // const token = response.data?.token; // ensure api returns a token
       const { token, user: userData } = response.data;
       const firmData = useFirmProfileStore.getState().formData;
 
@@ -67,7 +65,7 @@ const VerifyForm = () => {
       toast.success("Account created successfully");
       router.push("/success");
 
-      useFirmProfileStore.getState().resetProfile();
+      // useFirmProfileStore.getState().resetProfile();
     } catch (err: any) {
       setAuthLoading(false);
       const errorMessage = err.response?.data?.message || "Verification failed";

@@ -3,7 +3,7 @@ import api from "./api";
 export const bookConsultation = (payload: any) =>
   api.post("/consults/book", payload);
 
-export const getAllConsult = () => api.post("/all/consults");
+export const getAllConsult = () => api.get("/all/consults");
 
 export const getAllConsultCode = (consultCode: any) =>
   api.post(`/all/consults/${consultCode}`);

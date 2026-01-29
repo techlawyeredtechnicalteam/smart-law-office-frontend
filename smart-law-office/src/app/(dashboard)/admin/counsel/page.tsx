@@ -10,6 +10,7 @@ import DeleteCounselModal from "@/components/dashboard/admin/manageCounsel/Delet
 import { toast } from "sonner";
 import React from "react";
 import { useAuthStore } from "@/store/authStore";
+import UpgradeToProModal from "@/components/dashboard/admin/manageCounsel/UpgradeProModal";
 
 const ManageCounselPage = () => {
   const {
@@ -21,10 +22,18 @@ const ManageCounselPage = () => {
     setLastAddedCounsel
   } = useCounselStore();
   const { user } = useAuthStore();
+  // const hasPlan = (user as any)?.subscriptionStatus === "ACTIVE";
+
+  const hasPlan =
+    (user as any)?.subscriptionStatus?.toLowerCase() === "active" ||
+    (user as any)?.isPro === true ||
+    (user as any)?.plan === "ACTIVE";
 
   React.useEffect(() => {
-    fetchCounsels();
-  }, [fetchCounsels]);
+    if (hasPlan) {
+      fetchCounsels();
+    }
+  }, [fetchCounsels, hasPlan]);
 
   const handleSendInvitation = () => {
     toast.info("Invitation Sent!", {
@@ -36,6 +45,28 @@ const ManageCounselPage = () => {
   // const showEmptyState = !isLoading && counsel.length === 0;
 
   // Always show the Manage Counsel page for admins (temporary change)
+  if (!hasPlan) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[70vh] text-center px-4">
+        <div className="w-20 h-20 bg-violet-100 rounded-full flex items-center justify-center mb-6">
+          <ShieldAlert className="w-10 h-10 text-violet-600" />
+        </div>
+        <h1 className="text-3xl font-bold mb-3">Manage Your Team</h1>
+        <p className="text-gray-500 max-w-md mb-8">
+          The ability to add, manage, and assign cases to counsel members is
+          reserved for Pro and Basic plan subscribers.
+        </p>
+        <Button
+          onClick={openAddModal} // This will trigger the UpgradeModal because hasPlan is false
+          className="bg-violet-600 hover:bg-violet-700 h-12 px-8"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add Counsel Member
+        </Button>
+        <UpgradeToProModal />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6">
@@ -86,7 +117,7 @@ const ManageCounselPage = () => {
         <CounselTable />
       )}
 
-      {/* <UpgradeToProModal /> */}
+      <UpgradeToProModal />
       <AddCounselModal />
       <EditCounselModal />
       <DeleteCounselModal />

@@ -14,13 +14,13 @@ import { CreateModal } from "@/components/shared/CreateModal";
 
 const CaseManagementPage = () => {
   const { cases, stats, isLoading, fetchCases } = useCaseStore();
-  const { consultations, fetchConsultations } = useConsultationStore();
+  const { consultations, fetchConsultationDirect } = useConsultationStore();
   const [isSuccessModalOpen, setIsSuccessModalOpen] = React.useState(false);
 
   // Sync data on mount
   useEffect(() => {
     fetchCases();
-    fetchConsultations(); // Fetch the table data for the top section
+    fetchConsultationDirect(); // Fetch the table data for the top section
   }, []);
 
   return (

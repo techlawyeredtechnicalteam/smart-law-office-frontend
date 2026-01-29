@@ -11,17 +11,20 @@ import { PerformanceReviewPanel } from "@/components/dashboard/dashboard/Perform
 import React, { useEffect } from "react";
 import { useDocumentStore } from "@/store/documentStore";
 import { useAuthStore } from "@/store/authStore";
+import useConsultationStore from "@/store/consultationStore";
 
 export default function AdminDashboardPage() {
   const { cases, fetchCases } = useCaseStore();
   const { counsel, fetchCounsels } = useCounselStore();
   const { documents } = useDocumentStore();
+  // const {fetchConsultationDirect, consultation} = useConsultationStore()
 
   const { user } = useAuthStore();
   const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
     fetchCases();
+    // fetchConsultation()
     // only if admin need to fetch the full counsel list for metrixs
     if (isAdmin) {
       fetchCounsels();
@@ -67,7 +70,8 @@ export default function AdminDashboardPage() {
             {isAdmin ? (
               <OverviewMetrics title="Counsel" value={counsel.length} />
             ) : (
-              <OverviewMetrics title="Consultations" value={cases.length} />
+              <span className="">Consulat</span>
+              // <OverviewMetrics title="Consultations" value={consultation.length} />
             )}
             <OverviewMetrics title="Documents" value={documents.length} />
             <OverviewMetrics title="Payments" value={0} />

@@ -31,7 +31,7 @@ export function PaymentSummary() {
 
     return {
       totalAmountNaira: rawAmount,
-      totalAmountKobo: rawAmount * 100,
+      totalAmountKobo: rawAmount,
       discountApplied: isYearly ? "20% Yearly Discount" : null
     };
   }, [selectedSubscription, billingCycle]);

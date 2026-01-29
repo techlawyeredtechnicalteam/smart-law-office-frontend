@@ -64,20 +64,24 @@ export function TableModal<T>({
               </TableCell>
             </TableRow>
           ) : (
-            data.map((item, index) => (
-              <TableRow
-                key={getRowKey ? getRowKey(item, index) : `row-${index}`}
-              >
-                {columns.map((column) => (
-                  <TableCell
-                    key={`${column.key}-${index}`}
-                    className={column.cellClassName}
-                  >
-                    {column.render(item, index)}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            data.map((item, index) => {
+              const rowKey = getRowKey
+                ? getRowKey(item, index)
+                : (item as any).id || `row-${index}`;
+              return (
+                <TableRow key={rowKey}>
+                  {columns.map((column) => (
+                    <TableCell
+                      // IMPORTANT: Key should combine the row's unique identity + column key
+                      key={`${rowKey}-${column.key}`}
+                      className={column.cellClassName}
+                    >
+                      {column.render(item, index)}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              );
+            })
           )}
         </TableBody>
       </Table>

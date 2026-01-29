@@ -116,9 +116,23 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
 
   // Modal Logic
   openAddModal: () => {
-    // For now allow opening the Add Counsel modal for all admins
-    set({ isAddModalOpen: true });
+    const user = useAuthStore.getState().user;
+
+    // Check: Must be ACTIVE AND (PRO or BASIC)
+    const hasAccess =
+      user?.subscriptionStatus === "ACTIVE" &&
+      (user?.planType === "PRO" || user?.planType === "BASIC");
+
+    if (hasAccess) {
+      set({ isAddModalOpen: true });
+    } else {
+      set({ isUpgradeModalOpen: true });
+    }
   },
+  // openAddModal: () => {
+  //   // For now allow opening the Add Counsel modal for all admins
+  //   set({ isAddModalOpen: true });
+  // },
 
   closeAddModal: () => set({ isAddModalOpen: false, callToBarFile: null }),
 
@@ -177,7 +191,7 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
         details: `${newCounsel.name} was successfully added to your team.`
       });
     } catch (error) {
-      toast.error("Failed to add counsel. Please try again.");
+      console.error("Failed to add counsel. Please try again.");
     } finally {
       set({ isLoading: false });
     }
@@ -198,7 +212,7 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
         duration: 3000
       });
     } catch (error) {
-      toast.error("Failed to update counsel.");
+      // toast.error("Failed to update counsel.");
     } finally {
       set({ isLoading: false });
     }
@@ -222,7 +236,7 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
         } has been deactivated`
       });
     } catch (error) {
-      toast.error("Failed to delete counsel.");
+      // toast.error("Failed to delete counsel.");
     } finally {
       set({ isLoading: false });
     }

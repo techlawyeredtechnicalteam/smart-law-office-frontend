@@ -134,8 +134,6 @@ export const useBillingStore = create<BillingStore>()(
             getCaseFormCaseTypes()
           ]);
 
-          console.log("Schedules Raw:", schedulesRes?.data);
-
           const rawSchedules = schedulesRes?.data || [];
 
           // Format Consultation history
@@ -165,7 +163,7 @@ export const useBillingStore = create<BillingStore>()(
             isLoading: false
           });
         } catch (error) {
-          toast.error("Failed to sync billing data");
+          // toast.error("Failed to sync billing data");
         } finally {
           set({ isLoading: false });
         }
