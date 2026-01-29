@@ -2,7 +2,9 @@
 import { Case, useCaseStore } from "@/store/createCase";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
+import { CaseDetailsModal } from "./CaseDetailsModal";
 import { TableColumn, TableModal } from "@/components/shared/TableModal";
+import { useState } from "react";
 
 interface CaseDashboardProps {
   cases: Case[];
@@ -10,24 +12,28 @@ interface CaseDashboardProps {
 
 // Function to determine badge style based on status
 const getStatusBadgeVariant = (status: string) => {
-  switch (status) {
-    case "Discovery":
-      return "bg-violet-100 text-violet-800 border-violet-200 hover:bg-violet-100";
-    case "Scheduled":
-      return "bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100";
-    case "Pending":
-      return "bg-yellow-100 text-yellow-800 border-yellow-200 hover:bg-yellow-100";
-    case "Completed":
-      return "bg-green-100 text-green-800 border-green-200 hover:bg-green-100";
+  const s = status?.toUpperCase();
+  switch (s) {
+    case "SCHEDULED":
+      return "bg-violet-100 text-violet-800...";
+    case "PENDING":
+      return "bg-blue-100 text-blue-800...";
+    case "COMPLETED":
+      return "bg-green-100 text-green-800...";
     default:
-      return "bg-gray-100 text-gray-800 border-gray-200 hover:bg-gray-100";
+      return "bg-gray-100 text-gray-800...";
   }
 };
 
 export function CaseDashboard({ cases }: CaseDashboardProps) {
-  console.log("CaseDashboard:", cases);
+  const [selectedCase, setSelectedCase] = useState<Case | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const { caseTypes } = useCaseStore();
+  const handleRowClick = (item: Case) => {
+    setSelectedCase(item);
+    setIsModalOpen(true);
+  };
+
   const columns: TableColumn<Case>[] = [
     {
       key: "id",
@@ -65,16 +71,14 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
     },
     {
       key: "caseType",
-      header: "Case Type",
-      render: (caseItem: any) => {
-        const type =
-          caseItem.caseType || // Flat property
-          caseItem.feeSchedule?.name || // Nested fee schedule
-          caseItem.case_type?.name || // Common snake_case variant
-          "Standard Case";
-
-        return <span className="text-sm font-medium">{type}</span>;
-      }
+      header: "Case Category",
+      render: (caseItem) => (
+        <div className="max-w-[200px]">
+          <span className="text-xs font-semibold text-gray-700 block leading-tight">
+            {caseItem.caseType}
+          </span>
+        </div>
+      )
     },
     {
       key: "status",
@@ -91,11 +95,17 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       key: "notes",
       header: "Notes",
       render: (caseItem) => {
-        const noteText = caseItem.notes || (caseItem as any).note;
+        // Updated to look into directCaseNotes array from your JSON
+        const noteText =
+          caseItem.notes !== "No notes added"
+            ? caseItem.notes
+            : (caseItem as any).directCaseNotes?.[0]?.description;
+
         if (!noteText)
           return <span className="text-gray-400 italic text-xs">No notes</span>;
+
         return (
-          <span title={noteText}>
+          <span className="text-gray-600 text-xs" title={noteText}>
             {noteText.length > 35
               ? noteText.substring(0, 35) + "..."
               : noteText}
@@ -129,11 +139,29 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
   ];
 
   return (
-    <TableModal
-      data={cases}
-      columns={columns}
-      emptyMessage="No cases found. Create your first case to get started."
-      getRowKey={(caseItem) => caseItem.id}
-    />
+    <>
+      <div className="cursor-pointer">
+        <TableModal
+          data={cases}
+          columns={columns}
+          emptyMessage="No cases found."
+          getRowKey={(caseItem) =>
+            caseItem.id || (caseItem as any).directCaseId
+          }
+        />
+      </div>
+
+      <CaseDetailsModal
+        selectedCase={selectedCase}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
+    </>
+    // <TableModal
+    //   data={cases}
+    //   columns={columns}
+    //   emptyMessage="No cases found. Create your first case to get started."
+    //   getRowKey={(caseItem) => caseItem.id}
+    // />
   );
 }

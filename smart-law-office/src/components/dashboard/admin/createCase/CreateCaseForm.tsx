@@ -23,7 +23,7 @@ interface CreateCaseFormProps {
 
 const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   const { executeCreate, isLoading: isCreating } = useCaseStore();
-  const { feeSchedules, rates, fetchBillingInitialData } = useBillingStore();
+  const { rates, fetchBillingInitialData } = useBillingStore();
   const {
     fetchData,
     counsels,
@@ -39,23 +39,13 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     fetchData();
   }, []);
 
-  // const caseTypeOptions = React.useMemo(() => {
-  //   return rates
-  //     .filter((r) => r.serviceType === "Case")
-  //     .map((rate: any) => ({
-  //       // This is what the user sees
-  //       label: `${rate.subServiceType} (₦${rate.caseRate?.toLocaleString()})`,
-  //       // This MUST be the ID the backend expects (the CaseType UUID)
-  //       value: String((rate as any).caseTypeId || (rate as any).id)
-  //     }));
-  // }, [rates]);
   const caseTypeOptions = React.useMemo(() => {
     // Use optional chaining or fallback to empty array
     return (rates || [])
       .filter((r) => r.serviceType === "Case")
       .map((rate: any) => ({
         label: `${rate.subServiceType} (₦${rate.caseRate?.toLocaleString()})`,
-        value: String((rate as any).caseTypeId || (rate as any).id)
+        value: String((rate as any).caseTypeId || (rate as any).caseTypeId)
       }));
   }, [rates]);
 
@@ -78,7 +68,6 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   );
 
   const statusOptions = [
-    { label: "Discovery", value: "Discovery" },
     { label: "Scheduled", value: "Scheduled" },
     { label: "Pending", value: "Pending" },
     { label: "Completed", value: "Completed" }
@@ -96,7 +85,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
       document: "",
       // Keep legacy fields for schema compatibility but won't be used
       title: "",
-      status: "Discovery"
+      status: "Scheduled"
     }
   });
 
@@ -114,7 +103,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {/* Shared Fields */}
-        <CustomSelectField
+        {/* <CustomSelectField
           control={form.control}
           name="clientEmail"
           label="Select Client"
@@ -138,6 +127,34 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           label="Case Status"
           placeholder="Select status"
           options={statusOptions} // Use the status array here
+          className="w-full"
+        /> */}
+        {/* CLIENT FIELD: Conditional based on Role */}
+        {isAdmin ? (
+          <CustomSelectField
+            control={form.control}
+            name="clientEmail"
+            label="Select Client"
+            placeholder="Select a Client"
+            options={clientOptions}
+            disabled={isFetchingData}
+          />
+        ) : (
+          <CustomFormField
+            control={form.control}
+            name="clientEmail"
+            label="Client Email"
+            placeholder="enter.client@email.com"
+            type="email"
+          />
+        )}
+
+        <CustomSelectField
+          control={form.control}
+          name="caseTypeId"
+          label="Case Type"
+          placeholder="Select Case Type"
+          options={caseTypeOptions}
           className="w-full"
         />
 

@@ -12,9 +12,11 @@ import React, { useEffect } from "react";
 import { useDocumentStore } from "@/store/documentStore";
 import { useAuthStore } from "@/store/authStore";
 import useConsultationStore from "@/store/consultationStore";
+import { useBillingStore } from "@/store/setRateBill";
 
 export default function AdminDashboardPage() {
   const { cases, fetchCases } = useCaseStore();
+  const { fetchBillingInitialData } = useBillingStore();
   const { counsel, fetchCounsels } = useCounselStore();
   const { documents } = useDocumentStore();
   // const {fetchConsultationDirect, consultation} = useConsultationStore()
@@ -23,15 +25,17 @@ export default function AdminDashboardPage() {
   const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
-    fetchCases();
-    // fetchConsultation()
-    // only if admin need to fetch the full counsel list for metrixs
-    if (isAdmin) {
-      fetchCounsels();
-    }
-    // In a real app, you'd also fetch documents/payments/etc.
-  }, [fetchCases, fetchCounsels, isAdmin]);
+    const init = async () => {
+      // Load Billing first to ensure the 'rates' dictionary is ready
+      await fetchBillingInitialData();
+      // Then load cases so they can find their names in the rates dictionary
+      await fetchCases();
 
+      if (isAdmin) fetchCounsels();
+    };
+
+    init();
+  }, [isAdmin]);
   // 2. Prepare data for the OverviewMetrics component
   const totalCases = cases.length;
   const totalCounsels = counsel.length;
@@ -70,7 +74,7 @@ export default function AdminDashboardPage() {
             {isAdmin ? (
               <OverviewMetrics title="Counsel" value={counsel.length} />
             ) : (
-              <span className="">Consulat</span>
+              <span className=""></span>
               // <OverviewMetrics title="Consultations" value={consultation.length} />
             )}
             <OverviewMetrics title="Documents" value={documents.length} />

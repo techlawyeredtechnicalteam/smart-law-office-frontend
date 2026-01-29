@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useCaseStore } from "@/store/createCase";
 import useConsultationStore, { Consultation } from "@/store/consultationStore";
-import { TableModal, TableColumn } from "@/components/shared/TableModal"; // Adjust path as needed
+import { TableModal, TableColumn } from "@/components/shared/TableModal";
 import Link from "next/link";
 import { format } from "date-fns";
 import { TbUserScreen } from "react-icons/tb";
@@ -41,10 +41,10 @@ const MyCasePage = () => {
         key: "id",
         header: "Consultation ID",
         render: (item) => {
-          const suffix = item.id
-            ? item.id.slice(-4).toUpperCase()
-            : Math.floor(1000 + Math.random() * 9000);
-          return `#2026-${suffix}`;
+          // Use consultCode directly from the transformed data
+          return item.code
+            ? `#${item.code}`
+            : `#2026-${item.id?.slice(-4).toUpperCase() || "XXXX"}`;
         }
       },
       { key: "type", header: "Case Type", render: () => "Family Law" },
@@ -127,10 +127,17 @@ const MyCasePage = () => {
           )
       },
       {
-        key: "notes",
+        key: "note",
         header: "Notes",
-        cellClassName: "max-w-[200px] truncate",
-        render: (item) => item.notes || "---"
+        cellClassName: "max-w-[200px] truncate text-gray-600 text-sm",
+        render: (item) => {
+          // Check 'note' (from store) OR 'notes' (just in case) OR nested direct API path
+          const displayNote =
+            item.note ||
+            (item as any).notes ||
+            (item as any).consultNotes?.description;
+          return displayNote || "No notes provided";
+        }
       },
       {
         key: "action",
@@ -164,12 +171,6 @@ const MyCasePage = () => {
             Cases and Consultations will appear here. Set up a consultation to
             manage meetings.
           </p>
-          {/* <Button
-            onClick={openBooking}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            Book First Consultation
-          </Button> */}
         </div>
       </div>
     );
@@ -181,12 +182,6 @@ const MyCasePage = () => {
       <section className="space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-bold">Consultations</h2>
-          {/* <Button
-            onClick={openBooking}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            + Book a Consultation
-          </Button> */}
         </div>
         <TableModal
           data={consultations}
@@ -198,7 +193,7 @@ const MyCasePage = () => {
       </section>
 
       {/* SECTION: CASES */}
-      <section className="space-y-4">
+      {/* <section className="space-y-4">
         <h2 className="text-2xl font-bold">Cases</h2>
         <TableModal
           data={cases}
@@ -207,7 +202,7 @@ const MyCasePage = () => {
           containerClassName="bg-white rounded-xl shadow-sm border overflow-hidden"
           getRowKey={(item) => item.id || Math.random()}
         />
-      </section>
+      </section> */}
     </div>
   );
 };

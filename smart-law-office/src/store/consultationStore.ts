@@ -3,11 +3,16 @@ import {
   ConsultationFormData,
   ConsultationStatus
 } from "@/types/Consultation.schema";
-import { bookConsultation, getConsults } from "@/app/api/bookConsult.api";
+import {
+  bookConsultation,
+  getAllConsult,
+  getConsults
+} from "@/app/api/bookConsult.api";
 import { getAllCasesDirect } from "@/app/api/cases.api";
 
 export interface Consultation {
   id: string;
+  code: string;
   client?: {
     firstName: string;
     lastName: string;
@@ -19,7 +24,57 @@ export interface Consultation {
   document?: string;
   status: ConsultationStatus;
   paymentReceipt: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
+
+// Transform API response to UI format
+// const transformConsultationFromAPI = (apiConsult: any): Consultation => {
+//   return {
+//     id: apiConsult.consultId,
+//     code: apiConsult.consultCode,
+//     // 1. Handle nested client name (if backend joins it) or fallback
+//     clientName: apiConsult.client?.firstName
+//       ? `${apiConsult.client.firstName} ${apiConsult.client.lastName || ""}`.trim()
+//       : "Unknown Client",
+
+//     consultationFeeId: apiConsult.consultationFeeId,
+//     consultAt: apiConsult.consultAt,
+
+//     // 2. Map the nested consultNotes description to the 'note' field
+//     note: apiConsult.consultNotes?.description?.trim() || "No notes provided",
+
+//     // 3. Map the nested consultDocuments path
+//     document: apiConsult.consultDocuments?.path || null,
+
+//     status: apiConsult.status, // PENDING, PROGRESS, etc.
+//     paymentReceipt: apiConsult.paymentReceipt || "",
+//     createdAt: apiConsult.createdAt,
+//     updatedAt: apiConsult.updatedAt
+//   };
+// };
+
+const transformConsultationFromAPI = (apiConsult: any): Consultation => {
+  return {
+    id: apiConsult.consultId,
+    code: apiConsult.consultCode,
+
+    // Check if the nested object exists, otherwise leave it null/undefined
+    // so the UI can decide how to fallback
+    clientName: apiConsult.client
+      ? `${apiConsult.client.firstName} ${apiConsult.client.lastName || ""}`.trim()
+      : undefined,
+
+    consultationFeeId: apiConsult.consultationFeeId,
+    consultAt: apiConsult.consultAt,
+    note: apiConsult.consultNotes?.description?.trim() || "No notes provided",
+    document: apiConsult.consultDocuments?.path || null,
+    status: apiConsult.status,
+    paymentReceipt: apiConsult.paymentReceipt || "",
+    createdAt: apiConsult.createdAt,
+    updatedAt: apiConsult.updatedAt
+  };
+};
 
 interface ConsultationState {
   formData: Partial<ConsultationFormData> | null;
@@ -27,7 +82,7 @@ interface ConsultationState {
   isLoading: boolean;
   step: "form" | "summary" | "payment" | "success";
   consultations: Consultation[];
-  lastCreatedConsultCode: string | null; // NEW: Store the last created consult code
+  lastCreatedConsultCode: string | null;
 
   fetchConsultations: () => Promise<void>;
   fetchConsultationDirect: () => Promise<void>;
@@ -50,7 +105,6 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
   consultations: [],
   lastCreatedConsultCode: null,
 
-  // FIX: Use functional updates to merge state properly
   setFormData: (data: Partial<ConsultationFormData>) => {
     set((state) => ({
       ...state,
@@ -74,12 +128,11 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
 
   closeBooking: () => set({ isBookingOpen: false }),
 
-  // FIX: Ensure isBookingOpen stays TRUE when moving to summary/payment
   setStep: (step: "form" | "summary" | "payment" | "success") => {
     set((state) => ({
-      ...state, // Preserve everything
+      ...state,
       step: step,
-      isBookingOpen: true // FORCE open
+      isBookingOpen: true
     }));
   },
 
@@ -93,21 +146,47 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
 
   setLastCreatedConsultCode: (code) => set({ lastCreatedConsultCode: code }),
 
+  // fetchConsultations: async () => {
+  //   try {
+  //     const response = await getConsults();
+  //     // Transform the API response to match UI expectations
+  //     const transformedData = response.data.map(transformConsultationFromAPI);
+  //     set({ consultations: transformedData });
+  //   } catch (err) {
+  //     console.error("Failed to fetch consultations", err);
+  //   }
+  // },
+
+  // fetchConsultationDirect: async () => {
+  //   try {
+  //     const response = await getAllConsult();
+  //     // Transform the API response to match UI expectations
+  //     const transformedData = response.data.map(transformConsultationFromAPI);
+  //     set({ consultations: transformedData });
+  //   } catch (err) {
+  //     console.error("Failed to fetch consultation", err);
+  //   }
+  // },
+
   fetchConsultations: async () => {
+    // Used by Clients
     try {
       const response = await getConsults();
-      set({ consultations: response.data });
+      const transformedData = response.data.map(transformConsultationFromAPI);
+      set({ consultations: transformedData });
     } catch (err) {
-      console.error("Failed to fetch consultations", err);
+      console.error("Failed to fetch client consultations", err);
     }
   },
 
   fetchConsultationDirect: async () => {
+    // Used by Admins
     try {
-      const response = await getAllCasesDirect();
-      set({ consultations: response.data });
+      const response = await getAllConsult(); // API call for Admin
+      const transformedData = response.data.map(transformConsultationFromAPI);
+      set({ consultations: transformedData });
     } catch (err) {
-      console.error("Failed to fetch consultation", err);
+      console.error("Failed to fetch all consultations for admin", err);
     }
   },
 
@@ -134,11 +213,14 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
       const response = await bookConsultation(payload);
 
       if (response.status === 201 || response.status === 200) {
-        // Update local state with the new consultation
-        if (response.data?.code) setLastCreatedConsultCode(response.data.code);
-        addConsultation(response.data);
+        // Transform the API response before adding to state
+        const transformedConsult = transformConsultationFromAPI(response.data);
 
-        // Success! Move the UI forward
+        if (response.data?.consultCode) {
+          setLastCreatedConsultCode(response.data.consultCode);
+        }
+
+        addConsultation(transformedConsult);
         set({ step: "success", isLoading: false });
         return true;
       }
@@ -146,9 +228,164 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
     } catch (err) {
       console.error("Store: Failed to create consultation", err);
       set({ isLoading: false });
-      throw err; // Let the component handle the toast message
+      throw err;
     }
   }
 }));
 
 export default useConsultationStore;
+
+// import { create } from "zustand";
+// import {
+//   ConsultationFormData,
+//   ConsultationStatus
+// } from "@/types/Consultation.schema";
+// import { bookConsultation, getConsults } from "@/app/api/bookConsult.api";
+// import { getAllCasesDirect } from "@/app/api/cases.api";
+
+// export interface Consultation {
+//   id: string;
+//   client?: {
+//     firstName: string;
+//     lastName: string;
+//   };
+//   clientName?: string;
+//   consultationFeeId: string;
+//   consultAt: string;
+//   note: string;
+//   document?: string;
+//   status: ConsultationStatus;
+//   paymentReceipt: string;
+// }
+
+// interface ConsultationState {
+//   formData: Partial<ConsultationFormData> | null;
+//   isBookingOpen: boolean;
+//   isLoading: boolean;
+//   step: "form" | "summary" | "payment" | "success";
+//   consultations: Consultation[];
+//   lastCreatedConsultCode: string | null; // NEW: Store the last created consult code
+
+//   fetchConsultations: () => Promise<void>;
+//   fetchConsultationDirect: () => Promise<void>;
+//   setFormData: (data: Partial<ConsultationFormData>) => void;
+//   resetBooking: () => void;
+//   openBooking: () => void;
+//   closeBooking: () => void;
+//   setStep: (step: ConsultationState["step"]) => void;
+//   setConsultations: (consults: Consultation[]) => void;
+//   addConsultation: (consult: Consultation) => void;
+//   setLastCreatedConsultCode: (code: string) => void;
+//   submitConsultation: () => Promise<boolean>;
+// }
+
+// const useConsultationStore = create<ConsultationState>((set, get) => ({
+//   formData: null,
+//   isBookingOpen: false,
+//   isLoading: false,
+//   step: "form",
+//   consultations: [],
+//   lastCreatedConsultCode: null,
+
+//   // FIX: Use functional updates to merge state properly
+//   setFormData: (data: Partial<ConsultationFormData>) => {
+//     set((state) => ({
+//       ...state,
+//       formData: { ...state.formData, ...data },
+//       isBookingOpen: true
+//     }));
+//     console.log("Store: Data Saved", get().formData);
+//   },
+
+//   openBooking: () => {
+//     set({ isBookingOpen: true, step: "form" });
+//   },
+
+//   resetBooking: () =>
+//     set({
+//       formData: null,
+//       isBookingOpen: false,
+//       step: "form",
+//       lastCreatedConsultCode: null
+//     }),
+
+//   closeBooking: () => set({ isBookingOpen: false }),
+
+//   // FIX: Ensure isBookingOpen stays TRUE when moving to summary/payment
+//   setStep: (step: "form" | "summary" | "payment" | "success") => {
+//     set((state) => ({
+//       ...state, // Preserve everything
+//       step: step,
+//       isBookingOpen: true // FORCE open
+//     }));
+//   },
+
+//   setConsultations: (consults) => set({ consultations: consults }),
+
+//   addConsultation: (newConsult) =>
+//     set((state) => ({
+//       ...state,
+//       consultations: [...state.consultations, newConsult]
+//     })),
+
+//   setLastCreatedConsultCode: (code) => set({ lastCreatedConsultCode: code }),
+
+//   fetchConsultations: async () => {
+//     try {
+//       const response = await getConsults();
+//       set({ consultations: response.data });
+//     } catch (err) {
+//       console.error("Failed to fetch consultations", err);
+//     }
+//   },
+
+//   fetchConsultationDirect: async () => {
+//     try {
+//       const response = await getAllCasesDirect();
+//       set({ consultations: response.data });
+//     } catch (err) {
+//       console.error("Failed to fetch consultation", err);
+//     }
+//   },
+
+//   submitConsultation: async () => {
+//     const { formData, addConsultation, setLastCreatedConsultCode, setStep } =
+//       get();
+
+//     console.log("Submitting with Fee ID:", formData?.consultationFeeId);
+//     if (!formData) return false;
+
+//     set({ isLoading: true });
+
+//     try {
+//       const payload = {
+//         consultationFeeId: formData.consultationFeeId,
+//         date: formData.date,
+//         time: formData.time,
+//         note: formData.note,
+//         document: formData.document,
+//         consultAt: formData.consultAt,
+//         paymentReceipt: formData.paymentReceipt
+//       };
+
+//       const response = await bookConsultation(payload);
+
+//       if (response.status === 201 || response.status === 200) {
+//         // Update local state with the new consultation
+//         if (response.data?.code) setLastCreatedConsultCode(response.data.code);
+//         addConsultation(response.data);
+
+//         // Success! Move the UI forward
+//         set({ step: "success", isLoading: false });
+//         return true;
+//       }
+//       return false;
+//     } catch (err) {
+//       console.error("Store: Failed to create consultation", err);
+//       set({ isLoading: false });
+//       throw err; // Let the component handle the toast message
+//     }
+//   }
+// }));
+
+// export default useConsultationStore;

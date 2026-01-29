@@ -20,6 +20,7 @@ export interface ConsultationRate {
 export interface CaseRate {
   id?: string;
   serviceType: "Case";
+  caseTypeId?: string;
   subServiceType: string;
   caseRate: number;
   feeScheduleId?: string;
@@ -129,6 +130,8 @@ export const useBillingStore = create<BillingStore>()(
         set({ isLoading: true });
         try {
           const schedulesRes = await getFeeSchedule();
+          console.log("Fetch Schedules:", schedulesRes);
+
           const [consultRes, caseTypesRes] = await Promise.all([
             getConsultationFee(),
             getCaseFormCaseTypes()

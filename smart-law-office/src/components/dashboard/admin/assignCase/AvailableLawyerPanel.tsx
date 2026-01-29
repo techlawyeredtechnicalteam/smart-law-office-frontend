@@ -12,11 +12,18 @@ export function AvailableLawyersPanel() {
   const { counsels } = useAssignStore();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredLawyers = counsels.filter(
-    (lawyer) =>
-      lawyer.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      lawyer.specialty?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredLawyers = counsels.filter((lawyer) => {
+    const search = searchQuery.toLowerCase();
+    const isMatch =
+      lawyer.name?.toLowerCase().includes(search) ||
+      lawyer.specialty?.toLowerCase().includes(search);
+
+    // Fail-safe: Ensure no ADMIN or "Firm" names sneak through
+    const isNotAdmin =
+      lawyer.role !== "ADMIN" && !lawyer.name.toLowerCase().includes("firm");
+
+    return isMatch && isNotAdmin;
+  });
 
   return (
     <div className="bg-white rounded-xl shadow-sm border p-4 flex flex-col h-[450px]">
@@ -54,7 +61,9 @@ export function AvailableLawyersPanel() {
 }
 
 function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
+  // Use casesCount directly from the store mapping
   const currentCases = lawyer.casesCount || 0;
+  const isBusy = currentCases >= 5;
 
   const getInitials = (name: string) => {
     if (!name) return "??";
@@ -69,33 +78,38 @@ function LawyerCard({ lawyer }: { lawyer: Lawyer }) {
     <div className="flex items-center justify-between p-2 hover:bg-gray-50 rounded-lg transition">
       <div className="flex gap-3">
         <Avatar className="h-10 w-10 border border-gray-100 shadow-sm">
-          <AvatarImage
-            src={lawyer.firstName || ""}
-            alt={lawyer.name}
-            className="object-cover"
-          />
-
-          {/* 2. Fallback to Initials if image fails or doesn't exist */}
-          <AvatarFallback className="bg-purple-100 text-[#6f42c1] text-xs font-bold border border-purple-200">
+          {/* Use initials properly */}
+          <AvatarFallback className="bg-purple-100 text-[#6f42c1] text-xs font-bold">
             {getInitials(lawyer.name)}
           </AvatarFallback>
         </Avatar>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-sm">{lawyer.name}</span>
+            <span className="font-bold text-sm text-gray-900">
+              {lawyer.name}
+            </span>
             <MessageCircle
               size={14}
-              className="text-purple-500 cursor-pointer hover:text-purple-700 transition"
+              className="text-purple-500 cursor-pointer"
             />
           </div>
-          <div className="text-xs text-gray-500">{lawyer.specialty}</div>
+          <div className="text-[11px] text-gray-500 font-medium">
+            {lawyer.specialty}
+          </div>
         </div>
       </div>
+
       <div className="text-right">
-        <div className="text-sm font-bold">{currentCases} Cases</div>
-        <div className="flex items-center justify-end gap-1 text-xs text-green-600">
-          <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-          Available
+        <div className="text-sm font-bold text-gray-800">
+          {currentCases} Cases
+        </div>
+        <div
+          className={`flex items-center justify-end gap-1 text-[10px] font-semibold ${isBusy ? "text-amber-600" : "text-green-600"}`}
+        >
+          <span
+            className={`w-1.5 h-1.5 rounded-full ${isBusy ? "bg-amber-500" : "bg-green-500"}`}
+          ></span>
+          {isBusy ? "Busy" : "Available"}
         </div>
       </div>
     </div>

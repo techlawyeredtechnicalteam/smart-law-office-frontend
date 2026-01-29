@@ -109,18 +109,24 @@ export const useCaseStore = create<CaseState>((set, get) => ({
   calculateStats: (allCases: Case[]) => {
     const user = useAuthStore.getState().user;
 
-    // LEAD TIP: Filter the list based on the user BEFORE calculating stats
+    // Filter cases the user is allowed to see
     const visibleCases =
       user?.role === "ADMIN"
         ? allCases
         : allCases.filter((c) => c.staffEmail === user?.email);
 
     const total = visibleCases.length;
+
+    // Added .toUpperCase() to handle backend consistency
     const completed = visibleCases.filter(
-      (c) => c.status === "COMPLETED"
+      (c) => c.status?.toUpperCase() === "COMPLETED"
     ).length;
+
     const pending = visibleCases.filter(
-      (c) => c.status === "PENDING" || c.status === "IN_PROGRESS"
+      (c) =>
+        c.status?.toUpperCase() === "PENDING" ||
+        c.status?.toUpperCase() === "IN_PROGRESS" ||
+        c.status?.toUpperCase() === "DEFAULT"
     ).length;
 
     set({
@@ -128,67 +134,175 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     });
   },
 
+  // fetchCases: async () => {
+  //   set({ isLoading: true, error: null });
+  //   const user = useAuthStore.getState().user;
+
+  //   try {
+  //     // 1. Fetch Billing Data FIRST if it's not already there
+  //     let feeSchedules = useBillingStore.getState().feeSchedules;
+  //     if (!feeSchedules || feeSchedules.length === 0) {
+  //       await useBillingStore.getState().fetchBillingInitialData();
+  //       feeSchedules = useBillingStore.getState().feeSchedules; // Refresh reference
+  //     }
+
+  //     const response =
+  //       user?.role === "ADMIN" ? await getAllCases() : await getStaffCases();
+  //     const rawData = response.data || [];
+
+  //     const normalizedCases: Case[] = rawData.map((c: any) => {
+  //       // 2. Perform Lookup
+  //       const matchedCaseType = feeSchedules.find(
+  //         (ft: any) => ft.caseTypeId === c.caseTypeId || ft.id === c.caseTypeId
+  //       );
+
+  //       // Use .name as per your requirement
+  //       const caseTypeDisplay =
+  //         matchedCaseType?.feeSchedule?.description || "General Legal Matter";
+
+  //       return {
+  //         id: c.directCaseId,
+  //         caseCode: c.caseCode,
+  //         staffEmail: c.staff?.email || "Unassigned",
+  //         clientEmail: c.client?.email || "",
+  //         clientName: c.client
+  //           ? `${c.client.firstName} ${c.client.lastName}`.trim()
+  //           : "Walk-in Client",
+  //         caseType: caseTypeDisplay,
+  //         status: c.status || "default",
+  //         createdAt: c.createdAt,
+  //         notes: c.directCaseNotes?.[0]?.note || "No notes added",
+  //         documents: (c.directCaseDocuments || []).map((d: any) => ({
+  //           name: d.path.split("/").pop() || "Document",
+  //           url: d.path
+  //         })),
+  //         caseTypeId: c.caseTypeId
+  //       };
+  //     });
+
+  //     set({ cases: normalizedCases, isLoading: false });
+  //     get().calculateStats(normalizedCases);
+  //   } catch (error: any) {
+  //     set({ error: "Failed to load cases", isLoading: false });
+  //   }
+  // },
+
+  // fetchCases: async () => {
+  //   set({ isLoading: true, error: null });
+  //   const user = useAuthStore.getState().user;
+
+  //   try {
+  //     // 1. Get the billing store state
+  //     const billingStore = useBillingStore.getState();
+
+  //     // Ensure billing data is loaded
+  //     if (billingStore.rates.length === 0) {
+  //       await billingStore.fetchBillingInitialData();
+  //     }
+
+  //     // We use the 'rates' array because that's what CaseForm uses to save IDs
+  //     const allRates = useBillingStore.getState().rates;
+
+  //     const response =
+  //       user?.role === "ADMIN" ? await getAllCases() : await getStaffCases();
+  //     const rawData = response.data || [];
+
+  //     const normalizedCases: Case[] = rawData.map((c: any) => {
+  //       // Find the rate in the rates array
+  //       const matchedRate = allRates.find(
+  //         (r: any) => r.caseTypeId === c.caseTypeId || r.id === c.caseTypeId
+  //       );
+
+  //       // TYPE GUARD: Check if it's a CaseRate to satisfy TypeScript
+  //       let caseTypeDisplay = "General Legal Matter";
+
+  //       if (matchedRate && matchedRate.serviceType === "Case") {
+  //         // Now TS knows matchedRate has subServiceType
+  //         caseTypeDisplay = matchedRate.subServiceType;
+  //       }
+
+  //       return {
+  //         id: c.directCaseId,
+  //         caseCode: c.caseCode,
+  //         staffEmail: c.staff?.email || "Unassigned",
+  //         clientEmail: c.client?.email || "",
+  //         clientName: c.client
+  //           ? `${c.client.firstName} ${c.client.lastName}`.trim()
+  //           : "Walk-in Client",
+  //         caseType: caseTypeDisplay,
+  //         status: c.status,
+  //         createdAt: c.createdAt,
+  //         notes: c.directCaseNotes?.[0]?.description || "No notes added",
+  //         documents: (c.directCaseDocuments || []).map((d: any) => ({
+  //           name: d.path.split("/").pop() || "Document",
+  //           url: d.path
+  //         })),
+  //         caseTypeId: c.caseTypeId
+  //       };
+  //     });
+
+  //     set({ cases: normalizedCases, isLoading: false });
+  //     get().calculateStats(normalizedCases);
+  //   } catch (error: any) {
+  //     set({ error: "Failed to load cases", isLoading: false });
+  //   }
+  // },
   fetchCases: async () => {
     set({ isLoading: true, error: null });
-
     const user = useAuthStore.getState().user;
-    const role = user?.role;
 
     try {
+      const billingStore = useBillingStore.getState();
+      if (billingStore.rates.length === 0) {
+        await billingStore.fetchBillingInitialData();
+      }
+      const allRates = billingStore.rates;
+
       const response =
-        role === "ADMIN" ? await getAllCases() : await getStaffCases();
-      const rawData = response.data || [];
+        user?.role === "ADMIN" ? await getAllCases() : await getStaffCases();
+      const rawData = response.data?.data || response.data || []; // Handle nested data property
 
-      const feeSchedules = useBillingStore.getState().feeSchedules;
-
-      const normalizedCases: Case[] = rawData.map((c: any, index: number) => {
-        // 1. Generate the Case ID format: #2026-00XX
-        // We use the index or the last 2 digits of the directCaseId for the XX
-        const suffix = String(index + 1).padStart(2, "0");
-        const caseDisplayId = `#2026-00${suffix}`;
-
-        // 2. Resolve Case Type from Fee Schedules
-        const matchedSchedule = feeSchedules.find(
-          (fs) => fs.feeScheduleId === c.caseTypeId
+      const normalizedCases: Case[] = rawData.map((c: any) => {
+        // 1. Find the rate in the rates array
+        const matchedRate = allRates.find(
+          (r: any) =>
+            (r as any).caseTypeId === c.caseTypeId || r.id === c.caseTypeId
         );
-        const caseTypeDisplay = matchedSchedule?.caseTypeId || "General Case";
 
-        // 3. Resolve Client Name & Email (from nested 'client' object)
-        const clientName = c.client
-          ? `${c.client.firstName} ${c.client.lastName}`.trim()
-          : "Unknown Client";
-        const clientEmail = c.client?.email || "";
+        let caseTypeDisplay = "General Legal Matter";
 
-        // 4. Resolve Staff Name & Email (from nested 'staff' object)
-        const staffName = c.staff
-          ? `${c.staff.firstName} ${c.staff.lastName}`.trim()
-          : "Unassigned";
-        const staffEmail = c.staff?.email || "Unassigned";
+        // 2. USE TYPE GUARDING
+        // Check if matchedRate exists and is specifically a "Case" serviceType
+        if (matchedRate && matchedRate.serviceType === "Case") {
+          // TypeScript now knows matchedRate has subServiceType
+          caseTypeDisplay = matchedRate.subServiceType;
+        }
 
         return {
-          // Keeping the real UUID for API calls
-          id: c.directCaseId || c.caseId || c.id,
-          // Using your custom format for display
-          caseCode: caseDisplayId,
-          staffEmail: staffEmail,
-          staffName: staffName,
-          clientEmail: clientEmail,
-          clientName: clientName,
-          caseType: caseTypeDisplay,
-          status: c.status || "Default",
+          id: c.directCaseId || c.id,
+          caseCode: c.caseCode,
+          staffEmail: c.staff?.email || "Unassigned",
+          clientEmail: c.client?.email || "",
+          clientName: c.client
+            ? `${c.client.firstName} ${c.client.lastName}`.trim()
+            : "Walk-in Client",
+          caseType: caseTypeDisplay, // Now correctly typed and assigned
+          status: c.status,
           createdAt: c.createdAt,
-          notes: c.note || "",
-          documents: Array.isArray(c.documents) ? c.documents : []
+          notes: c.directCaseNotes?.[0]?.description || "No notes added",
+          documents: (c.directCaseDocuments || []).map((d: any) => ({
+            name: d.path.split("/").pop() || "Document",
+            url: d.path
+          })),
+          caseTypeId: c.caseTypeId
         };
       });
 
       set({ cases: normalizedCases, isLoading: false });
       get().calculateStats(normalizedCases);
     } catch (error: any) {
-      set({
-        error: error.response?.data?.message || "Failed to load cases",
-        isLoading: false
-      });
+      console.error("Fetch Cases Error:", error);
+      set({ error: "Failed to load cases", isLoading: false });
     }
   },
 
@@ -199,8 +313,32 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     try {
       let response;
 
+      // if (role === "ADMIN") {
+      //   response = await adminCreateCase(values);
+      // } else {
+      //   const staffPayload = {
+      //     clientEmail: values.clientEmail,
+      //     caseTypeId: values.caseTypeId,
+      //     note: values.notes,
+      //     document: values.document,
+      //     lastAdjournedAt: values.lastAdjournedDate || null,
+      //     nextAdjournedAt: values.nextAdjournedDate || null,
+      //     status: values.status
+      //   };
+      //   response = await staffCreateCase(staffPayload);
+      // }
       if (role === "ADMIN") {
-        response = await adminCreateCase(values);
+        // FIX: Admin payload was missing notes and status!
+        const adminPayload = {
+          clientEmail: values.clientEmail,
+          caseTypeId: values.caseTypeId,
+          staffEmail: values.staffEmail,
+          note: values.notes, // Pass the note here
+          status: values.status,
+          lastAdjournedAt: values.lastAdjournedDate || null,
+          nextAdjournedAt: values.nextAdjournedDate || null
+        };
+        response = await adminCreateCase(adminPayload);
       } else {
         const staffPayload = {
           clientEmail: values.clientEmail,
@@ -214,17 +352,13 @@ export const useCaseStore = create<CaseState>((set, get) => ({
         response = await staffCreateCase(staffPayload);
       }
 
-      // update local state immediately
-      const newCase = response.data;
-
-      if (newCase) {
-        const updatedCases = [newCase, ...get().cases];
-        set({
-          cases: updatedCases,
-          isLoading: false
-        });
-        // Trigger the real-time update
-        get().calculateStats(updatedCases);
+      if (response.data) {
+        // LEAD TIP: Instead of just pushing the raw object,
+        // re-run fetchCases to ensure the new case gets normalized
+        // (mapped with feeSchedule name and client details)
+        await get().fetchCases();
+        set({ isLoading: false });
+        return true;
       }
       return true;
     } catch (err: any) {
