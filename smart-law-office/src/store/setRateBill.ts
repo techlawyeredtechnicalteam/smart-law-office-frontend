@@ -8,6 +8,7 @@ import {
   getCaseFormCaseTypes
 } from "@/app/api/setRateBills.api";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { useAuthStore } from "./authStore";
 
 export interface ConsultationRate {
   id?: string;
@@ -124,22 +125,72 @@ export const useBillingStore = create<BillingStore>()(
         }
       },
 
+      // fetchBillingInitialData: async () => {
+      //   // if (get().isLoading) return;
+
+      //   set({ isLoading: true });
+      //   try {
+      //     const schedulesRes = await getFeeSchedule();
+      //     console.log("Fetch Schedules:", schedulesRes);
+
+      //     const [consultRes, caseTypesRes] = await Promise.all([
+      //       getConsultationFee(),
+      //       getCaseFormCaseTypes()
+      //     ]);
+
+      //     const rawSchedules = schedulesRes?.data || [];
+
+      //     // Format Consultation history
+      //     const consultationHistory: ConsultationRate[] = (
+      //       consultRes?.data || []
+      //     ).map((item: any) => ({
+      //       id: item.id,
+      //       serviceType: "Consultation",
+      //       consultType: item.consultType,
+      //       duration: item.duration || 0,
+      //       rate: item.fee || 0
+      //     }));
+      //     const caseRateHistory = (caseTypesRes?.data || []).map(
+      //       (item: any) => ({
+      //         serviceType: "Case",
+      //         subServiceType:
+      //           item.name || item.feeSchedule?.name || "Standard Case",
+      //         caseRate: item.fee || 0,
+      //         caseTypeId: item.caseTypeId || item.id,
+      //         feeScheduleId: item.feeScheduleId || item.id
+      //       })
+      //     );
+
+      //     set({
+      //       feeSchedules: rawSchedules,
+      //       rates: [...consultationHistory, ...caseRateHistory],
+      //       isLoading: false
+      //     });
+      //   } catch (error) {
+      //     // toast.error("Failed to sync billing data");
+      //   } finally {
+      //     set({ isLoading: false });
+      //   }
+      // },
+
       fetchBillingInitialData: async () => {
-        // if (get().isLoading) return;
+        const user = useAuthStore.getState().user;
+        const isAdmin = user?.role === "ADMIN";
 
         set({ isLoading: true });
         try {
+          // 1. Fetch schedules (Staff & Admin usually have access to this)
           const schedulesRes = await getFeeSchedule();
-          console.log("Fetch Schedules:", schedulesRes);
+          const rawSchedules = schedulesRes?.data || [];
 
+          // 2. Conditional Fetching based on Role
+          // Staff don't need consults, so we don't even call the endpoint
           const [consultRes, caseTypesRes] = await Promise.all([
-            getConsultationFee(),
+            isAdmin ? getConsultationFee() : Promise.resolve({ data: [] }),
             getCaseFormCaseTypes()
           ]);
 
-          const rawSchedules = schedulesRes?.data || [];
-
-          // Format Consultation history
+          // 3. Format Consultation history (will be empty for Staff)
           const consultationHistory: ConsultationRate[] = (
             consultRes?.data || []
           ).map((item: any) => ({
@@ -149,6 +200,8 @@ export const useBillingStore = create<BillingStore>()(
             duration: item.duration || 0,
             rate: item.fee || 0
           }));
+
+          // 4. Format Case Rates (this is what Staff actually need for the form)
           const caseRateHistory = (caseTypesRes?.data || []).map(
             (item: any) => ({
               serviceType: "Case",
@@ -166,7 +219,7 @@ export const useBillingStore = create<BillingStore>()(
             isLoading: false
           });
         } catch (error) {
-          // toast.error("Failed to sync billing data");
+          console.error("Billing fetch error:", error);
         } finally {
           set({ isLoading: false });
         }

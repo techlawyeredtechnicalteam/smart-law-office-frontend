@@ -4,7 +4,7 @@ import { Lawyer } from "@/types/user";
 import { getCounsel } from "@/app/api/manageCounse.api";
 import { assignCase } from "@/app/api/assignCase.api";
 import { getAllConsult } from "@/app/api/bookConsult.api";
-import { User } from "./authStore";
+import { useAuthStore, User } from "./authStore";
 import { useBillingStore } from "./setRateBill";
 
 export interface UnassignedCaseForUI {
@@ -58,136 +58,22 @@ export const useAssignStore = create<AssignState>()((set, get) => ({
   isAssigning: false,
   isLoading: false,
 
-  // fetchData: async () => {
-  //   if (get().isLoading) return;
-  //   set({ isLoading: true });
-  //   try {
-  //     const [consultRes, usersRes] = await Promise.all([
-  //       getAllConsult(),
-  //       getCounsel()
-  //     ]);
-
-  //     // const transformedCases: UnassignedCaseForUI[] = consultRes.data.map(
-  //     //   (ct: any) => ({
-  //     //     id: ct.consultId,
-  //     //     consultCode: ct.consultCode,
-  //     //     clientName: ct.client
-  //     //       ? `${ct.client.firstName} ${ct.client.lastName}`.trim()
-  //     //       : ct.clientName || "Unknown",
-  //     //     caseType: ct.caseType?.name || ct.feeSchedule?.name || "Legal Case",
-  //     //     date: ct.createdAt
-  //     //       ? new Date(ct.createdAt).toLocaleDateString()
-  //     //       : "N/A",
-  //     //     time: ct.createdAt
-  //     //       ? new Date(ct.createdAt).toLocaleTimeString()
-  //     //       : "N/A",
-  //     //     status: ct.status
-  //     //   })
-  //     // );
-
-  //     const transformedCases: UnassignedCaseForUI[] = consultRes.data.map(
-  //       (ct: any) => {
-  //         // 1. Correct Name Extraction
-  //         // Check for ct.client (joined object) OR ct.clientProfile
-  //         const firstName =
-  //           ct.client?.firstName || ct.clientProfile?.firstName || "";
-  //         const lastName =
-  //           ct.client?.lastName || ct.clientProfile?.lastName || "";
-
-  //         const fullName = `${firstName} ${lastName}`.trim();
-
-  //         return {
-  //           // Use consultId as the unique ID for the UI list
-  //           id: ct.consultId || ct.id,
-  //           consultCode: ct.consultCode,
-  //           // If fullName is empty, use a snippet of the clientId or "Walk-in Client"
-  //           clientName:
-  //             fullName ||
-  //             (ct.clientId
-  //               ? `Client (${ct.clientId.slice(0, 5)})`
-  //               : "Unknown Client"),
-  //           caseType: ct.caseType?.name || ct.feeSchedule?.name || "Legal Case",
-  //           date: ct.createdAt
-  //             ? new Date(ct.createdAt).toLocaleDateString()
-  //             : "N/A",
-  //           time: ct.createdAt
-  //             ? new Date(ct.createdAt).toLocaleTimeString()
-  //             : "N/A",
-  //           status: ct.status || "Pending Assignment"
-  //         };
-  //       }
-  //     );
-  //     const rawUsers = usersRes.data?.data || usersRes.data || [];
-  //     const lawyers = rawUsers
-  //       .filter((u: any) => u.role === "STAFF")
-  //       .map((u: any) => ({
-  //         id: String(u.userId || u.id),
-  //         name: u.fullName || `${u.firstName} ${u.lastName}`.trim(),
-  //         email: u.email,
-  //         specialty: u.scn ? `SCN: ${u.scn}` : "General Practice",
-  //         casesCount: Number(u.assignedCases) || 0
-  //       }));
-
-  //     const clients = rawUsers.filter((u: any) => u.role === "CLIENT");
-
-  //     set({
-  //       unassignedCases: transformedCases,
-  //       counsels: lawyers,
-  //       clients: clients,
-  //       isLoading: false
-  //     });
-  //   } catch (err) {
-  //     set({ isLoading: false });
-  //   }
-  // },
-
   fetchData: async () => {
     if (get().isLoading) return;
     set({ isLoading: true });
 
+    const user = useAuthStore.getState().user;
+    const isAdmin = user?.role === "ADMIN";
+
     try {
       const [consultRes, usersRes] = await Promise.all([
-        getAllConsult(),
+        isAdmin ? getAllConsult() : Promise.resolve({ data: [] }),
         getCounsel()
       ]);
 
       // 1. Normalize raw data - handles [data.data] or [data] or [direct array]
       const rawUsers = usersRes.data?.data || usersRes.data || usersRes || [];
       const allUsers = Array.isArray(rawUsers) ? rawUsers : [];
-
-      // 2. Map Lawyers (Staff) - Case-insensitive role check
-      // const lawyerList: Lawyer[] = allUsers
-      //   .filter((u: any) => ["STAFF", "ADMIN"].includes(u.role?.toUpperCase()))
-      //   .map((u: any) => {
-      //     // Determine the literal role value
-      //     const roleValue = u.role?.toUpperCase();
-      //     const finalRole = (roleValue === "ADMIN" ? "ADMIN" : "STAFF") as
-      //       | "STAFF"
-      //       | "ADMIN";
-
-      //     // Determine the status value based on workload
-      //     const count = Number(u.assignedCases || u.casesCount) || 0;
-      //     const finalStatus = (count >= 5 ? "Busy" : "Active") as
-      //       | "Active"
-      //       | "Inactive"
-      //       | "Busy";
-
-      //     return {
-      //       id: String(u.userId || u.id),
-      //       userId: String(u.userId || u.id),
-      //       firstName: u.firstName || "",
-      //       lastName: u.lastName || "",
-      //       name:
-      //         u.fullName || `${u.firstName || ""} ${u.lastName || ""}`.trim(),
-      //       email: u.email,
-      //       role: finalRole, // Casted to the specific literal type
-      //       specialty: u.scn ? `SCN: ${u.scn}` : "General Practice",
-      //       scn: u.scn || "",
-      //       casesCount: count,
-      //       status: finalStatus, // Casted to the specific literal type
-      //       callToBarFile: u.callToBarFile || null
-      //     };
-      //   });
 
       const lawyerList: Lawyer[] = allUsers
         .filter((u: any) => {
@@ -265,13 +151,8 @@ export const useAssignStore = create<AssignState>()((set, get) => ({
       set({ isLoading: false });
     }
   },
-  assignCase: async (
-    consultCode,
-    staffEmail,
-    caseId,
-    caseDetails,
-    counselDetails
-  ) => {
+
+  assignCase: async (consultCode, staffEmail) => {
     set({ isAssigning: true });
     try {
       // THE FIX: We send the consultCode string as required by your 400 error trace

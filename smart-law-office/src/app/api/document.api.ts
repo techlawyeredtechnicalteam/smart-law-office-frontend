@@ -5,7 +5,7 @@ export const caseDocument = (payload: {
   caseId: string;
   document: string | File;
   name: string;
-}) => api.post("/case-documents", payload);
+}) => api.post("/case-documents/direct", payload);
 
 export const getDocument = () => api.get("/api/v1/case-documents");
 

@@ -14,7 +14,6 @@ import FileUpload from "@/components/shared/FileUpload";
 import { useAuthStore } from "@/store/authStore";
 import { useBillingStore } from "@/store/setRateBill";
 import { useAssignStore } from "@/store/assignCaseStore";
-import { Value } from "@radix-ui/react-select";
 
 interface CreateCaseFormProps {
   onSuccess: () => void;
@@ -78,7 +77,8 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     defaultValues: {
       clientEmail: "",
       caseTypeId: "",
-      staffEmail: "",
+      // staffEmail: "",
+      staffEmail: !isAdmin ? user?.email || "" : "",
       lastAdjournedDate: "",
       nextAdjournedDate: "",
       notes: "",
