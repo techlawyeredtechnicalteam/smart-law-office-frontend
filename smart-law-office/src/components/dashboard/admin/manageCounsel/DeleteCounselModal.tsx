@@ -1,12 +1,11 @@
-// src/components/dashboard/admin/manageCounsel/DeleteCounselModal.tsx
 "use client";
 
 import { useCounselStore } from "@/store/manageCounsel";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { User, XCircle } from "lucide-react"; // Changed icon for removal
+import { XCircle } from "lucide-react";
 import React from "react";
-//
+
 const DeleteCounselModal = () => {
   const {
     isDeleteModalOpen,
@@ -20,9 +19,7 @@ const DeleteCounselModal = () => {
     if (!selectedCounsel) return;
 
     try {
-      // the store handles the CloseDeleteModal and toast internally
       await deleteCounsel(selectedCounsel.id);
-      // Success toast is handled in the store
     } catch (error) {
       console.error("Delete failed:", error);
     }
@@ -31,10 +28,8 @@ const DeleteCounselModal = () => {
   return (
     <Dialog open={isDeleteModalOpen} onOpenChange={closeDeleteModal}>
       <DialogContent className="sm:max-w-[425px] text-center p-8">
-        {/* Icon Area - Matching deletemanageCounse.png */}
         <div className="flex justify-center mb-6">
           <div className="rounded-full h-16 w-16 bg-red-100 flex items-center justify-center">
-            {/* Using XCircle or a similar warning/delete icon from lucide-react */}
             <XCircle className="w-8 h-8 text-red-600" />
           </div>
         </div>
@@ -47,7 +42,7 @@ const DeleteCounselModal = () => {
           irreversible.
         </p>
 
-        {/* Counsel Info Box - Matching deletemanageCounse.png */}
+        {/* Counsel Info Box */}
         {selectedCounsel && (
           <div className="bg-violet-50 p-3 rounded-lg inline-block mb-6 border border-violet-200">
             <p className="font-bold text-lg text-violet-800">

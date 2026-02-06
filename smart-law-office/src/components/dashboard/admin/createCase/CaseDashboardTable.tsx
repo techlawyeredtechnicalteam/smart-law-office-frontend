@@ -1,4 +1,3 @@
-// components/CaseDashboard.tsx
 import { Case, useCaseStore } from "@/store/createCase";
 import { Badge } from "@/components/ui/badge";
 import { User } from "lucide-react";
@@ -50,15 +49,12 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       key: "clientName",
       header: "Client Name",
       render: (caseItem: any) => {
-        // Lead Tip: Log one item here if you're still stuck to see its real shape
-        // console.log("Case Item Shape:", caseItem);
-
         const name =
-          caseItem.clientName || // Flat property
-          caseItem.client?.name || // Nested object
-          caseItem.client?.fullName || // Common backend variant
-          caseItem.title || // Fallback title
-          caseItem.clientEmail || // Use email as name if all else fails
+          caseItem.clientName ||
+          caseItem.client?.name ||
+          caseItem.client?.fullName ||
+          caseItem.title ||
+          caseItem.clientEmail ||
           "Unknown Client";
 
         return (
@@ -144,7 +140,7 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
         <TableModal
           data={cases}
           columns={columns}
-          emptyMessage="No cases found."
+          emptyMessage="No cases found. Create your first case to get started"
           getRowKey={(caseItem) =>
             caseItem.id || (caseItem as any).directCaseId
           }
@@ -157,11 +153,5 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
         onClose={() => setIsModalOpen(false)}
       />
     </>
-    // <TableModal
-    //   data={cases}
-    //   columns={columns}
-    //   emptyMessage="No cases found. Create your first case to get started."
-    //   getRowKey={(caseItem) => caseItem.id}
-    // />
   );
 }

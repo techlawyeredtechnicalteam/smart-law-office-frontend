@@ -16,20 +16,16 @@ const UpgradeToProModal = () => {
   const { selectPlan } = useSubscriptionStore();
 
   const handleUpgrade = () => {
-    // Tell the sub system the user wants to upgrade to Pro
     selectPlan("PRO");
 
     // redirect to subscription page
     closeUpgradeModal();
     router.push("/subscribe?reason=add_counsel");
-
-    // clean up
   };
 
   return (
     <Dialog open={isUpgradeModalOpen} onOpenChange={closeUpgradeModal}>
       <DialogContent className="sm:max-w-[400px] text-center p-8">
-        {/* Accessibility Requirements */}
         <DialogTitle className="text-xl font-bold">Upgrade to Pro</DialogTitle>
 
         <div className="flex justify-center my-4">

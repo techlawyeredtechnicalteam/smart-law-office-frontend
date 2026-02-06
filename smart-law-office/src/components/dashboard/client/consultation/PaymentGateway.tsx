@@ -27,7 +27,6 @@ export function PaymentVerification() {
   const { formData: firmProfile, fetchProfile } = useFirmProfileStore();
   const [receipt, setReceipt] = useState<string>("");
 
-  // 1. Initialize bank profile if missing
   React.useEffect(() => {
     if (!firmProfile.bankAccountNumber) {
       fetchProfile();
@@ -43,7 +42,6 @@ export function PaymentVerification() {
   };
 
   const handleSubmit = async () => {
-    // Validation
     const receipt = formData?.paymentReceipt;
     if (!receipt) {
       toast.error("Please upload your payment receipt before proceeding.");
@@ -51,7 +49,6 @@ export function PaymentVerification() {
     }
 
     try {
-      // The store handles the API call, mapping, and step transition to "success"
       await submitConsultation();
       toast.success("Consultation booked successfully!");
     } catch (error: any) {
@@ -123,7 +120,6 @@ export function PaymentVerification() {
           label="Upload receipt (PDF, JPG, PNG)"
           fileData={formData?.paymentReceipt || ""}
           onFileChange={(data) => {
-            // 4. FIX: Update the store so the button unlocks
             setFormData({ paymentReceipt: data || "" });
           }}
           accept=".pdf,.jpg,.png,.jpeg"

@@ -65,8 +65,8 @@ export const useDocumentStore = create<DocumentStore>()(
       setIsSuccessModalOpen: (isSuccessModalOpen) => set({ isSuccessModalOpen })
     }),
     {
-      name: "document-storage", // Unique name for localStorage
-      storage: createJSONStorage(() => localStorage) // Defaults to localStorage
+      name: "document-storage",
+      storage: createJSONStorage(() => localStorage)
     }
   )
 );

@@ -33,7 +33,6 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   const isAdmin = user?.role === "ADMIN";
 
   React.useEffect(() => {
-    // Ensure we have the latest rates/schedules
     fetchBillingInitialData();
     fetchData();
   }, []);
@@ -77,13 +76,11 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     defaultValues: {
       clientEmail: "",
       caseTypeId: "",
-      // staffEmail: "",
       staffEmail: !isAdmin ? user?.email || "" : "",
       lastAdjournedDate: "",
       nextAdjournedDate: "",
       notes: "",
       document: "",
-      // Keep legacy fields for schema compatibility but won't be used
       title: "",
       status: "Scheduled"
     }

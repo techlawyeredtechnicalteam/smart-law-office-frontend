@@ -69,20 +69,13 @@ export const useAuthStore = create<AuthState>()(
           user: state.user ? { ...state.user, ...updatedUser } : null
         }));
       },
-      // updateUserLogo: (newLogo: string) =>
-      //   set((state: any) => ({
-      //     user: {
-      //       ...state.user,
-      //       firm: { ...state.user?.firm, logo: newLogo }
-      //     }
-      //   })),
       updateUserLogo: (newLogo) =>
         set((state) => ({
           user: state.user
             ? {
                 ...state.user,
                 firm: { ...state.user.firm, logo: newLogo },
-                logo: newLogo // sync both locations
+                logo: newLogo
               }
             : null
         })),
@@ -90,7 +83,6 @@ export const useAuthStore = create<AuthState>()(
       //
       loginSuccess: (token, user) => {
         setAuthCookie(token, user.role);
-        // ensure we store the plan info coming from backend
         set({
           user: {
             ...user,
@@ -103,11 +95,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
-        deleteAuthCookie(); // remove the cookie
+        deleteAuthCookie();
         useBillingStore.getState().resetFlow();
         set({ user: null, isAuthenticated: false, signupFormTemp: null });
-        // localStorage.removeItem("auth-storage");
-        // localStorage.removeItem("billing-storage");
       }
     }),
     {

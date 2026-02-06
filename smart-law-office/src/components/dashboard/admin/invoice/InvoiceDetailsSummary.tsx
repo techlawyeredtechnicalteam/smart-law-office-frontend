@@ -1,4 +1,3 @@
-// src/components/billing/InvoiceDetailsSummary.tsx
 "use client";
 
 import React from "react";
@@ -14,7 +13,6 @@ export function InvoiceDetailsSummary() {
   const { newInvoiceData, invoiceHistory, activeInvoiceId, setStep } =
     useInvoiceStore();
 
-  // Determine which invoice to display
   const invoice = activeInvoiceId
     ? invoiceHistory.find((inv) => inv.invoiceId === activeInvoiceId)
     : (newInvoiceData as InvoiceDetails);
@@ -143,7 +141,6 @@ export function InvoiceDetailsSummary() {
           </div>
         </div>
 
-        {/* Share Options (Only for History View) */}
         {isHistoryView && (
           <div className="pt-4 space-y-4">
             <h3 className="font-bold">Share as</h3>
@@ -166,8 +163,7 @@ export function InvoiceDetailsSummary() {
           </div>
         )}
       </div>
-
-      {/* Action Buttons (Footer) */}
+      
       <div className="flex justify-end space-x-4 pt-8 border-t mt-8">
         {!isPaid && !isHistoryView && (
           <>

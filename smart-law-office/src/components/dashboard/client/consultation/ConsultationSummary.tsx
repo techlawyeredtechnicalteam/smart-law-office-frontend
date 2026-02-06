@@ -2,15 +2,12 @@
 
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { Calendar, Clock, Copy, Info, User } from "lucide-react";
+import { Calendar, Clock, Info, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import useConsultationStore from "@/store/consultationStore";
 import { useFirmProfileStore } from "@/store/firmProfileStore";
-import { ConsultationRate, useBillingStore } from "@/store/setRateBill";
-import { toast } from "sonner";
 import React from "react";
 
-// A utility component to represent the Naira currency symbol
 const NairaSymbol = ({ className = "" }) => (
   <span className={cn("font-medium text-lg align-top", className)}>₦</span>
 );
@@ -74,7 +71,6 @@ export function ConsultationSummary() {
           </p>
           <p className="text-2xl font-bold text-[#6f42c1]">
             <NairaSymbol className="mr-1" />
-            {/* If specific rate isn't found, fallback to the firm's base fee */}
             {(feeDetails?.rate || 0).toLocaleString()}
           </p>
         </div>

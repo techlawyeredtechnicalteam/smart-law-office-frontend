@@ -23,14 +23,13 @@ export function AddDocumentModal() {
     resolver: zodResolver(documentSchema),
     defaultValues: {
       name: "",
-      caseType: "", // This is our caseId
+      caseType: "",
       status: "Discovery",
       file: ""
     }
   });
 
   const activeCaseOptions = React.useMemo(() => {
-    // Filter out any cases that somehow don't have an ID to prevent 404s
     return (cases || [])
       .filter((c) => c.id)
       .map((c) => ({

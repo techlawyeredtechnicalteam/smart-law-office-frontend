@@ -42,7 +42,6 @@ export default function ProfileTab() {
     loadProfile();
   }, []);
 
-  // Get current logo from global auth store
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -56,8 +55,8 @@ export default function ProfileTab() {
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64String = reader.result as string;
-      setLogo(base64String); // Local preview
-      updateUserLogo(base64String); // Global sync
+      setLogo(base64String);
+      updateUserLogo(base64String);
 
       try {
         await editFirmProfile({ logo: base64String });

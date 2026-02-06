@@ -17,8 +17,6 @@ export function CreateInvoiceForm() {
   const form = useForm<InvoiceFormValues>({
     resolver: zodResolver(invoiceFormSchema),
     defaultValues: {
-      // ...newInvoiceData,
-      // Replicate initial data shown in createInvoice.png
       invoiceId: "2025-0012",
       clientName: "",
       service: "Consultation",
@@ -34,8 +32,7 @@ export function CreateInvoiceForm() {
     setNewInvoiceData(values);
     setStep("details");
   };
-
-  // Using watch for dynamic fee input handling
+  
   const feeWatch = form.watch("consultationFee");
 
   const serviceOptions: Array<InvoiceFormValues["service"]> = [
@@ -71,27 +68,7 @@ export function CreateInvoiceForm() {
             label="Client Name"
             placeholder="Type something here..."
           />
-
-          {/* Service (Select) */}
-          {/* <CustomSelectField
-            control={form.control}
-            name="service"
-            label="Service"
-            placeholder="Consultation"
-            options={serviceOptions}
-            className="bg-purple-50 border-purple-300"
-          /> */}
-
-          {/* Duration (Select) */}
-          {/* <CustomSelectField
-            control={form.control}
-            name="duration"
-            label="Duration"
-            placeholder="30 minutes"
-            options={durationOptions}
-            className="bg-purple-50 border-purple-300"
-          /> */}
-
+          
           {/* Consultation Fee */}
           <CustomFormField
             control={form.control}

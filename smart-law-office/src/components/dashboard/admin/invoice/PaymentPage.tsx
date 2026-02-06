@@ -53,11 +53,8 @@ export function PaymentPage() {
   });
 
   const onSubmit = (values: PaymentFormValues) => {
-    // Simulate payment processing
     console.log("Payment initiated:", values);
-    // After successful payment simulation, proceed to the success step
     setStep("success");
-    // finalizeInvoice(); // Finalize will be called after closing the success modal
   };
 
   const PaymentOption = ({

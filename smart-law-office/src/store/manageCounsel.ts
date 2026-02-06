@@ -9,7 +9,6 @@ import {
 } from "@/app/api/manageCounse.api";
 import { Lawyer } from "@/types/user";
 import { useAssignStore } from "./assignCaseStore";
-import { useAuthStore } from "./authStore";
 
 export interface Notification {
   type: "success" | "info" | "error";
@@ -31,9 +30,7 @@ export interface Counsel {
   caseCount?: number;
 }
 
-// Helper to trasnform API data to counsel interface
 const mapToCounsel = (data: any): Lawyer => {
-  // Force conversion to number to prevent "string vs number" overlap errors
   const count = Number(data.assignedCases || data.casesCount || 0);
 
   return {
@@ -48,14 +45,13 @@ const mapToCounsel = (data: any): Lawyer => {
     specialty:
       data.specialty || (data.scn ? `SCN: ${data.scn}` : "General Practice"),
     scn: data.scn || "",
-    casesCount: count, // This is now a true number
-    status: count >= 5 ? "Busy" : "Active", // Safe number comparison
+    casesCount: count,
+    status: count >= 5 ? "Busy" : "Active",
     callToBarFile: data.callToBarFile || data.barCertificate || null
   };
 };
 
 export interface ManageCounselStore {
-  // State
   counsel: Lawyer[];
   isLoading: boolean;
   callToBarFile: string | null;
@@ -153,7 +149,6 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
     set({ isLoading: true });
     try {
       const response = await fetchCounsel();
-      // Handle different response structures
       const rawData = response.data?.data || response.data || [];
       const staff = rawData.filter((u: any) => u.role === "STAFF");
       set({ counsel: staff.map(mapToCounsel) });
@@ -204,7 +199,6 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
 
       set({ isEditModalOpen: false, selectedCounsel: null });
 
-      // Custom Success Toast
       toast("Update Successful", {
         description: "The Counsel's details have been saved.",
         duration: 3000

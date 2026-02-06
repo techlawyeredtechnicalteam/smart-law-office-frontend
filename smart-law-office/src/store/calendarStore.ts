@@ -1,4 +1,3 @@
-// /store/calendarStore.ts
 import { create, StateCreator } from "zustand";
 import { toast } from "sonner";
 
@@ -6,10 +5,10 @@ export interface ScheduledEvent {
   id: string;
   type: "Consultation" | "Deadline" | "Meeting";
   title: string;
-  clientName: string; // Only for Consultation
+  clientName: string;
   status: "Scheduled" | "Completed" | "Cancelled";
-  date: string; // e.g., "March 11, 2025"
-  time: string; // e.g., "10:00 AM"
+  date: string;
+  time: string;
   duration?: string;
   notes?: string;
 }
@@ -25,14 +24,12 @@ export interface ConsultationDraft {
 }
 
 export interface CalendarStore {
-  // State
   currentMonth: string;
   events: ScheduledEvent[];
   isModalOpen: boolean;
-  modalStep: 1 | 2 | 3; // 1: Form, 2: Share, 3: Success
+  modalStep: 1 | 2 | 3;
   draftConsultation: ConsultationDraft | null;
 
-  // Actions
   openScheduleModal: () => void;
   closeScheduleModal: () => void;
   setModalStep: (step: 1 | 2 | 3) => void;
@@ -141,7 +138,6 @@ const store: StateCreator<CalendarStore> = (set, get) => ({
     const draft = get().draftConsultation;
     if (!draft) return;
 
-    // Simulate scheduling a new event
     const newEvent: ScheduledEvent = {
       id: `e${Date.now()}`,
       type: "Consultation",
@@ -156,10 +152,9 @@ const store: StateCreator<CalendarStore> = (set, get) => ({
 
     set((state) => ({
       events: [...state.events, newEvent],
-      draftConsultation: newEvent as any // Using newEvent for share step
+      draftConsultation: newEvent as any
     }));
 
-    // Move to the share step
     get().setModalStep(2);
   },
 

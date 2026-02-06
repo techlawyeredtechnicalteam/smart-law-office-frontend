@@ -1,6 +1,5 @@
 import api from "./api";
 
-// export const caseDocument = (data: any) => api.post("/case-documents", data);
 export const caseDocument = (payload: {
   caseId: string;
   document: string | File;

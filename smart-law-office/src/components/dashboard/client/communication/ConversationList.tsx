@@ -1,4 +1,3 @@
-// src/components/communication/ConversationList.tsx
 "use client";
 
 import React from "react";
@@ -30,8 +29,7 @@ export function ConversationList() {
           Counsel
         </span>
       );
-    }
-    // Assuming client/other roles don't need a tag unless specified
+    }    
     return null;
   };
 

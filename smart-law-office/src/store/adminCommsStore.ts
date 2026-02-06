@@ -1,4 +1,3 @@
-// /store/commsStore.ts
 import { create, StateCreator } from "zustand";
 
 export type CommsView = "empty" | "dashboard" | "chat";
@@ -89,7 +88,6 @@ const mockMessages: Message[] = [
     isStarred: false,
     messages: []
   },
-  // ... rest of the messages from the mockup
   {
     id: "m003",
     sender: "Jane Francis",

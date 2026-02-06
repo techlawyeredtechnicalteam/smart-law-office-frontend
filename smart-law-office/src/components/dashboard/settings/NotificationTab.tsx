@@ -15,17 +15,17 @@ const NotificationRow = ({
   onCheckedChange: (checked: boolean) => void;
 }) => (
   <div className="flex items-center justify-between py-3">
-        <p className="text-sm font-normal text-gray-700">{label}</p>   {" "}
+    <p className="text-sm font-normal text-gray-700">{label}</p> {" "}
     <Switch
       checked={isChecked}
       onCheckedChange={onCheckedChange}
       className="data-[state=checked]:bg-[#7C5CFC] data-[state=unchecked]:bg-gray-300"
     />
-     {" "}
+    {" "}
   </div>
 );
 
-// Helper component for a single data privacy row
+
 const DataPrivacyRow = ({
   name,
   role,
@@ -60,8 +60,7 @@ const DataPrivacyRow = ({
   </div>
 );
 
-export default function NotificationsTab() {
-  // State for all the switches
+export default function NotificationsTab() {  
   const [pushSettings, setPushSettings] = useState({
     comments: true,
     chatMessages: true,

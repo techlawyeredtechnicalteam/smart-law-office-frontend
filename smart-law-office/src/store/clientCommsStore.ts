@@ -26,10 +26,9 @@ const RUTH_ANANAH: User = {
   name: "Ruth Ananah",
   role: "You",
   avatar: "/avatars/ruth.jpg"
-}; // Assuming Ruth is another client/user who communicated
+};
 
 const MOCK_MESSAGES: Message[] = [
-  // Jane Francis (Counsel)
   {
     id: "m1",
     senderId: JANE_FRANCIS.id,
@@ -37,7 +36,6 @@ const MOCK_MESSAGES: Message[] = [
     timestamp: "Yesterday, 09:45 AM",
     status: "read"
   },
-  // Christine Adeola (You) - commsclient2.png
   {
     id: "m2",
     senderId: CURRENT_USER.id,
@@ -45,7 +43,6 @@ const MOCK_MESSAGES: Message[] = [
     timestamp: "Yesterday, 09:45 AM",
     status: "read"
   },
-  // Jane Francis (Counsel) - commsclient.png
   {
     id: "m3",
     senderId: JANE_FRANCIS.id,
@@ -53,7 +50,6 @@ const MOCK_MESSAGES: Message[] = [
     timestamp: "Yesterday, 09:45 AM",
     status: "sent"
   },
-  // Ruth Ananah (You) - commsclient.png
   {
     id: "m4",
     senderId: RUTH_ANANAH.id,
@@ -61,7 +57,6 @@ const MOCK_MESSAGES: Message[] = [
     timestamp: "Yesterday, 09:45 AM",
     status: "sent"
   },
-  // Message with Document (commsclientmsg.png)
   {
     id: "m5",
     senderId: CURRENT_USER.id,
@@ -102,8 +97,6 @@ const MOCK_CONVERSATIONS: Conversation[] = [
   }
 ];
 
-// --- Store Definition ---
-
 interface CommunicationState {
   currentUser: User;
   currentChannel: CommChannel;
@@ -129,7 +122,6 @@ export const useCommunicationStore = create<CommunicationState>((set, get) => ({
   activeMessages: [],
 
   setChannel: (channel) => {
-    // When changing channel, close the active chat view
     set({
       currentChannel: channel,
       activeConversationId: null,

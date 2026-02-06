@@ -33,31 +33,11 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
     }
   }, [rates.length, fetchConsultationFeesOnly]);
 
-  // const consultationOptions = useMemo(() => {
-  //   return rates
-  //     .filter((r: any) => r.serviceType === "Consultation")
-  //     .map((rate: any) => ({
-  //       label: `${rate.consultType} (${rate.duration} mins) — ₦${rate.rate.toLocaleString()}`,
-  //       value: rate.id || rate._id || rate.consultType
-  //     }));
-  // }, [rates]);
-  // const consultationOptions = useMemo(() => {
-  //   return rates
-  //     .filter((r: any) => r.serviceType === "Consultation")
-  //     .map((rate: any) => ({
-  //       label: `${rate.consultType} (${rate.duration} mins) — ₦${rate.rate.toLocaleString()}`,
-  //       // ✅ REMOVE rate.consultType as a fallback.
-  //       // It MUST be the ID for the backend to find the record.
-  //       value: rate.id || rate._id
-  //     }));
-  // }, [rates]);
-
   const consultationOptions = useMemo(() => {
     return rates
       .filter((r: any) => r.serviceType === "Consultation")
       .map((rate: any) => ({
         label: `${rate.consultType} (${rate.duration} mins) — ₦${rate.rate.toLocaleString()}`,
-        // ✅ Force the ID here
         value: String(rate.id || rate._id)
       }));
   }, [rates]);
@@ -79,22 +59,6 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
       return;
     }
 
-    // const selectedRate = rates.find(
-    //   (r: any) =>
-    //     String(r.id || r._id || r.consultType) === values.consultationFeeId
-    // );
-
-    // FIX: More robust finding logic
-    // const selectedRate = rates.find((r: any) => {
-    //   const idMatch = String(r.id || r._id) === values.consultationFeeId;
-    //   const typeMatch = r.consultType === values.consultationFeeId;
-    //   return idMatch || typeMatch;
-    // });
-
-    // if (!selectedRate) {
-    //   return;
-    // }
-
     const selectedRate = rates.find(
       (r: any) => String(r.id || r._id) === values.consultationFeeId
     );
@@ -110,7 +74,7 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
     const rateData = selectedRate as any;
     const finalPayload = {
       ...values,
-      consultationFeeId: rateData.id, // This is now the UUID
+      consultationFeeId: rateData.id,
       consultAt: consultDate.toISOString(),
       feeDetails: {
         id: rateData.id,
@@ -199,9 +163,6 @@ export function BookConsultationForm({ onClose }: BookConsultationFormProps) {
           <Button type="button" variant="outline" onClick={handleCancel}>
             Cancel
           </Button>
-          {/* <Button type="submit" className="bg-[#6f42c1] hover:bg-[#5a369e]">
-            Proceed to Pay
-          </Button> */}
           <Button
             type="submit"
             className="bg-[#6f42c1] hover:bg-[#5a369e]"

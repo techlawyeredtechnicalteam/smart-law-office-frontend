@@ -20,7 +20,6 @@ export const UploadFile: React.FC<FileUploadProps> = ({
         type="button"
         variant="outline"
         onClick={() => {
-          // Mock file selection logic
           const fileName = prompt("Enter file name (e.g., 'certificate.png'):");
           onChange(fileName);
         }}

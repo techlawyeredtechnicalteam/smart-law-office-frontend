@@ -3,17 +3,13 @@
 
 import React from "react";
 import { useInvoiceStore } from "@/store/invoiceStore";
-import { InvoiceEmptyState } from "@/components/dashboard/client/billings&payment/InvoiceEmptyState";
-import { CreateInvoiceForm } from "@/components/dashboard/client/billings&payment/InvoiceForm";
-import { InvoiceDetailsSummary } from "@/components/dashboard/client/billings&payment/InvoiceDetailsSummary";
-import { PaymentPage } from "@/components/dashboard/client/billings&payment/PaymentPage";
-import { PaymentSuccessModal } from "@/components/dashboard/client/billings&payment/PaymentSuccessModal";
-import { BillingDashboard } from "@/components/dashboard/client/billings&payment/BillingDashboard";
+import { InvoiceEmptyState } from "@/components/dashboard/admin/invoice/InvoiceEmptyState";
+import { CreateInvoiceForm } from "@/components/dashboard/admin/invoice/InvoiceForm";
+import { InvoiceDetailsSummary } from "@/components/dashboard/admin/invoice/InvoiceDetailsSummary";
+import { PaymentPage } from "@/components/dashboard/admin/invoice/PaymentPage";
+import { PaymentSuccessModal } from "@/components/dashboard/admin/invoice/PaymentSuccessModal";
+import { BillingDashboard } from "@/components/dashboard/admin/invoice/BillingDashboard";
 import { ArrowLeft } from "lucide-react";
-
-// Assuming the InvoiceEmptyState component is saved correctly with the fix below:
-// NOTE: I am assuming you rename your empty state file to InvoiceEmptyState.tsx
-// and update the button label from "Book Consultation" to "Generate Invoice"
 
 export default function BillingAndInvoiceManagement() {
   const { step, setStep, invoiceHistory } = useInvoiceStore();

@@ -5,7 +5,6 @@ import {
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useCounselStore } from "@/store/manageCounsel";
 import { useForm } from "react-hook-form";
@@ -15,8 +14,7 @@ import {
   Form,
   FormControl,
   FormField,
-  FormItem,
-  FormLabel,
+  FormItem,  
   FormMessage
 } from "@/components/ui/form";
 import FileUpload from "../../../shared/FileUpload";
@@ -120,8 +118,7 @@ const AddCounselModal = () => {
                 control={form.control}
                 name="callToBarFile"
                 render={({ field }) => (
-                  <FormItem>
-                    {/* <FormLabel></FormLabel> */}
+                  <FormItem>                    
                     <FormControl>
                       <FileUpload
                         id="call-to-bar-upload"

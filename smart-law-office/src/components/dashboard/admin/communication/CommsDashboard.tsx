@@ -12,7 +12,7 @@ import {
   MessageSquare,
   ChevronLeft
 } from "lucide-react";
-import { cn } from "@/lib/utils"; // Assuming you have a utility for class merging
+import { cn } from "@/lib/utils";
 
 // Sidebar component
 const SidebarMenu = ({ isCollapsed }: { isCollapsed: boolean }) => {
@@ -20,7 +20,7 @@ const SidebarMenu = ({ isCollapsed }: { isCollapsed: boolean }) => {
     { label: "All Inbox", icon: Mail, count: 3, section: "Menu" },
     { label: "Starred", icon: Star, count: 3, section: "Menu" },
     { label: "Documents", icon: FileText, section: "Menu" },
-    { label: "Drafts", icon: Trash, section: "Drafts" } // Using Trash icon placeholder for Drafts
+    { label: "Drafts", icon: Trash, section: "Drafts" }
   ];
 
   return (
@@ -58,8 +58,6 @@ const SidebarMenu = ({ isCollapsed }: { isCollapsed: boolean }) => {
 // Message Card component
 const MessageCard = ({ message }: { message: Message }) => {
   const selectMessage = useCommsStore((state) => state.selectMessage);
-
-  // Simple avatar rendering based on sender name initial
   const getInitials = (name: string) =>
     name
       .split(" ")

@@ -98,7 +98,7 @@ export const useInvoiceStore = create<InvoiceState>((set, get) => ({
 
     set((state) => ({
       invoiceHistory: [finalizedInvoice, ...state.invoiceHistory],
-      step: "details", // Go back to details view or dashboard
+      step: "details",
       newInvoiceData: null,
       activeInvoiceId: newId
     }));

@@ -3,14 +3,13 @@
 
 import React, { useEffect } from "react";
 import { useCaseStore } from "@/store/createCase";
-import useConsultationStore from "@/store/consultationStore"; // Import your consult store
-import { CaseStats } from "@/components/dashboard/admin/caseManagement/CaseStats"; // The stat cards component
+import useConsultationStore from "@/store/consultationStore";
+import { CaseStats } from "@/components/dashboard/admin/caseManagement/CaseStats";
 import { AssignedCasesTable } from "@/components/dashboard/admin/assignCase/AssignCaseTable";
 import { ConsultationDashboard } from "@/components/dashboard/client/consultation/ConsultationDashboard";
 import { AssignCaseModal } from "@/components/dashboard/admin/assignCase/AssignCaseModal";
 import { Briefcase, Loader2 } from "lucide-react";
 import { CreateCaseModal } from "@/components/dashboard/admin/createCase/CreateCaseModal";
-import { CreateModal } from "@/components/shared/CreateModal";
 
 const CaseManagementPage = () => {
   const { cases, stats, isLoading, fetchCases } = useCaseStore();
@@ -93,10 +92,6 @@ const EmptyState = ({ setIsSuccessModalOpen, isSuccessModalOpen }: any) => (
       isSuccessOpen={isSuccessModalOpen}
       setSuccessOpen={setIsSuccessModalOpen}
     />
-    {/* <AssignCaseModal
-      isSuccessOpen={isSuccessModalOpen}
-      setSuccessOpen={setIsSuccessModalOpen}
-    /> */}
   </div>
 );
 

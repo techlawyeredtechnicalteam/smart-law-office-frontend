@@ -22,12 +22,11 @@ import { MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
-// Group invoices by date for 'billinghistory.png' style
 const groupInvoicesByMonth = (invoices: InvoiceDetails[]) => {
   return invoices.reduce((acc, invoice) => {
     const date = new Date(
       invoice.date.replace(/(\d{4})-(\d{2})-(\d{2})/, "$1/$2/$3")
-    ); // Ensure valid date format for parsing
+    );
     const monthKey = date.toLocaleString("en-US", {
       month: "long",
       year: "numeric"
@@ -95,7 +94,7 @@ export function BillingHistoryTable({
 
   const handleViewInvoice = (id: string) => {
     setActiveInvoiceId(id);
-    setStep("history"); // history step uses InvoiceDetailsSummary
+    setStep("history"); 
   };
 
   const renderTable = (invoices: InvoiceDetails[], showHeader: boolean) => (
@@ -139,8 +138,7 @@ export function BillingHistoryTable({
                 Download History
               </Button>
             </div>
-            <div className="border rounded-lg overflow-hidden">
-              {/* Render table without header inside the group */}
+            <div className="border rounded-lg overflow-hidden">              
               {renderTable(groupedInvoices[monthKey], true)}
             </div>
           </div>

@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Edit, ChevronDown, Loader2 } from "lucide-react";
-import { useFirmProfileStore } from "@/store/firmProfileStore"; // Adjust path as needed
+import { useFirmProfileStore } from "@/store/firmProfileStore";
 import { toast } from "sonner";
 
 export default function PaymentTab() {
@@ -32,21 +32,13 @@ export default function PaymentTab() {
     if (storeData) {
       setBankName(storeData.bankName || "");
       setAccountName(storeData.bankAccountName || "");
-      setAccountNumber(storeData.bankAccountNumber || "");
-      // If firmName isn't in firmData, you might need to adjust based on your API
+      setAccountNumber(storeData.bankAccountNumber || "");      
       setfirmName(storeData.firmName || "");
     }
   }, [storeData, isEditing]);
 
   const handleSave = async () => {
-    try {
-      // Logic to call your updateProfile API would go here
-      console.log("Saving...", {
-        bankName,
-        accountName,
-        accountNumber,
-        firmName
-      });
+    try {     
       toast.success("Payment details updated!");
       setIsEditing(false);
     } catch (error) {

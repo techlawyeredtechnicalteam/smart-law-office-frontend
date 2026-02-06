@@ -1,4 +1,3 @@
-// src/components/billing/BillingDashboard.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -16,7 +15,7 @@ import { BillingHistoryTable } from "./BillingHistoryTable";
 
 export function BillingDashboard() {
   const { setStep } = useInvoiceStore();
-  const [viewMode, setViewMode] = useState<"table" | "grouped">("table"); // Toggles between billingDash.png and billinghistory.png style
+  const [viewMode, setViewMode] = useState<"table" | "grouped">("table");
 
   const handleGenerateInvoice = () => {
     setStep("form");

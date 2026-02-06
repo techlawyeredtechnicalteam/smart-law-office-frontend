@@ -1,6 +1,6 @@
 "use client";
 
-import { FileText, Shield } from "lucide-react";
+import { FileText, Link, Shield } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuthStore } from "@/store/authStore";
 import NavLinks from "@/components/layout/SmartNavLink";
@@ -8,6 +8,39 @@ import React, { useEffect } from "react";
 import Image from "next/image";
 import { getProfile } from "../api/profile.api";
 import { SmartHeader } from "@/components/layout/SmartHeader";
+
+function NavItem({
+  icon,
+  label,
+  href,
+  active = false
+}: {
+  icon: any;
+  label: string;
+  href?: string;
+  active?: boolean;
+}) {
+  const className = `flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
+    active ? "bg-white/10" : "hover:bg-white/10 text-white/80"
+  }`;
+
+  const content = (
+    <>
+      <span className="shrink-0">{icon}</span>
+      <span className="text-sm font-medium">{label}</span>
+    </>
+  );
+
+  if (href) {
+    return (
+      <a href={href} className={className}>
+        {content}
+      </a>
+    );
+  }
+
+  return <div className={className}>{content}</div>;
+}
 
 export default function SmartLawOfficeDashboard({
   children
@@ -87,8 +120,16 @@ export default function SmartLawOfficeDashboard({
 
           {/* Bottom Menu */}
           <div className="space-y-1">
-            <NavItem icon={<FileText size={20} />} label="Privacy Policy" />
-            <NavItem icon={<Shield size={20} />} label="Terms and Conditions" />
+            <NavItem
+              icon={<FileText size={20} />}
+              label="Privacy Policy"
+              href="/legal/privacy-policy-for-legalflow-by-cyntonisca"
+            />
+            <NavItem
+              icon={<Shield size={20} />}
+              label="Terms and Conditions"
+              href="/legal/terms-of-service-for-legalflow"
+            />
           </div>
         </div>
 
@@ -111,28 +152,6 @@ export default function SmartLawOfficeDashboard({
           {children}
         </div>
       </main>
-    </div>
-  );
-}
-
-// Small Helper Components for Cleaner Code
-function NavItem({
-  icon,
-  label,
-  active = false
-}: {
-  icon: any;
-  label: string;
-  active?: boolean;
-}) {
-  return (
-    <div
-      className={`flex items-center gap-3 px-3 py-2 rounded-md cursor-pointer transition-colors ${
-        active ? "bg-white/10" : "hover:bg-white/10 text-white/80"
-      }`}
-    >
-      {icon}
-      <span className="text-sm font-medium">{label}</span>
     </div>
   );
 }

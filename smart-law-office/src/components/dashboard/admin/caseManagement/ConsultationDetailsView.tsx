@@ -5,13 +5,7 @@ import { toast } from "sonner";
 export const ConsultationDetailsView = ({ consult }: { consult: any }) => {
   // const { promoteToCase } = useConsultationStore();
 
-  const handlePromotion = async () => {
-    // const success = await promoteToCase(consult.id);
-    // if (success) {
-    //   toast.success("Successfully converted to an active case!");
-    //   // window.location.href = "/dashboard/cases"; // Hard redirect to refresh lists
-    // }
-  };
+  const handlePromotion = async () => {};
 
   return (
     <div className="bg-white rounded-lg p-6 shadow-sm border">

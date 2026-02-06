@@ -1,7 +1,6 @@
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { User, MessageSquare } from "lucide-react";
 
-// Mock data for messages
 const mockMessages = [
   {
     name: "Jane Francis",

@@ -33,10 +33,8 @@ const EditCounselModal = () => {
         fullName: selectedCounsel.fullName,
         scn: selectedCounsel.scn,
         email: selectedCounsel.email,
-        // We sync the existing file to the store so FileUpload sees it
         callToBarFile: selectedCounsel.callToBarFile
       });
-      // Pre-set the store's file state with the existing one
       setFile(selectedCounsel.callToBarFile ?? null);
     }
   }, [selectedCounsel, setFile]);
@@ -51,7 +49,6 @@ const EditCounselModal = () => {
     if (!selectedCounsel) return;
 
     try {
-      // transform form data
       const nameParts = (form.fullName || "").trim().split(" ");
       const firstName = nameParts[0] || "";
       const lastName = nameParts.slice(1).join(" ") || "";
@@ -89,7 +86,6 @@ const EditCounselModal = () => {
                 value={form.fullName || ""}
                 onChange={handleChange}
               />
-              {/* Checkmark for visual confirmation (replicated from mockup) */}
               <Check className="w-4 h-4 text-green-600 absolute right-3 top-1/2 -translate-y-1/2" />
             </div>
           </div>

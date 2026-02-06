@@ -1,4 +1,3 @@
-// src/components/communication/ChatMessageView.tsx
 "use client";
 
 import React, { useState } from "react";
@@ -54,7 +53,6 @@ export function ChatMessageView() {
       fileName: file.name,
       sizeKB: Math.round(file.size / 1024)
     };
-    // Simulate sending a message with a document attachment
     sendMessage(
       activeConversationId,
       `Case ID: ${mockAttachment.fileName.split(":")[0]}`,
@@ -67,7 +65,6 @@ export function ChatMessageView() {
     const isSelf = message.senderId === currentUser.id;
     const sender = isSelf ? currentUser : recipient;
 
-    // Render for Document (commsclientmsg.png - right-side, purple box)
     if (message.attachment) {
       return (
         <div
@@ -102,7 +99,6 @@ export function ChatMessageView() {
       );
     }
 
-    // Render for Text Message
     return (
       <div
         className={cn(
@@ -124,7 +120,6 @@ export function ChatMessageView() {
             <Check className="h-3 w-3" />
           </div>
         </div>
-        {/* Avatar on the right for self-sent messages */}
         {isSelf && (
           <Avatar className="h-6 w-6 ml-2 mt-auto">
             <AvatarImage src={sender.avatar} alt={sender.name} />

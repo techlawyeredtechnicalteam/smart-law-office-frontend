@@ -1,4 +1,3 @@
-// components/dashboard/client/consultation/ConsultationEmptyState.tsx
 import React from "react";
 import { TbUserScreen } from "react-icons/tb";
 import { Button } from "@/components/ui/button";

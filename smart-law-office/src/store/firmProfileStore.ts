@@ -134,12 +134,9 @@ export const useFirmProfileStore = create<FirmProfileState>()(
 
         const { formData } = get();
 
-        try {
-          // merge: this is the authStore and FIrmProfileStore
+        try {          
           const finalPayload = {
-            ...adminData, // Email, Password, etc. AuthStore           
-
-            // REMAPPING START
+            ...adminData,          
             name: formData.firmName,
             email: adminData.email || formData.email,
             firmType: formData.firmType,
@@ -176,8 +173,7 @@ export const useFirmProfileStore = create<FirmProfileState>()(
     }),
 
     {
-      name: "firm-profile-storage",
-      // we persist this so page refresh don't loose the logo/cac upload
+      name: "firm-profile-storage",     
       partialize: (state) => ({
         formData: state.formData,
         step: state.step

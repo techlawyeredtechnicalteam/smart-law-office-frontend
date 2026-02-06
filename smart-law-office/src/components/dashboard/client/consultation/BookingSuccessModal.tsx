@@ -28,13 +28,11 @@ export function BookingSuccessModal() {
   const isOpen = isBookingOpen && step === "success";
 
   if (!isOpen) return null;
-
-  // --- Logic: Safe Data Formatting ---
+  
   const clientName = user?.firstName
     ? `${user.firstName} ${user.lastName}`
     : "Client";
-
-  // Handle date formatting whether it's a string from an input or a Date object
+  
   let displayDate = "Not set";
   if (formData?.date) {
     const dateObj =

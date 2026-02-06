@@ -35,13 +35,7 @@ const Sidebar = () => {
             <p className="text-[8px] text-violet-200 break-all pt-1">
               {userInitials}
             </p>
-          </div>
-          {/* <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold truncate">{userNameValue}</p>
-            <p className="text-[8px] text-violet-200 break-all pt-1">
-              ID: {user?.id || "N/A"}
-            </p>
-          </div> */}
+          </div>         
         </div>
       </div>
 

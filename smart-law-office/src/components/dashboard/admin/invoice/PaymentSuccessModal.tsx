@@ -1,4 +1,3 @@
-// src/components/billing/PaymentSuccessModal.tsx
 "use client";
 
 import React from "react";
@@ -11,16 +10,13 @@ export function PaymentSuccessModal() {
   const { step, setStep, finalizeInvoice } = useInvoiceStore();
   const isOpen = step === "success";
 
-  const handleViewHistory = () => {
-    // Finalize invoice, then switch to the dashboard view
+  const handleViewHistory = () => {    
     finalizeInvoice();
     setStep("dashboard");
   };
 
-  const handleBack = () => {
-    // Finalize invoice, but stay on the details view (where the modal appeared)
-    finalizeInvoice();
-    // Since finalizeInvoice changes state to 'details', we ensure it stays there.
+  const handleBack = () => {    
+    finalizeInvoice();    
   };
 
   return (

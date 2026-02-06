@@ -5,11 +5,10 @@ import { getCounsel } from "@/app/api/manageCounse.api";
 import { assignCase } from "@/app/api/assignCase.api";
 import { getAllConsult } from "@/app/api/bookConsult.api";
 import { useAuthStore, User } from "./authStore";
-import { useBillingStore } from "./setRateBill";
 
 export interface UnassignedCaseForUI {
-  id: string; // Maps to consultId
-  consultCode: string; // Required for the assignment API
+  id: string;
+  consultCode: string;
   clientName: string;
   caseType: string;
   date: string;
@@ -37,7 +36,7 @@ interface AssignState {
   unassignedCases: UnassignedCaseForUI[];
   counsels: Lawyer[];
   clients: User[];
-  assignedCases: any[]; // Simplified for cleanup
+  assignedCases: any[];
   isAssigning: boolean;
   isLoading: boolean;
   fetchData: () => Promise<void>;
@@ -108,26 +107,24 @@ export const useAssignStore = create<AssignState>()((set, get) => ({
             role: finalRole,
             specialty: u.scn ? `SCN: ${u.scn}` : "General Practice",
             scn: u.scn || "",
-            casesCount: count, // This ensures the UI gets the right number
+            casesCount: count,
             status: finalStatus,
             callToBarFile: u.callToBarFile || null
           };
         });
 
-      // 3. Map Clients - Case-insensitive role check
-      // This is what populates your clientOptions dropdown
+      // 3. Map Clients - Case-insensitive role check     
       const clients = allUsers.filter(
         (u: any) => (u.role || u.userRole || u.type)?.toUpperCase() === "CLIENT"
       );
 
       const transformFromAPI = (item: any) => ({
         id: item.consultId,
-        consultCode: item.consultCode,
-        // EXTRACT NESTED NAME:
+        consultCode: item.consultCode,       
         clientName: item.client
           ? `${item.client.firstName} ${item.client.lastName || ""} ${item.client.name} ${item.client.fullName}`.trim()
           : "Unknown Client",
-        caseType: "Consultation", // Default category
+        caseType: "Consultation",
         notes: item.consultNotes?.description || "No notes",
         date: item.consultAt
           ? new Date(item.consultAt).toLocaleDateString()
@@ -143,7 +140,7 @@ export const useAssignStore = create<AssignState>()((set, get) => ({
       set({
         unassignedCases: (consultRes.data || []).map(transformFromAPI),
         counsels: lawyerList,
-        clients: clients, // Set the filtered clients here
+        clients: clients,
         isLoading: false
       });
     } catch (err) {
@@ -154,8 +151,7 @@ export const useAssignStore = create<AssignState>()((set, get) => ({
 
   assignCase: async (consultCode, staffEmail) => {
     set({ isAssigning: true });
-    try {
-      // THE FIX: We send the consultCode string as required by your 400 error trace
+    try {    
       await assignCase({ consultCode, staffEmail });
 
       await useCaseStore.getState().fetchCases();

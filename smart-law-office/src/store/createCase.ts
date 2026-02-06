@@ -1,6 +1,5 @@
 import { createCaseSchema } from "@/types/case.schema";
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
 import { useAuthStore } from "./authStore";
 import {
   adminCreateCase,
@@ -8,11 +7,8 @@ import {
   getStaffCases,
   staffCreateCase
 } from "@/app/api/cases.api";
-import { getAdminCaseTypes } from "@/app/api/caseType.api";
 import { useBillingStore } from "./setRateBill";
 import { caseDocument } from "@/app/api/document.api";
-import { useDocumentStore } from "./documentStore";
-import { getCaseFormCaseTypes } from "@/app/api/setRateBills.api";
 
 export interface CaseType {
   caseTypeId: string;
@@ -36,7 +32,6 @@ export interface CaseType {
 export interface Case {
   [x: string]: any;
   caseCode: any;
-  // ADD THESE FIELDS
   id: string;
   title?: string;
   staffEmail: string;
@@ -91,7 +86,6 @@ interface CaseState {
     file: string
   ) => Promise<boolean>;
 
-  // Helper to reset error
   clearError: () => void;
 }
 
@@ -157,7 +151,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
 
         let caseTypeDisplay = "General Legal Matter";
 
-        // 2. USE TYPE GUARDING
         // Check if matchedRate exists and is specifically a "Case" serviceType
         if (matchedRate && matchedRate.serviceType === "Case") {
           // TypeScript now knows matchedRate has subServiceType
@@ -168,7 +161,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
           // id: c.directCaseId || c.id,
           id: c.id || c.directCaseId || c.caseId || c._id,
           caseCode: c.caseCode,
-          // staffEmail: c.staff?.email || "Unassigned",
           staffEmail: (c.staff?.email || c.staffEmail || "").toLowerCase(),
           clientEmail: c.client?.email || "",
           clientName: c.client
@@ -194,7 +186,6 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     }
   },
 
-  // Role Creation
   executeCreate: async (values, role) => {
     set({ isLoading: true, error: null });
 
@@ -202,12 +193,11 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       let response;
 
       if (role === "ADMIN") {
-        // FIX: Admin payload was missing notes and status!
         const adminPayload = {
           clientEmail: values.clientEmail,
           caseTypeId: values.caseTypeId,
           staffEmail: values.staffEmail,
-          note: values.notes, // Pass the note here
+          note: values.notes,
           status: values.status,
           lastAdjournedAt: values.lastAdjournedDate || null,
           nextAdjournedAt: values.nextAdjournedDate || null
@@ -257,10 +247,8 @@ export const useCaseStore = create<CaseState>((set, get) => ({
 
       const response = await caseDocument(payload);
 
-      // Get the new document from response
       const newDoc = response.data?.data || response.data;
 
-      // Update the specific case in the store
       set((state) => ({
         cases: state.cases.map((c) =>
           c.id === caseId

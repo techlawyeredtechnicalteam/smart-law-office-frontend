@@ -4,7 +4,7 @@ import {
   DownloadCloud,
   FileText,
   HelpCircle,
-  Home,
+  Lock,
   MessageSquare,
   UserPlus,
   Users
@@ -52,6 +52,12 @@ export const ALL_LINKS: Record<string, NavItems> = {
     name: "Billings & Payment",
     icon: CreditCard,
     route: "/admin/billing",
+    roles: ["ADMIN"]
+  },
+  invoice: {
+    icon: FileText,
+    name: "Inovice",
+    route: "/admin/invoice",
     roles: ["ADMIN"]
   },
   subscribe: {
@@ -112,12 +118,6 @@ export const ALL_LINKS: Record<string, NavItems> = {
     route: "/client/consultations",
     roles: ["CLIENT"]
   },
-  invoice: {
-    icon: FileText,
-    name: "Billings & Payment",
-    route: "/client/billings",
-    roles: ["CLIENT"]
-  },
   // commsClient: {
   //   name: "Communications",
   //   icon: MessageSquare,
@@ -150,13 +150,13 @@ export const ALL_LINKS: Record<string, NavItems> = {
   // privacy: {
   //   name: "Privacy Policy",
   //   icon: Lock,
-  //   route: "privacy",
-  //   roles: ["ADMIN", "COUNSEL", "CLIENT"]
+  //   route: "/legal/privacy-policy-for-legalflow-by-cyntonisca",
+  //   roles: ["ADMIN", "STAFF", "CLIENT"]
   // },
   // terms: {
   //   name: "Terms and Conditions",
   //   icon: FileText,
-  //   route: "terms",
-  //   roles: ["ADMIN", "COUNSEL", "CLIENT"]
+  //   route: "/legal/terms-of-service-for-legalflow",
+  //   roles: ["ADMIN", "STAFF", "CLIENT"]
   // }
 };

@@ -1,18 +1,14 @@
-// components/dashboard/DocumentsPanel.tsx (Updated Snippet)
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { useDocumentStore } from "@/store/documentStore"; // <-- NEW IMPORT
 import { MoreHorizontal } from "lucide-react";
 
 export function DocumentsPanel() {
   const { documents } = useDocumentStore();
-
-  // Sort by date/time (assuming a logical structure, or just take the latest added)
-  // Here we just take the latest 3 added, as they are prepended to the array.
+ 
   const documentsToShow = documents.slice(0, 3);
 
   return (
-    <Card className="shadow-sm border border-gray-100 h-full">
-      {/* ... Header remains the same ... */}
+    <Card className="shadow-sm border border-gray-100 h-full">      
       <CardContent className="p-0">
         <div className="divide-y divide-gray-100">
           {/* Header Row */}

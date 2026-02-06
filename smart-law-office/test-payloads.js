@@ -1,7 +1,4 @@
-// Test file to verify payload structures
-// This file demonstrates the expected payloads for admin and staff case creation
 
-// Expected Admin Payload
 const adminPayload = {
   "staffEmail": "staff@firm.com",
   "clientEmail": "client@example.com", 

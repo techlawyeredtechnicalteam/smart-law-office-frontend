@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Custom bubble component
 const ChatBubble = ({ message }: { message: ChatMessage }) => {
   return (
     <div
@@ -73,8 +72,7 @@ const CommsChatView = () => {
   }
 
   const handleBack = () => setView("dashboard");
-  const handleSend = () => {
-    // Logic to send message (omitted for this implementation)
+  const handleSend = () => {    
     console.log("Sending:", inputText);
     setInputText("");
   };
