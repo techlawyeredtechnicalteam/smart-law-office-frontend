@@ -72,6 +72,11 @@ export function InvoiceDashboard() {
       render: (inv) => `₦${Number(inv.consultationFee).toLocaleString()}`
     },
     {
+      key: "notes",
+      header: "Invoice Notes",
+      render: (inv) => inv.notes
+    },
+    {
       key: "status",
       header: "Status",
       render: (inv) => (

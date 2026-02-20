@@ -141,7 +141,7 @@ export const useBillingStore = create<BillingStore>()(
           const consultationHistory: ConsultationRate[] = (
             consultRes?.data || []
           ).map((item: any) => ({
-            id: item.id,
+            id: String(item.id || item.consultationFeeId),
             serviceType: "Consultation",
             consultType: item.consultType,
             duration: item.duration || 0,
@@ -150,6 +150,7 @@ export const useBillingStore = create<BillingStore>()(
 
           const caseRateHistory = (caseTypesRes?.data || []).map(
             (item: any) => ({
+              id: String(item.caseTypeId || item.id),
               serviceType: "Case",
               subServiceType:
                 item.name || item.feeSchedule?.name || "Standard Case",

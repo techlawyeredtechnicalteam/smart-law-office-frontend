@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
 import { invoiceFormSchema, InvoiceFormValues } from "@/types/Invoice.schema";
 import { useInvoiceStore } from "@/store/invoiceStore";
-import { useBillingStore } from "@/store/setRateBill";
+import {
+  CaseRate,
+  ConsultationRate,
+  useBillingStore
+} from "@/store/setRateBill";
 import { CustomFormField } from "@/components/shared/CustomFormField";
 import { CustomSelectField } from "@/components/shared/CustomSelectField";
 import { toast } from "sonner";
@@ -29,6 +33,7 @@ export function CreateInvoiceForm() {
       subServiceId: "",
       duration: "30 minutes",
       consultationFee: 0,
+      staffEmail: "",
       notes: ""
     }
   });
@@ -44,102 +49,50 @@ export function CreateInvoiceForm() {
   useEffect(() => {
     form.setValue("subServiceId", "");
     form.setValue("consultationFee", 0);
+    form.setValue("staffEmail", "");
   }, [selectedService, form]);
 
   // Auto-fill price when a Sub-Service (Consultation Type) is selected
   useEffect(() => {
-    if (selectedSubServiceId) {
+    if (selectedSubServiceId && rates.length > 0) {
       const selectedRate = rates.find(
-        (r) =>
-          String((r as any).id || (r as any).caseTypeId) ===
-          selectedSubServiceId
+        (r) => String(r.id) === String(selectedSubServiceId)
       );
 
       if (selectedRate) {
+        // Safe type-checking to grab the correct amount
         const price =
-          selectedService === "Consultation"
-            ? Number((selectedRate as any).rate)
-            : Number((selectedRate as any).caseRate);
+          selectedRate.serviceType === "Consultation"
+            ? (selectedRate as ConsultationRate).rate
+            : (selectedRate as CaseRate).caseRate;
 
-        form.setValue("consultationFee", price);
+        form.setValue("consultationFee", Number(price || 0));
       }
     }
-  }, [selectedSubServiceId, rates, selectedService, form]);
+  }, [selectedSubServiceId, rates, form]);
 
   const subServiceOptions = useMemo(() => {
-    if (!rates || rates.length === 0) return [];
-
-    if (selectedService === "Consultation") {
-      return rates
-        .filter((r) => r.serviceType === "Consultation")
-        .map((r: any, index: number) => ({
-          label: r.consultType || "Unknown Consultation",
-          value: r.id ? String(r.id) : `temp-consult-${index}`
-        }));
-    }
-
     return rates
-      .filter((r) => r.serviceType === "Case")
-      .map((r: any, index: number) => ({
-        label: r.subServiceType || "Unknown Case Type",
-        value: r.caseTypeId ? String(r.caseTypeId) : `temp-case-${index}`
+      .filter((r) => r.serviceType === selectedService)
+      .map((r) => ({
+        label:
+          r.serviceType === "Consultation"
+            ? r.consultType
+            : (r as CaseRate).subServiceType,
+        value: String(r.id)
       }));
   }, [selectedService, rates]);
 
-  const handlePost = async (values: InvoiceFormValues) => {
-    try {
-      const selectedRate = rates.find(
-        (r) =>
-          (selectedService === "Consultation"
-            ? (r as any).id
-            : (r as any).caseTypeId) === values.subServiceId
-      ) as any;
-
-      if (!selectedRate) {
-        toast.error("Please select a valid service type.");
-        return;
-      }
-
-      // Construct a safe ISO date string
-      const ISO_DATE = new Date(`${values.date}T${values.time}`).toISOString();
-
-      if (selectedService === "Consultation") {
-        const payload = {
-          consultationFeeId: String(selectedRate.id || ""),
-          clientEmail: values.clientName,
-          consultType: String(selectedRate.consultType || ""),
-          consultAt: ISO_DATE,
-          note: values.notes || "Consultation Invoice",
-          amount: Number(selectedRate.rate || 0)
-        };
-        await invoiceConsultation(payload);
-      } else {
-        const payload = {
-          caseTypeId: String(selectedRate.caseTypeId || ""),
-          staffEmail: "staff@firm.com",
-          userEmail: values.clientName,
-          caseAt: ISO_DATE,
-          note: values.notes || "Case Invoice",
-          amount: Number(selectedRate.caseRate || 0)
-        };
-        await invoiceCase(payload);
-      }
-
-      // Update store and move to success/details view
-      setNewInvoiceData(values);
-      setStep("success");
-      toast.success("Invoice Generated Successfully");
-    } catch (error) {
-      console.error("API Error:", error);
-      toast.error("Submission failed. Please check your inputs.");
-    }
+  const handlePreview = (values: InvoiceFormValues) => {
+    setNewInvoiceData(values);
+    setStep("details");
   };
 
   return (
-    <div className="max-w-2xl mx-auto p-8 bg-white rounded-xl shadow-sm border">
+    <div className="max-w-7xl mx-auto p-6 bg-white rounded-xl shadow-sm border">
       <h2 className="text-xl font-bold mb-6">Create Invoice</h2>
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(handlePost)} className="space-y-4">
+        <form onSubmit={form.handleSubmit(handlePreview)} className="space-y-4">
           <CustomSelectField
             control={form.control}
             name="service"
@@ -170,15 +123,29 @@ export function CreateInvoiceForm() {
             label="Amount (₦)"
             type="number"
             readOnly
-            className="bg-gray-50 font-semibold"
+            className="bg-gray-100 border-gray-200 font-bold text-violet-700 cursor-not-allowed"
           />
 
           <CustomFormField
             control={form.control}
             name="clientName"
-            label="Client Email / Name"
-            placeholder="johndoe@example.com"
+            label={
+              selectedService === "Case"
+                ? "Client Email"
+                : "Client Email / Name"
+            }
+            placeholder="client@email.com"
           />
+
+          {/* Only show Staff Email when Case is selected */}
+          {selectedService === "Case" && (
+            <CustomFormField
+              control={form.control}
+              name="staffEmail"
+              label="Staff Email"
+              placeholder="staff@firm.com"
+            />
+          )}
 
           <div className="grid grid-cols-2 gap-4">
             <CustomFormField
@@ -197,12 +164,14 @@ export function CreateInvoiceForm() {
             />
           </div>
 
-          <CustomFormField
-            control={form.control}
-            name="notes"
-            label="Additional Notes (Optional)"
-            placeholder="Add specific details for this invoice..."
-          />
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">Notes</label>
+            <textarea
+              {...form.register("notes")}
+              className="w-full min-h-25 p-3 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
+              placeholder="Add specific details for this invoice..."
+            />
+          </div>
 
           <div className="flex justify-end gap-3 pt-6">
             <Button
@@ -213,7 +182,7 @@ export function CreateInvoiceForm() {
               Cancel
             </Button>
             <Button type="submit" className="bg-purple-600">
-              Pay & Generate
+              Preview
             </Button>
           </div>
         </form>

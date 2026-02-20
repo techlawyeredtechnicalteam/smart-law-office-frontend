@@ -1,191 +1,206 @@
 "use client";
 
-import React from "react";
+import React, { useMemo } from "react";
 import { useInvoiceStore } from "@/store/invoiceStore";
+import { useFirmProfileStore } from "@/store/firmProfileStore";
+import {
+  useBillingStore,
+  ConsultationRate,
+  CaseRate
+} from "@/store/setRateBill";
 import { Button } from "@/components/ui/button";
-import { Copy, FileText, ImageIcon, Share2 } from "lucide-react";
+import { Copy, ArrowLeft, Loader2 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { InvoiceDetails } from "@/types/Invoice.schema";
+import { toast } from "sonner";
+import { invoiceConsultation, invoiceCase } from "@/app/api/invoice.api";
 
 export function InvoiceDetailsSummary() {
-  const { newInvoiceData, invoiceHistory, activeInvoiceId, setStep } =
-    useInvoiceStore();
+  const { newInvoiceData, setStep } = useInvoiceStore();
+  const { formData: firmProfile } = useFirmProfileStore();
+  const { rates } = useBillingStore();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  const invoice = activeInvoiceId
-    ? invoiceHistory.find((inv) => inv.invoiceId === activeInvoiceId)
-    : (newInvoiceData as InvoiceDetails);
+  const invoice = useMemo(() => {
+    if (!newInvoiceData) return null;
 
-  const isHistoryView =
-    !!activeInvoiceId &&
-    (invoice?.status === "Successful" || invoice?.status === "Pending");
-  const isPaid = invoice?.status === "Successful";
+    return {
+      invoiceId: newInvoiceData.invoiceId || "",
+      clientName: newInvoiceData.clientName || "",
+      staffEmail: newInvoiceData.staffEmail || "",
+      service: newInvoiceData.service || "Consultation",
+      subServiceId: newInvoiceData.subServiceId || "",
+      consultationFee: newInvoiceData.consultationFee || 0,
+      duration: newInvoiceData.duration || "",
+      date: newInvoiceData.date || "",
+      time: newInvoiceData.time || "",
+      notes: newInvoiceData.notes || "",
+      accountNumber: firmProfile.bankAccountNumber || "Not Set",
+      bankName: firmProfile.bankName || "Not Set"
+    };
+  }, [newInvoiceData, firmProfile]);
 
   if (!invoice) {
-    return <div className="text-center p-10">Invoice data not found.</div>;
+    return (
+      <div className="flex flex-col items-center justify-center p-20">
+        <p className="text-gray-500 mb-4">No invoice data found to preview.</p>
+        <Button onClick={() => setStep("form")}>Back to Form</Button>
+      </div>
+    );
   }
 
-  // const handlePay = () => {
-  //   setStep("payment");
-  // };
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Account number copied!");
+  };
 
-  const handleBack = () => {
-    setStep(isHistoryView ? "dashboard" : "form");
+  const handlePay = async () => {
+    setIsSubmitting(true);
+    try {
+      const selectedRate = rates.find(
+        (r) => String(r.id) === String(invoice.subServiceId)
+      ) as any;
+
+      if (!selectedRate) {
+        toast.error(
+          "Could not find the selected service rate. Please go back and reselect."
+        );
+        setIsSubmitting(false);
+        return;
+      }
+
+      const ISO_DATE = new Date(
+        `${invoice.date}T${invoice.time}`
+      ).toISOString();
+
+      if (invoice.service === "Consultation") {
+        const payload = {
+          consultationFeeId: String(selectedRate.id || ""),
+          clientEmail: invoice.clientName,
+          consultType: String(selectedRate.consultType || ""),
+          consultAt: ISO_DATE,
+          note: invoice.notes || "Consultation Invoice",
+          amount: Number(selectedRate.rate || 0)
+        };
+        console.log("FINAL PAYLOAD:", JSON.stringify(payload, null, 2));
+        await invoiceConsultation(payload);
+      } else {
+        const payload = {
+          caseTypeId: String(selectedRate.caseTypeId || ""),
+          staffEmail: invoice.staffEmail,
+          userEmail: invoice.clientName,
+          caseAt: ISO_DATE,
+          note: invoice.notes || "Case Invoice",
+          amount: Number(selectedRate.caseRate || 0)
+        };
+        await invoiceCase(payload);
+      }
+
+      toast.success("Invoice Generated Successfully");
+      setStep("success");
+    } catch (error) {
+      console.error("API Error:", error);
+      toast.error("Submission failed. Please check your inputs.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-8 bg-white rounded-xl shadow-lg border">
+    <div className="max-w-7xl mx-auto p-8 bg-white rounded-xl shadow-lg border">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b">
-        <h1 className="text-2xl font-bold">
-          ← {isHistoryView ? "Invoice History" : "Invoice Details"}
-        </h1>
-        <div className="flex space-x-2">
-          {isHistoryView && (
-            <>
-              <Button
-                variant="ghost"
-                className="text-red-500 hover:text-red-600"
-              >
-                Delete
-              </Button>
-              <Button className="bg-purple-600 hover:bg-purple-700">
-                Download History
-              </Button>
-            </>
-          )}
-          {!isHistoryView && (
-            <>
-              <Button variant="outline" className="flex items-center space-x-1">
-                <Share2 className="h-4 w-4" /> <span>Share Invoice</span>
-              </Button>
-              <Button className="bg-purple-600 hover:bg-purple-700">
-                Download Invoice
-              </Button>
-            </>
-          )}
-        </div>
+      <div className="flex items-center gap-4 mb-8">
+        <Button variant="ghost" size="icon" onClick={() => setStep("form")}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-2xl font-bold">Review Invoice</h1>
       </div>
 
-      {/* Content Body */}
-      <div className="mt-8 space-y-8">
-        {/* Client Details */}
-        <h2 className="text-xl font-bold">Client Details</h2>
-        <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-          <p className="text-gray-500">Invoice ID</p>
-          <p className="font-medium text-right">{invoice.invoiceId}</p>
+      <div className="space-y-6">
+        {/* Section: Service Details */}
+        <section>
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Service Details
+          </h2>
+          <div className="grid grid-cols-2 gap-y-3 text-sm">
+            <span className="text-gray-600">Service Type</span>
+            <span className="font-medium text-right">{invoice.service}</span>
 
-          <p className="text-gray-500">Client Name</p>
-          <p className="font-medium text-right">{invoice.clientName}</p>
+            <span className="text-gray-600">Client</span>
+            <span className="font-medium text-right">{invoice.clientName}</span>
 
-          <p className="text-gray-500">Service</p>
-          <p className="font-medium text-right">{invoice.service}</p>
-        </div>
+            {invoice.service === "Case" && (
+              <>
+                <span className="text-gray-600">Staff Email</span>
+                <span className="font-medium text-right">
+                  {invoice.staffEmail}
+                </span>
+              </>
+            )}
+
+            <span className="text-gray-600">Scheduled For</span>
+            <span className="font-medium text-right">
+              {invoice.date} at {invoice.time}
+            </span>
+          </div>
+        </section>
 
         <Separator />
 
-        {/* Invoice Summary */}
-        <h2 className="text-xl font-bold">Invoice Summary</h2>
-        <div className="grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
-          <p className="text-gray-500">Account Details</p>
-          <div className="flex justify-end items-center space-x-2">
-            <p className="font-medium">{invoice.accountDetails || "N/A"}</p>
-            <Copy className="h-4 w-4 cursor-pointer text-gray-500 hover:text-purple-600" />
-          </div>
-
-          <p className="text-gray-500">UBA</p>
-          <p className="font-medium text-right">
-            {invoice.bank || "Smart Law Office"}
-          </p>
-
-          {isHistoryView && (
-            <>
-              <p className="text-gray-500">Status</p>
-              <div className="flex justify-end">
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    invoice.status === "Successful" &&
-                      "bg-green-100 text-green-700 hover:bg-green-100",
-                    invoice.status === "Pending" &&
-                      "bg-yellow-100 text-yellow-700 hover:bg-yellow-100"
-                  )}
-                >
-                  {invoice.status}
-                </Badge>
+        {/* Section: Payment Details */}
+        <section>
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            Payment Information
+          </h2>
+          <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Bank Name</span>
+              <span className="font-semibold">{invoice.bankName}</span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-sm text-gray-600">Account Number</span>
+              <div
+                className="flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
+                onClick={() => copyToClipboard(invoice.accountNumber)}
+              >
+                <span className="font-mono font-bold">
+                  {invoice.accountNumber}
+                </span>
+                <Copy className="h-4 w-4" />
               </div>
-            </>
-          )}
-
-          <p className="text-gray-500">Consultation Fee</p>
-          <p className="font-medium text-right">
-            ₦{invoice.consultationFee.toLocaleString()}
-          </p>
-
-          <p className="text-gray-500">Duration</p>
-          <p className="font-medium text-right">{invoice.duration}</p>
-
-          <p className="text-gray-500">Date</p>
-          <p className="font-medium text-right">{invoice.date}</p>
-
-          <p className="text-gray-500">Time</p>
-          <p className="font-medium text-right">{invoice.time}</p>
-        </div>
-
-        {/* Notes */}
-        <div className="space-y-2">
-          <h3 className="font-bold">Notes</h3>
-          <div className="p-4 border rounded-lg bg-gray-50 text-sm text-gray-700 min-h-20">
-            {invoice.notes || "No notes provided."}
-          </div>
-        </div>
-
-        {isHistoryView && (
-          <div className="pt-4 space-y-4">
-            <h3 className="font-bold">Share as</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <Button
-                variant="outline"
-                className="h-20 flex-col space-y-1 text-purple-600 border-purple-200 hover:bg-purple-50"
-              >
-                <FileText className="h-6 w-6" />
-                <span>PDF</span>
-              </Button>
-              <Button
-                variant="outline"
-                className="h-20 flex-col space-y-1 text-purple-600 border-purple-200 hover:bg-purple-50"
-              >
-                <ImageIcon className="h-6 w-6" />
-                <span>Image</span>
-              </Button>
             </div>
           </div>
-        )}
-      </div>
 
-      <div className="flex justify-end space-x-4 pt-8 border-t mt-8">
-        {!isPaid && !isHistoryView && (
-          <>
-            <Button onClick={() => setStep("form")} variant="outline">
-              Cancel
-            </Button>
-            <Button
-              // onClick={handlePay}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              Pay
-            </Button>
-          </>
+          <div className="flex justify-between items-center mt-6 p-2">
+            <span className="text-lg font-bold">Total Amount</span>
+            <span className="text-2xl font-black text-purple-700">
+              ₦{invoice.consultationFee.toLocaleString()}
+            </span>
+          </div>
+        </section>
+
+        {/* Section: Notes */}
+        {invoice.notes && (
+          <section className="bg-amber-50/50 p-3 rounded border border-amber-100">
+            <p className="text-xs font-bold text-amber-800 mb-1">Notes:</p>
+            <p className="text-sm text-amber-900">{invoice.notes}</p>
+          </section>
         )}
-        {isPaid && isHistoryView && (
-          <Button
-            onClick={handleBack}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            Back to History
-          </Button>
-        )}
+
+        {/* Action Button */}
+        <Button
+          onClick={handlePay}
+          disabled={isSubmitting}
+          className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-lg font-bold mt-4"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+              Processing...
+            </>
+          ) : (
+            `Pay ₦${invoice.consultationFee.toLocaleString()}`
+          )}
+        </Button>
       </div>
     </div>
   );

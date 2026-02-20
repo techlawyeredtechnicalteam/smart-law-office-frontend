@@ -7,7 +7,7 @@ export const invoiceConsultation = (payload: {
   consultAt: string;
   note: string;
   amount: number;
-}) => api.post("/invoices/consults", payload);
+}) => api.post("/invoices/consult", payload);
 
 export const invoiceCase = (payload: {
   caseTypeId: string;

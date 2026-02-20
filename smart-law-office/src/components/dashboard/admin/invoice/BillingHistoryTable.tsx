@@ -23,18 +23,21 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
 const groupInvoicesByMonth = (invoices: InvoiceDetails[]) => {
-  return invoices.reduce((acc, invoice) => {
-    const date = new Date(
-      invoice.date.replace(/(\d{4})-(\d{2})-(\d{2})/, "$1/$2/$3")
-    );
-    const monthKey = date.toLocaleString("en-US", {
-      month: "long",
-      year: "numeric"
-    });
-    acc[monthKey] = acc[monthKey] || [];
-    acc[monthKey].push(invoice);
-    return acc;
-  }, {} as Record<string, InvoiceDetails[]>);
+  return invoices.reduce(
+    (acc, invoice) => {
+      const date = new Date(
+        invoice.date.replace(/(\d{4})-(\d{2})-(\d{2})/, "$1/$2/$3")
+      );
+      const monthKey = date.toLocaleString("en-US", {
+        month: "long",
+        year: "numeric"
+      });
+      acc[monthKey] = acc[monthKey] || [];
+      acc[monthKey].push(invoice);
+      return acc;
+    },
+    {} as Record<string, InvoiceDetails[]>
+  );
 };
 
 const HistoryRow = ({
@@ -48,6 +51,7 @@ const HistoryRow = ({
     <TableCell>{invoice.invoiceId}</TableCell>
     <TableCell>{invoice.service}</TableCell>
     <TableCell>{invoice.clientName}</TableCell>
+    <TableCell>{invoice.notes}</TableCell>
     <TableCell>₦{invoice.consultationFee.toLocaleString()}</TableCell>
     <TableCell>
       <Badge
@@ -94,7 +98,7 @@ export function BillingHistoryTable({
 
   const handleViewInvoice = (id: string) => {
     setActiveInvoiceId(id);
-    setStep("history"); 
+    setStep("history");
   };
 
   const renderTable = (invoices: InvoiceDetails[], showHeader: boolean) => (
@@ -107,6 +111,7 @@ export function BillingHistoryTable({
             <TableHead>Client name</TableHead>
             <TableHead>Fee</TableHead>
             <TableHead>Status</TableHead>
+            <TableHead>Notes</TableHead>
             <TableHead>Date</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
@@ -138,7 +143,7 @@ export function BillingHistoryTable({
                 Download History
               </Button>
             </div>
-            <div className="border rounded-lg overflow-hidden">              
+            <div className="border rounded-lg overflow-hidden">
               {renderTable(groupedInvoices[monthKey], true)}
             </div>
           </div>

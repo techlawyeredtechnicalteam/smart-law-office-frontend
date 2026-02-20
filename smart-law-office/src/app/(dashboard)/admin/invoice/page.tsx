@@ -29,11 +29,11 @@ export default function BillingAndInvoiceManagement() {
       case "dashboard":
         if (!hasHistory) {
           return (
-            // <div className="p-4 sm:p-8">
-            //   <h1 className="text-3xl font-bold mb-8">Billing</h1>
-            //   <InvoiceEmptyState GenerateInvoice={() => setStep("form")} />
-            // </div>
-            <InvoiceDashboard />
+            <div className="p-4 sm:p-8">
+              <h1 className="text-3xl font-bold mb-8">Billing</h1>
+              <InvoiceEmptyState GenerateInvoice={() => setStep("form")} />
+            </div>
+            // <InvoiceDashboard />
           );
         }
         return <InvoiceDashboard />;
@@ -42,9 +42,10 @@ export default function BillingAndInvoiceManagement() {
         return <CreateInvoiceForm />;
 
       case "details":
-      case "history":
+        return <InvoiceDetailsSummary />;
       case "success":
         return <InvoiceDetailsSummary />;
+      // case "history":
 
       default:
         return <InvoiceDashboard />;
@@ -56,15 +57,7 @@ export default function BillingAndInvoiceManagement() {
       <div className="max-w-7xl mx-auto">
         {renderHeader()}
 
-        <div
-          className={
-            step === "dashboard"
-              ? ""
-              : "bg-white rounded-lg shadow-sm overflow-hidden"
-          }
-        >
-          {renderFlowStep()}
-        </div>
+        <div className={step === "dashboard" ? "" : ""}>{renderFlowStep()}</div>
       </div>
 
       <PaymentSuccessModal />
