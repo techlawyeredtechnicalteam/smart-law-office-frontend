@@ -9,12 +9,7 @@ import {
 } from "@/app/api/manageCounse.api";
 import { Lawyer } from "@/types/user";
 import { useAssignStore } from "./assignCaseStore";
-
-export interface Notification {
-  type: "success" | "info" | "error";
-  message: string;
-  details: string;
-}
+import { useNotificationStore } from "./notificationStore";
 
 export interface Counsel {
   id: number;
@@ -149,6 +144,12 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
       await get().fetchCounsels();
       set({ isAddModalOpen: false, lastAddedCounsel: response.data });
       toast.success("Counsel added successfully");
+
+      useNotificationStore.getState().addNotification({
+        type: "success",
+        message: "New Counsel Added",
+        details: `${response.data?.firstName ?? "A new counsel"} has been added`
+      });
     } catch {
       toast.error("Payment successful, but failed to update list.");
     } finally {
@@ -192,7 +193,8 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
       set({ isDeleteModalOpen: false, selectedCounsel: null });
 
       toast.success("Counsel removed successfully.");
-      get().addNotification({
+
+      useNotificationStore.getState().addNotification({
         type: "info",
         message: "Counsel Removed",
         details: `${counselToRemove?.name ?? "A staff member"} has been deactivated`

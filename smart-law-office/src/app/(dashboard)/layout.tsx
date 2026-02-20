@@ -82,7 +82,7 @@ export default function SmartLawOfficeDashboard({
         <div className="flex items-center gap-3 mb-8 px-2 py-2">
           <div className="relativemin-w-[40px] h-10 bg-white rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
             <Image
-              src="/logo.png" // Ensure this is your Legal Flow icon
+              src="/logo.png" 
               alt="Legal Flow"
               width={32}
               height={32}

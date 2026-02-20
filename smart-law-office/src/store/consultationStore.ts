@@ -8,6 +8,8 @@ import {
   getAllConsult,
   getConsults
 } from "@/app/api/bookConsult.api";
+import { useNotificationStore } from "./notificationStore";
+import { useAuthStore } from "./authStore";
 
 export interface Consultation {
   id: string;
@@ -197,6 +199,29 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
         }
 
         addConsultation(transformedConsult);
+
+        //  fire notification if current user is ADMIN
+        const user = useAuthStore.getState().user;
+        const isAdmin =
+          user?.role?.toUpperCase() === "ADMIN" ||
+          user?.role?.toUpperCase() === "CLIENT";
+
+        if (isAdmin) {
+          useNotificationStore.getState().addNotification({
+            type: "consultation",
+            message: "New Consultation Booked",
+            details: `Code: ${response.data.consultCode || "N/A"}`,
+            link: "/admin/billing"
+          });
+        } else {
+          useNotificationStore.getState().addNotification({
+            type: "success",
+            message: "Consultation Booked",
+            details: `Code: ${response.data.consultCode || "N/A"}`,
+            link: "/client/track-payment"
+          });
+        }
+
         set({ step: "success", isLoading: false });
         return true;
       }
