@@ -1,5 +1,6 @@
 import axios from "axios";
 import { deleteAuthCookie, getAuthCookie } from "@/lib/cookies";
+import { toast } from "sonner";
 
 const baseURL =
   process.env.NEXT_PUBLIC_API_BASE ||
@@ -34,11 +35,18 @@ api.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-      // In a production app, you might want to redirect to /login if no token
+      // redirect to /login if no token
       // but only on protected routes
-      console.warn("⚠️ Request made without token to:", config.url);
+      const isProtectedRoute = !AUTH_EXEMPT_ENDPOINTS.some((endpoint) =>
+        config.url?.includes(endpoint)
+      );
+      if (isProtectedRoute) {
+        console.warn(
+          "⚠️ No auth token found for protected API call:",
+          config.url
+        );
+      }
     }
-
     return config;
   },
   (error) => Promise.reject(error)
@@ -69,6 +77,7 @@ api.interceptors.response.use(
     // 3. Handle 403 Forbidden (Role mismatch)
     if (error.response?.status === 403) {
       console.error("❌ 403 Forbidden - Insufficient Permissions");
+      toast.error("You do not have permission to perform this action.");
     }
 
     return Promise.reject(error);
