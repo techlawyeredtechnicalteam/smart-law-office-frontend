@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Plus, User, CheckCircle, Loader2 } from "lucide-react";
 import CounselTable from "@/components/dashboard/admin/manageCounsel/CounselTable";
 import { toast } from "sonner";
+import { TbUserScreen } from "react-icons/tb";
 
 export const dynamic = "force-dynamic";
 
@@ -46,16 +47,24 @@ const ManageCounselPage = () => {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Manage Counsel</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            Add and manage legal professionals within your firm.
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center p-16 bg-purple-50 rounded-2xl text-center shadow-lg max-w-lg mx-auto">
+        {/* Icon */}
+        <User className="h-16 w-16 text-purple-700 mb-4" />
+
+        {/* Heading */}
+        <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+          Add Counsel
+        </h2>
+
+        {/* Description */}
+        <p className="text-gray-600 mb-8 max-w-sm">
+          Add and manage legal professionals within your firm.
+        </p>
+
+        {/* Add Counsel Button */}
         <Button
           onClick={openAddModal}
-          className="bg-violet-600 hover:bg-violet-700 transition-colors"
+          className="bg-[#6f42c1] hover:bg-[#5a369e] text-white px-6 py-3"
         >
           <Plus className="w-4 h-4 mr-2" />
           Add Counsel
@@ -96,22 +105,31 @@ const ManageCounselPage = () => {
       )}
 
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center min-h-[400px] bg-gray-50/50 border-2 border-dashed rounded-2xl">
+        <div className="flex flex-col items-center justify-center min-h-100 bg-gray-50/50 border-2 border-dashed rounded-2xl">
           <Loader2 className="h-10 w-10 text-violet-600 animate-spin mb-4" />
         </div>
       ) : counsels.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[400px] border-2 border-dashed rounded-2xl bg-gray-50/50">
-          <User className="h-10 w-10 text-gray-300 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900">
-            Your team is empty
-          </h3>
+        <div className="flex flex-col items-center justify-center p-16 bg-purple-50 rounded-2xl text-center shadow-lg max-w-lg mx-auto">
+          {/* Icon */}
+          <User className="h-16 w-16 text-purple-700 mb-4" />
+
+          {/* Heading */}
+          <h2 className="text-2xl font-semibold mb-3 text-gray-800">
+            Add Counsel
+          </h2>
+
+          {/* Description */}
+          <p className="text-gray-600 mb-8 max-w-sm">
+            Add and manage legal professionals within your firm.
+          </p>
+
+          {/* Add Counsel Button */}
           <Button
             onClick={openAddModal}
-            variant="outline"
-            className="mt-4 border-violet-600 text-violet-600"
+            className="bg-[#6f42c1] hover:bg-[#5a369e] text-white px-6 py-3"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Add Your First Counsel
+            Add Counsel
           </Button>
         </div>
       ) : (

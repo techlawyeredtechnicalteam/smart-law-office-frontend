@@ -13,7 +13,7 @@ export function InvoiceEmptyState({ GenerateInvoice }: InvoiceEmptyStateProps) {
       <TbUserScreen className="h-16 w-16 text-purple-700 mb-4" />
 
       {/* Heading */}
-      <h2 className="text-2xl font-semibold mb-3 text-gray-800">Billing</h2>
+      <h2 className="text-2xl font-semibold mb-3 text-gray-800">Invoice</h2>
 
       {/* Description */}
       <p className="text-gray-600 mb-8 max-w-sm">
@@ -24,12 +24,12 @@ export function InvoiceEmptyState({ GenerateInvoice }: InvoiceEmptyStateProps) {
         We cannot access funds without your permission.
       </span>
 
-      {/* Book Consultation Button */}
+      {/* Generate Invoice Button */}
       <Button
         onClick={GenerateInvoice}
         className="bg-[#6f42c1] hover:bg-[#5a369e] text-white px-6 py-3"
       >
-        Book Consultation
+        Generate Invoice
       </Button>
     </div>
   );

@@ -15,8 +15,8 @@ import { FcGoogle } from "react-icons/fc";
 import { CustomFormField } from "@/components/shared/CustomFormField";
 
 const UnifiedLoginForm = () => {
-  const router = useRouter();  
-  const loginSucess = useAuthStore((state) => state.loginSuccess);
+  const router = useRouter();
+  const loginSuccess = useAuthStore((state) => state.loginSuccess);
   const isAuthLoading = useAuthStore((state) => state.isAuthLoading);
   const setAuthLoading = useAuthStore((state) => state.setAuthLoading);
 
@@ -79,16 +79,15 @@ const UnifiedLoginForm = () => {
         lastName: userData.lastName,
         firmName: userData.firmName
       };
+
       // Store user session
-      loginSucess(token, userObject);
-      // ✅ Display role-specific success message
+      await loginSuccess(token, userObject);
+
       toast.success(getRoleMessage(userObject.role, userObject));
       router.push(getRedirectPath(userObject.role));
     } catch (error: any) {
       setAuthLoading(false);
-      const errorMessage =
-        error.response?.data?.message || "Invalid Credentials";
-      toast.error(errorMessage);
+      toast.error(error.response?.data?.message || "Invalid Credentials");
     }
   };
 

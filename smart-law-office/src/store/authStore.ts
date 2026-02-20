@@ -42,7 +42,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isAuthLoading: boolean;
   // actions
-  loginSuccess: (token: string, user: User) => void;
+  loginSuccess: (token: string, user: User) => Promise<void>;
   syncUser: (updatedUser: Partial<User>) => void;
   updateUserLogo: (newLogo: string) => void;
   logout: () => void;
@@ -81,26 +81,24 @@ export const useAuthStore = create<AuthState>()(
         })),
 
       //
-      loginSuccess: (token, user) => {
-        setAuthCookie(token, user.role);
+      loginSuccess: async (token, user) => {
+        // Set cookie server-side FIRST, then update store
+        await setAuthCookie(token, user.role);
         set({
-          user: {
-            ...user
-          },
+          user,
           isAuthenticated: true,
           isAuthLoading: false
         });
       },
 
-      logout: () => {
-        deleteAuthCookie();
+      logout: async () => {
+        await deleteAuthCookie();
         useBillingStore.getState().resetFlow();
         set({ user: null, isAuthenticated: false, signupFormTemp: null });
       }
     }),
     {
       name: "auth-storage",
-      // Only persist the user info
       partialize: (state) => ({
         user: state.user,
         isAuthenticated: state.isAuthenticated,
