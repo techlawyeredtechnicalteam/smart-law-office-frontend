@@ -190,16 +190,17 @@ export function SmartHeader() {
 
                 {/* Footer */}
                 <div className="px-4 py-2.5 border-t bg-gray-50 flex justify-between items-center">
-                  <Link
+                  {/* <Link
                     href="/admin/billing"
                     onClick={() => setShowNotifications(false)}
                     className="text-xs font-medium text-violet-600 hover:underline"
                   >
                     Go to Billing →
-                  </Link>
+                  </Link> */}
                   {/* Clear all — user triggered, shown only when there are notifications */}
                   {notifications.length > 0 && (
                     <button
+                      type="button"
                       onClick={clearNotifications}
                       className="text-xs text-gray-400 hover:text-red-500 transition"
                     >

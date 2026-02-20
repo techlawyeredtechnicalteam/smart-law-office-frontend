@@ -39,7 +39,7 @@ export const useNotificationStore = create<NotificationStore>()(
           const updated = [newNotification, ...state.notifications].slice(
             0,
             50
-          ); // ✅ cap at 50 for reference
+          );
           return {
             notifications: updated,
             unreadCount: updated.filter((n) => !n.read).length
