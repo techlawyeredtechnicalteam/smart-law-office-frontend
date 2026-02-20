@@ -25,6 +25,17 @@ export interface Consultation {
   paymentReceipt: string;
   createdAt?: string;
   updatedAt?: string;
+  transactions: ConsultTransaction[];
+}
+
+export interface ConsultTransaction {
+  consultTransactionId: string;
+  consultId: string;
+  amount: string;
+  currency: string;
+  status: "PENDING" | "COMPLETED" | "FAILED";
+  paymentReceipt: string;
+  createdAt: string;
 }
 
 const transformConsultationFromAPI = (apiConsult: any): Consultation => {
@@ -41,7 +52,8 @@ const transformConsultationFromAPI = (apiConsult: any): Consultation => {
     status: apiConsult.status,
     paymentReceipt: apiConsult.paymentReceipt || "",
     createdAt: apiConsult.createdAt,
-    updatedAt: apiConsult.updatedAt
+    updatedAt: apiConsult.updatedAt,
+    transactions: apiConsult.consultTransactions || []
   };
 };
 
@@ -64,6 +76,7 @@ interface ConsultationState {
   addConsultation: (consult: Consultation) => void;
   setLastCreatedConsultCode: (code: string) => void;
   submitConsultation: () => Promise<boolean>;
+  // confirmPayment: (transactionId: string) => Promise<boolean>;
 }
 
 const useConsultationStore = create<ConsultationState>((set, get) => ({
@@ -73,6 +86,22 @@ const useConsultationStore = create<ConsultationState>((set, get) => ({
   step: "form",
   consultations: [],
   lastCreatedConsultCode: null,
+
+  // confirmPayment: async (transactionId: string) => {
+  //   set({ isLoading: true });
+  //   try {
+  //     // Lead Note: Using fetchConsultationDirect ensures the local state
+  //     // is a 1:1 match with the DB after the verification.
+  //     await verifyConsultPayment(transactionId); // Your API call
+  //     await get().fetchConsultationDirect();
+  //     return true;
+  //   } catch (error) {
+  //     console.error("Verification failed", error);
+  //     return false;
+  //   } finally {
+  //     set({ isLoading: false });
+  //   }
+  // },
 
   setFormData: (data: Partial<ConsultationFormData>) => {
     set((state) => ({

@@ -8,7 +8,7 @@ export const ForgotPasswordSchema = z.object({
 // Schema for reset password (email + confirmPassword)
 export const ResetPasswordSchema = z
   .object({
-    email: z.string().email("Invalid email address"),
+    // email: z.string().email("Invalid email address"),
     password: z.string().min(8, "Password must be at least 8 characters"),
     confirmPassword: z.string()
   })

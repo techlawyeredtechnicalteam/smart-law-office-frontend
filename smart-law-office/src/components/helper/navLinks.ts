@@ -60,12 +60,12 @@ export const ALL_LINKS: Record<string, NavItems> = {
     route: "/admin/invoice",
     roles: ["ADMIN"]
   },
-  subscribe: {
-    icon: FileText,
-    name: "Subscriptions",
-    route: "/subscribe",
-    roles: ["ADMIN", "STAFF"]
-  },
+  // subscribe: {
+  //   icon: FileText,
+  //   name: "Subscriptions",
+  //   route: "/subscribe",
+  //   roles: ["ADMIN", "STAFF"]
+  // },
   manageCounsel: {
     name: "Manage Counsel",
     icon: Users,
@@ -86,12 +86,6 @@ export const ALL_LINKS: Record<string, NavItems> = {
     route: "/staff/my-cases",
     roles: ["STAFF"]
   },
-  // billingTrack: {
-  //   icon: TbInvoice,
-  //   name: "TrackBilling",
-  //   route: "/staff/track-billing",
-  //   roles: ["STAFF"]
-  // },
   documents: {
     icon: DownloadCloud,
     name: "Document",
@@ -106,24 +100,18 @@ export const ALL_LINKS: Record<string, NavItems> = {
     route: "/client/manage-case",
     roles: ["CLIENT"]
   },
-  // createCase: {
-  //   icon: Briefcase,
-  //   name: "Create New Case",
-  //   route: "/create-case",
-  //   roles: ["CLIENT", "STAFF"]
-  // },
   consultations: {
     icon: FileText,
     name: "Consultations",
     route: "/client/consultations",
     roles: ["CLIENT"]
   },
-  // commsClient: {
-  //   name: "Communications",
-  //   icon: MessageSquare,
-  //   route: "/client/comms",
-  //   roles: ["CLIENT"]
-  // }
+  trackPayment: {
+    icon: TbInvoice,
+    name: "TrackPayment",
+    route: "/client/track-payment",
+    roles: ["CLIENT"]
+  },
 
   // shared links (moved to the bottom before commented out section)
   commsAdmin: {

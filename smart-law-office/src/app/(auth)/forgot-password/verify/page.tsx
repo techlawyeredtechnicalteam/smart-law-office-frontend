@@ -83,7 +83,9 @@ const VerifyOtp = () => {
     try {
       await verifyPasswordResetOtp({ email, otp: data.otp });
       toast.success("OTP verified!");
-      router.push("/forgot-password/reset");
+      router.push(
+        `/forgot-password/reset?email=${encodeURIComponent(email)}&otp=${data.otp}`
+      );
     } catch (err: any) {
       toast.error("OTP verification failed");
     }

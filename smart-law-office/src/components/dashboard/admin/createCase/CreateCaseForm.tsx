@@ -24,7 +24,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   const { executeCreate, isLoading: isCreating } = useCaseStore();
   const { rates, fetchBillingInitialData } = useBillingStore();
   const {
-    fetchData,
+    fetchUnassigned,
     counsels,
     clients,
     isLoading: isFetchingData
@@ -34,7 +34,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
 
   React.useEffect(() => {
     fetchBillingInitialData();
-    fetchData();
+    fetchUnassigned();
   }, []);
 
   const caseTypeOptions = React.useMemo(() => {

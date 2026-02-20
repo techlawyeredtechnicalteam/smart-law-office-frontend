@@ -8,12 +8,12 @@ import { TableModal, TableColumn } from "@/components/shared/TableModal";
 import { Button } from "@/components/ui/button";
 
 export function UnassignedCasesPanel() {
-  const { unassignedCases, isLoading, fetchData } = useAssignStore();
+  const { unassignedCases, isLoading, fetchUnassigned } = useAssignStore();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Auto-fetch on mount if empty
   useEffect(() => {
-    if (unassignedCases.length === 0) fetchData();
+    if (unassignedCases.length === 0) fetchUnassigned();
   }, []);
 
   const filteredCases = unassignedCases.filter((c) => {
@@ -93,7 +93,7 @@ export function UnassignedCasesPanel() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => fetchData()}
+            onClick={() => fetchUnassigned()}
             disabled={isLoading}
             className="h-9 w-9 p-0 border-gray-200 hover:bg-gray-50"
           >

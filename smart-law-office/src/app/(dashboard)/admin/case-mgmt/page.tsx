@@ -19,7 +19,7 @@ const CaseManagementPage = () => {
   // Sync data on mount
   useEffect(() => {
     fetchCases();
-    fetchConsultationDirect(); // Fetch the table data for the top section
+    fetchConsultationDirect(); 
   }, []);
 
   return (

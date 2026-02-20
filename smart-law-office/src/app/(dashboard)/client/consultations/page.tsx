@@ -24,11 +24,6 @@ export default function ConsultationFlowPage() {
   const [selectedConsultCode, setSelectedConsultCode] =
     React.useState<string>("");
 
-  // 1. Define the variable HERE (above the return)
-  const isFormOpen = isBookingOpen && step === "form";
-  const isSummaryOpen = isBookingOpen && step === "summary";
-  const isPaymentOpen = isBookingOpen && step === "payment";
-
   React.useEffect(() => {
     if (rates.length === 0) {
       fetchConsultationFeesOnly();
@@ -54,28 +49,17 @@ export default function ConsultationFlowPage() {
   };
 
   // Function to go back to the dashboard
-  const handleBackToDashboard = () => {
-    setViewMode("dashboard");
-    setSelectedConsultCode("");
-  };
+  // const handleBackToDashboard = () => {
+  //   setViewMode("dashboard");
+  //   setSelectedConsultCode("");
+  // };
 
   return (
     <div className="p-8">
-      {/* Conditional Rendering of Dashboard vs. Details View */}
       {viewMode === "dashboard" && (
-        <ConsultationDashboard
-          isAdminView={false}
-          // onBookConsultation={openBooking}
-          // onViewDetails={handleViewDetails}
-        />
+        <ConsultationDashboard isAdminView={false} />
       )}
-      {/* {viewMode === "details" && selectedConsultCode && (
-        <ConsultationDetailsView
-          consultCode={selectedConsultCode}
-          onBack={handleBackToDashboard}
-        />
-      )} */}
-      {/* --- Modals Orchestration --- */}
+
       <CreateModal
         isOpen={isBookingOpen}
         onOpenChange={(open) => !open && closeBooking()}

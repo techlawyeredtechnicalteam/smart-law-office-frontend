@@ -170,9 +170,6 @@ export function ConsultationDashboard({
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12">
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-[#6f42c1]"></div>
-          <p className="text-gray-500 font-medium">
-            Synchronizing consultations...
-          </p>
         </div>
       </div>
     );

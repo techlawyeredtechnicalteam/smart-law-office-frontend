@@ -85,9 +85,7 @@ export const useAuthStore = create<AuthState>()(
         setAuthCookie(token, user.role);
         set({
           user: {
-            ...user,
-            subscriptionStatus: user.subscriptionStatus || "INACTIVE",
-            planType: user.planType || "BASIC"
+            ...user
           },
           isAuthenticated: true,
           isAuthLoading: false

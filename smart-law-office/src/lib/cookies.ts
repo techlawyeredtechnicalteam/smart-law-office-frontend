@@ -25,7 +25,7 @@ export const setAuthCookie = (token: string, role: string) => {
     isProduction || window.location.protocol === "https:" ? "; secure" : "";
 
   // Set both cookies with the same expiry
-  const maxAge = 30 * 24 * 60 * 60; // 30 days (or adjust as needed)
+  const maxAge = 30 * 24 * 60 * 60;
 
   document.cookie = `auth-token=${token}; path=/; max-age=${maxAge}; samesite=lax${secureFlag}`;
   document.cookie = `user-role=${role}; path=/; max-age=${maxAge}; samesite=lax${secureFlag}`;

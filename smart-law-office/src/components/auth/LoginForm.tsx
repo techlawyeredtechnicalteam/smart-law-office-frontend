@@ -15,7 +15,7 @@ import { FcGoogle } from "react-icons/fc";
 import { CustomFormField } from "@/components/shared/CustomFormField";
 
 const UnifiedLoginForm = () => {
-  const router = useRouter();
+  const router = useRouter();  
   const loginSucess = useAuthStore((state) => state.loginSuccess);
   const isAuthLoading = useAuthStore((state) => state.isAuthLoading);
   const setAuthLoading = useAuthStore((state) => state.setAuthLoading);
@@ -32,7 +32,7 @@ const UnifiedLoginForm = () => {
 
   const { isValid } = form.formState;
 
-  // ✅ Role-based routing function
+  //  Role-based routing function
   const getRedirectPath = (role: string): string => {
     const routes = {
       ADMIN: "/admin/dashboard",
@@ -44,11 +44,11 @@ const UnifiedLoginForm = () => {
   };
 
   // ✅ Role-based welcome message
-  const getRoleMessage = (role: string): string => {
+  const getRoleMessage = (role: string, userObj: User | null): string => {
     const messages = {
-      ADMIN: "Welcome back, Admin!",
-      STAFF: "Welcome back, Counsel!",
-      CLIENT: "Welcome back!",
+      ADMIN: `Welcome back, ${userObj?.firm?.name || userObj?.firmName || userObj?.firstName || "Admin"}!`,
+      STAFF: `Welcome back, ${userObj?.firstName} ${userObj?.lastName || "COUNSEL"}!`,
+      CLIENT: `Welcome back, ${userObj?.firstName} ${userObj?.lastName || "CLIENT"}!`,
       "": "Logging in..."
     };
     return messages[role as keyof typeof messages] || "Logging in...";
@@ -82,10 +82,10 @@ const UnifiedLoginForm = () => {
       // Store user session
       loginSucess(token, userObject);
       // ✅ Display role-specific success message
-      toast.success(getRoleMessage(userObject.role));
+      toast.success(getRoleMessage(userObject.role, userObject));
       router.push(getRedirectPath(userObject.role));
     } catch (error: any) {
-      setAuthLoading(false); // turn of loading
+      setAuthLoading(false);
       const errorMessage =
         error.response?.data?.message || "Invalid Credentials";
       toast.error(errorMessage);
@@ -160,6 +160,17 @@ const UnifiedLoginForm = () => {
             "Continue"
           )}
         </Button>
+
+        {/* Forgot Password */}
+        <p className="text-sm mt-6 text-gray-600">
+          Already have an account?{" "}
+          <a
+            href="/forgot-password"
+            className="font-semibold text-[#7C3AED] hover:underline"
+          >
+            Forgot Password?
+          </a>
+        </p>
 
         {/* Terms and Privacy */}
         <div className="flex items-start text-xs pt-2">

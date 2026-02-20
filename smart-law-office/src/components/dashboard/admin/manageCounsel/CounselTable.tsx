@@ -3,142 +3,146 @@
 import { useCounselStore } from "@/store/manageCounsel";
 import { Edit, Trash2, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import React, { useEffect } from "react";
-import { useAssignStore } from "@/store/assignCaseStore";
+import { useEffect } from "react";
 import { Lawyer } from "@/types/user";
+import { TableModal, TableColumn } from "@/components/shared/TableModal";
+
+const STATUS_STYLES: Record<Lawyer["status"], string> = {
+  Active: "bg-green-100 text-green-700",
+  Busy: "bg-yellow-100 text-yellow-700",
+  Inactive: "bg-red-100 text-red-700"
+};
 
 const CounselTable = () => {
-  const { counsels, isLoading, fetchData } = useAssignStore();
-  const { openEditModal, openDeleteModal } = useCounselStore();
+  const {
+    counsel,
+    isLoading,
+    isFetching,
+    fetchCounsels,
+    openEditModal,
+    openDeleteModal
+  } = useCounselStore();
 
-  React.useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => {
+    fetchCounsels();
+  }, [fetchCounsels]);
 
-  if (isLoading && counsels.length === 0) {
-    return <TableSkeleton />;
-  }
+  const columns: TableColumn<Lawyer>[] = [
+    {
+      key: "name",
+      header: "Counsel Name",
+      render: (person) => (
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">
+            {person.firstName[0]}
+            {person.lastName[0]}
+          </div>
+          <span className="font-medium text-gray-900">{person.name}</span>
+        </div>
+      )
+    },
+    {
+      key: "scn",
+      header: "SCN Number",
+      cellClassName: "text-sm text-gray-600",
+      render: (person) => person.scn
+    },
+    {
+      key: "email",
+      header: "Email Address",
+      cellClassName: "text-sm text-gray-600",
+      render: (person) => person.email
+    },
+    {
+      key: "casesCount",
+      header: "Assigned Cases",
+      cellClassName: "text-sm text-gray-600",
+      render: (person) => (
+        <span className="bg-gray-100 px-2.5 py-0.5 rounded-full">
+          {person.casesCount}
+        </span>
+      )
+    },
+    {
+      key: "status",
+      header: "Status",
+      render: (person) => (
+        <span
+          className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+            STATUS_STYLES[person.status] ?? STATUS_STYLES.Inactive
+          }`}
+        >
+          {person.status}
+        </span>
+      )
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      headerClassName: "text-right",
+      cellClassName: "text-right",
+      render: (person) => (
+        <div className="flex justify-end gap-2">
+          <ActionButton
+            aria-label="Edit Counsel"
+            onClick={() => openEditModal(person)}
+            hoverClass="hover:text-blue-600 hover:bg-blue-50"
+          >
+            <Edit size={18} />
+          </ActionButton>
+          <ActionButton
+            aria-label="Delete Counsel"
+            onClick={() => openDeleteModal(person)}
+            hoverClass="hover:text-red-600 hover:bg-red-50"
+          >
+            <Trash2 size={18} />
+          </ActionButton>
+        </div>
+      )
+    }
+  ];
+
+  if (isFetching && counsel.length === 0) return <TableSkeleton />;
 
   return (
-    <div className="w-full bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                Counsel Name
-              </th>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                SCN Number
-              </th>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                Email Address
-              </th>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                Assigned Cases
-              </th>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600">
-                Status
-              </th>
-              <th className="px-6 py-4 text-sm font-semibold text-gray-600 text-right">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {counsels.length > 0 ? (
-              counsels.map((person: Lawyer) => {
-                const caseCount = Number(person.casesCount) || 0;
-                const isOverloaded = caseCount >= 5;
-
-                return (
-                  <tr
-                    key={person.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center font-bold text-xs">
-                          {person.firstName[0]}
-                          {person.lastName[0]}
-                        </div>
-                        <span className="font-medium text-gray-900">
-                          {person.name}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {person.scn}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {person.email}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      <span className="bg-gray-100 px-2.5 py-0.5 rounded-full">
-                        {person.casesCount}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                          person.status === "Active"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-red-100 text-red-700"
-                        }`}
-                      >
-                        {person.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          aria-label="Edit Counsel"
-                          onClick={() => openEditModal(person)}
-                          className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-                        >
-                          <Edit size={18} />
-                        </button>
-                        <button
-                          aria-label="Delete Counsel"
-                          onClick={() => openDeleteModal(person)}
-                          className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td
-                  colSpan={6}
-                  className="px-6 py-12 text-center text-gray-500"
-                >
-                  <div className="flex flex-col items-center gap-2">
-                    <Search size={40} className="text-gray-300" />
-                    <p>No counsel members found.</p>
-                  </div>
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <TableModal<Lawyer>
+      data={counsel}
+      columns={columns}
+      getRowKey={(person) => person.id}
+      emptyMessage="No counsel members found."
+      containerClassName="w-full bg-white rounded-xl border border-gray-200 overflow-hidden"
+    />
   );
 };
 
-// Internal Skeleton Helper
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+interface ActionButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  hoverClass: string;
+}
+
+const ActionButton = ({
+  hoverClass,
+  children,
+  ...props
+}: ActionButtonProps) => (
+  <button
+    {...props}
+    className={`p-1.5 text-gray-400 rounded-md transition-colors ${hoverClass}`}
+  >
+    {children}
+  </button>
+);
+
 const TableSkeleton = () => (
   <div className="space-y-4 w-full">
     <div className="h-10 w-full bg-gray-100 animate-pulse rounded-t-xl" />
-    {[1, 2, 3, 4, 5].map((i) => (
+    {Array.from({ length: 5 }, (_, i) => (
       <div key={i} className="flex gap-4 px-6">
         <Skeleton className="h-12 w-full" />
       </div>
     ))}
   </div>
 );
+
 export default CounselTable;

@@ -17,7 +17,6 @@ const SuccessPage = () => {
   const [isFinishing, setIsFinishing] = React.useState<boolean>(true);
 
   React.useEffect(() => {
-    // If we have a user, start the transition to "Welcome aboard"
     if (user && isFinishing) {
       const timer = setTimeout(() => {
         setIsFinishing(false);
@@ -30,10 +29,12 @@ const SuccessPage = () => {
   React.useEffect(() => {
     if (!isFinishing && user) {
       const timer = setTimeout(() => {
+        // const role = user.role || getAuthCookieRole();
+        const role = user.role;
+
         const route =
-          user.role === "ADMIN" || user.role === "CLIENT"
-            ? "/admin/dashboard"
-            : "/client/manage-case";
+          role === "ADMIN" ? "/admin/dashboard" : "/client/manage-case";
+
         router.push(route);
       }, 1500);
       return () => clearTimeout(timer);

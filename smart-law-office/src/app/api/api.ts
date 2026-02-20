@@ -54,22 +54,22 @@ api.interceptors.response.use(
     }
 
     // 2. Handle 401 Unauthorized (Token Expired or Invalid)
-    // if (error.response?.status === 401) {
-    //   console.error("🚫 401 Unauthorized - Session Expired");
-    //   deleteAuthCookie();
+    if (error.response?.status === 401) {
+      console.error("🚫 401 Unauthorized - Session Expired");
+      deleteAuthCookie();
 
-    //   if (
-    //     typeof window !== "undefined" &&
-    //     !window.location.pathname.includes("/role")
-    //   ) {
-    //     window.location.href = "/role?error=session_expired";
-    //   }
-    // }
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.includes("/role")
+      ) {
+        window.location.href = "/role?error=session_expired";
+      }
+    }
 
-    // // 3. Handle 403 Forbidden (Role mismatch)
-    // if (error.response?.status === 403) {
-    //   console.error("❌ 403 Forbidden - Insufficient Permissions");
-    // }
+    // 3. Handle 403 Forbidden (Role mismatch)
+    if (error.response?.status === 403) {
+      console.error("❌ 403 Forbidden - Insufficient Permissions");
+    }
 
     return Promise.reject(error);
   }

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { IdleTimer } from "@/components/auth/IdleTimer";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,10 @@ export default function RootLayout({
       >
         <IdleTimer />
         {children}
+        {/* <Script
+          src="https://js.paystack.co/v1/inline.js"
+          strategy="lazyOnload"
+        /> */}
         <Toaster />
       </body>
     </html>

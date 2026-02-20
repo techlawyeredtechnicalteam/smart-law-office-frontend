@@ -20,7 +20,11 @@ const PagesLayout = ({ children }: { children: React.ReactNode }) => {
     "/verify",
 
     // Firm Profile Routes
-    "/firm-profile"
+    "/firm-profile",
+
+    // forgot-password
+    "/forgot-password",
+    "/forgot-password/reset"
   ];
 
   // check if current path is full screen

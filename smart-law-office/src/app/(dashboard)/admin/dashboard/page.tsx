@@ -1,4 +1,3 @@
-// Example: src/app/dashboard/page.tsx
 "use client";
 
 import { useCaseStore } from "@/store/createCase";
@@ -19,16 +18,13 @@ export default function AdminDashboardPage() {
   const { fetchBillingInitialData } = useBillingStore();
   const { counsel, fetchCounsels } = useCounselStore();
   const { documents } = useDocumentStore();
-  // const {fetchConsultationDirect, consultation} = useConsultationStore()
 
   const { user } = useAuthStore();
   const isAdmin = user?.role === "ADMIN";
 
   useEffect(() => {
     const init = async () => {
-      // Load Billing first to ensure the 'rates' dictionary is ready
       await fetchBillingInitialData();
-      // Then load cases so they can find their names in the rates dictionary
       await fetchCases();
 
       if (isAdmin) fetchCounsels();
@@ -36,19 +32,6 @@ export default function AdminDashboardPage() {
 
     init();
   }, [isAdmin]);
-  // 2. Prepare data for the OverviewMetrics component
-  const totalCases = cases.length;
-  const totalCounsels = counsel.length;
-
-  const totalPayments = 0;
-
-  // const overviewData = {
-  //   totalCases,
-  //   totalDocuments,
-  //   totalPayments,
-  //   totalCounsels
-  //   // The '% since last month' indicators require backend data comparison
-  // };
 
   return (
     <div className="p-6 space-y-6">
@@ -98,51 +81,5 @@ export default function AdminDashboardPage() {
         <MessagesPanel />
       </div>
     </div>
-    // <div className="p-6 space-y-6">
-    //   <h2 className="text-2xl font-semibold text-gray-800">Dashboard</h2>
-
-    //   <div className={`flex flex-col gap-6`}>
-    //     {/* Left Column*/}
-    //     <div className="w-full">
-    //       <div
-    //         className={`grid gap-4 ${
-    //           isAdmin
-    //             ? "lg:grid-cols-2 lg:w-2/3" // 2x2 Grid taking up part of the screen
-    //             : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" // Straight horizontal line on desktop
-    //         }`}
-    //       >
-    //         <OverviewMetrics title="Total Cases" value={cases.length} />
-
-    //         {/* Staff sees Consultation, Admin sees Counsel */}
-    //         {isAdmin ? (
-    //           <OverviewMetrics title="Counsel" value={counsel.length} />
-    //         ) : (
-    //           <OverviewMetrics title="Consultations" value={cases.length} />
-    //         )}
-    //         <OverviewMetrics title="Documents" value={documents.length} />
-    //         <OverviewMetrics title="Payments" value={0} />
-    //       </div>
-    //     </div>
-
-    //     {/* RIght Column */}
-    //     {isAdmin && (
-    //       <div className="lg:col-span-1 lg:absolute lg:right-6 lg:top-24 lg:w-1/3">
-    //         <PerformanceReviewPanel />
-    //       </div>
-    //     )}
-
-    //     {/* Bottom Cases */}
-    //     <div className={`${isAdmin ? "lg:col-span-2" : "lg:col-span-1"}`}>
-    //       <CaseTablePanel cases={cases} />
-    //     </div>
-
-    //     {/* Documents & messages */}
-    //     <div className="lg:col-span-1">
-    //       <DocumentsPanel /> {/* Limit to 3 for visual match */}
-    //     </div>
-    //     {/* <div className="lg:col-span-1"></div> */}
-    //   </div>
-    //   <MessagesPanel />
-    // </div>
   );
 }

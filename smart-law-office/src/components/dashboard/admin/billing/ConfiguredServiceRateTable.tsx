@@ -15,8 +15,10 @@ import {
 } from "lucide-react";
 import { TableModal, TableColumn } from "@/components/shared/TableModal";
 import { useRouter } from "next/navigation";
+import TrackPayment from "./TrackPayment";
 
 const ConfiguredServiceRateTable = () => {
+  const [showBilling, setShowBilling] = React.useState(false);
   const router = useRouter();
   const {
     rates,
@@ -30,31 +32,6 @@ const ConfiguredServiceRateTable = () => {
   React.useEffect(() => {
     fetchBillingInitialData();
   }, []);
-
-  // Type-safe filters for the two tables
-  // const consultationRates = rates.filter(
-  //   (r): r is ConsultationRate => r.serviceType === "Consultation"
-  // );
-  // const caseRates = rates.filter(
-  //   (r): r is CaseRate => r.serviceType === "Case"
-  // );
-
-  // const formatCurrency = (amount: number) =>
-  //   `₦${amount.toLocaleString("en-NG")}`;
-
-  // // Helper to get LPRO range from feeSchedules if available
-  // const getLproRange = (subServiceType: string) => {
-  //   const schedule = feeSchedules.find(
-  //     (f) => (f.name || f.feeScheduleName) === subServiceType
-  //   );
-  //   if (schedule) {
-  //     return `${schedule.rateMin.toLocaleString()} - ${schedule.rateMax.toLocaleString()}`;
-  //   }
-  //   // Fallback to your logic if schedule not found
-  //   return subServiceType?.includes("Appeals")
-  //     ? "600,000 - 800,000"
-  //     : "300,000 - 500,000";
-  // };
 
   const consultationRates = rates.filter(
     (r): r is ConsultationRate => r.serviceType === "Consultation"
@@ -74,6 +51,17 @@ const ConfiguredServiceRateTable = () => {
       ? `${schedule.rateMin.toLocaleString()} - ${schedule.rateMax.toLocaleString()}`
       : "N/A";
   };
+
+  if (showBilling) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={() => setShowBilling(false)}>
+          <ChevronLeft className="mr-2 h-4 w-4" /> Back to Rates
+        </Button>
+        <TrackPayment />
+      </div>
+    );
+  }
 
   // Consultation Table Columns
   const consultationColumns: TableColumn<ConsultationRate>[] = [
@@ -169,7 +157,8 @@ const ConfiguredServiceRateTable = () => {
             <Button
               variant="outline"
               className="flex-1 sm:flex-none"
-              onClick={fetchBillingInitialData}
+              // onClick={fetchBillingInitialData}
+              onClick={() => setShowBilling(true)}
             >
               View Billing
             </Button>

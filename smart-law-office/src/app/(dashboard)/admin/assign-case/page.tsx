@@ -12,14 +12,14 @@ import { CreateCaseModal } from "@/components/dashboard/admin/createCase/CreateC
 import { AssignCaseSuccessModal } from "@/components/dashboard/admin/assignCase/AssignCaseSuccessModal";
 
 export default function AssignCasePage() {
-  const { fetchData, isLoading } = useAssignStore();
+  const { fetchUnassigned, isLoading } = useAssignStore();
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
   const handleSuccessClose = () => setIsSuccessModalOpen(false);
 
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    fetchUnassigned();
+  }, [fetchUnassigned]);
 
   if (isLoading) {
     return (

@@ -26,9 +26,9 @@ export function InvoiceDetailsSummary() {
     return <div className="text-center p-10">Invoice data not found.</div>;
   }
 
-  const handlePay = () => {
-    setStep("payment");
-  };
+  // const handlePay = () => {
+  //   setStep("payment");
+  // };
 
   const handleBack = () => {
     setStep(isHistoryView ? "dashboard" : "form");
@@ -163,7 +163,7 @@ export function InvoiceDetailsSummary() {
           </div>
         )}
       </div>
-      
+
       <div className="flex justify-end space-x-4 pt-8 border-t mt-8">
         {!isPaid && !isHistoryView && (
           <>
@@ -171,7 +171,7 @@ export function InvoiceDetailsSummary() {
               Cancel
             </Button>
             <Button
-              onClick={handlePay}
+              // onClick={handlePay}
               className="bg-purple-600 hover:bg-purple-700"
             >
               Pay

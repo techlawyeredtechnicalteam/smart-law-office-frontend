@@ -7,61 +7,44 @@ import {
   SubscriptionPlan,
   SubscriptionPaymentFormValues
 } from "@/types/Subscription.schema";
-import { webHookPayStack } from "@/app/api/webhook.api";
-import { useAuthStore } from "./authStore";
 
 export interface SubscriptionPaymentMetadata {
   userId: string;
-  planName: string; // e.g., "Pro" or "Basic"
-  type: "subscription";
+  planName: string;
+  action?: "user_create";
+  userPayload?: any;
 }
 
 const BASIC_PLAN: SubscriptionPlan = {
   name: "BASIC",
-  monthlyPrice: 7500,
+  monthlyPrice: 5000,
   billingTerm: "per seat",
-  features: [
-    "A personalised user dashboard",
-    "Access to assigned cases only",
-    "Real-time case notes and document management",
-    "Case status updates",
-    "Calendar and scheduling",
-    "Support access",
-    "Communication tools"
-  ]
+  features: ["Personalised dashboard", "Case management", "Support access"]
 };
 
 const PRO_PLAN: SubscriptionPlan = {
   name: "PRO",
   monthlyPrice: 15000,
   billingTerm: "per seat",
-  features: [
-    "A personalised user dashboard",
-    "Access to assigned cases only",
-    "Real-time case notes and document management",
-    "Case status updates",
-    "Calendar and scheduling",
-    "Support access",
-    "Communication tools"
-  ]
+  features: ["All Basic features", "Advanced scheduling", "Priority support"]
 };
 
 interface SubscriptionState {
-  step: SubscriptionStep;
   isLoading: boolean;
-  currentSubscription: SubscriptionPlan;
-  selectedSubscription: SubscriptionPlan;
+  selectedPlan: SubscriptionPlan;
   billingCycle: z.infer<typeof BillingCycle>;
-  paymentFormData: Partial<SubscriptionPaymentFormValues> | null;
-  paymentReference: string | null;
 
-  setStep: (step: SubscriptionStep) => void;
+  // Payment State
+  paymentReference: string | null;
+  pendingCounselPayload: any | null;
+
+  // Actions
   setIsLoading: (loading: boolean) => void;
-  selectPlan: (planName: z.infer<typeof PlanType>) => void;
+  setPlan: (planName: z.infer<typeof PlanType>) => void;
   setBillingCycle: (cycle: z.infer<typeof BillingCycle>) => void;
-  setPaymentFormData: (data: Partial<SubscriptionPaymentFormValues>) => void;
+  preparePayment: (payload: any | null) => void;
   setPaymentReference: (ref: string | null) => void;
-  resetFlow: () => void;
+  resetPayment: () => void;
 }
 
 const initialState = {
@@ -74,30 +57,31 @@ const initialState = {
 };
 
 export const useSubscriptionStore = create<SubscriptionState>((set, get) => ({
-  ...initialState,
+  isLoading: false,
+  selectedPlan: PRO_PLAN,
+  billingCycle: "Monthly",
   paymentReference: null,
+  pendingCounselPayload: null,
 
-  setPaymentReference: (ref) => set({ paymentReference: ref }),
-
-  setStep: (step: SubscriptionStep) => set({ step }),
   setIsLoading: (isLoading) => set({ isLoading }),
 
-  selectPlan: (planName) => {
-    const selectedPlan = planName === "PRO" ? PRO_PLAN : BASIC_PLAN;
-    set({ selectedSubscription: selectedPlan });
+  setPlan: (planName) => {
+    const plan = planName === "PRO" ? PRO_PLAN : BASIC_PLAN;
+    set({ selectedPlan: plan });
   },
 
   setBillingCycle: (cycle) => set({ billingCycle: cycle }),
 
-  setPaymentFormData: (data) =>
-    set((state) => ({
-      paymentFormData: { ...state.paymentFormData, ...data }
-    })),
+  // Store the counsel form data before launching Paystack
+  preparePayment: (payload) => set({ pendingCounselPayload: payload }),
 
-  resetFlow: () =>
+  setPaymentReference: (ref) => set({ paymentReference: ref }),
+
+  resetPayment: () =>
     set({
-      step: "manage",
-      paymentReference: null
+      paymentReference: null,
+      pendingCounselPayload: null,
+      isLoading: false
     })
 }));
 

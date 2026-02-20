@@ -52,20 +52,25 @@ const VerifyForm = () => {
       });
 
       const { token, user: userData } = response.data;
+      const role = userData?.role || userRole;
+
       const firmData = useFirmProfileStore.getState().formData;
 
       const completeUser: User = {
         ...userData,
         email: userData?.email || userEmail,
         firmName: firmData.firmName,
-        logo: firmData.logoFile
+        logo: firmData.logoFile,
+        role: role
       };
+
       loginSuccess(token, completeUser);
 
       toast.success("Account created successfully");
-      router.push("/success");
 
-      // useFirmProfileStore.getState().resetProfile();
+      setTimeout(() => {
+        router.push("/success");
+      }, 200);
     } catch (err: any) {
       setAuthLoading(false);
       const errorMessage = err.response?.data?.message || "Verification failed";
@@ -84,7 +89,6 @@ const VerifyForm = () => {
 
   return (
     <Form {...form}>
-      {/* handle onSubmit onSubmit={form.handleSubmit(onSubmit)}*/}
       <form className="space-y-6" onSubmit={form.handleSubmit(onVerify)}>
         {/* Verification Code */}
         <CustomFormField
