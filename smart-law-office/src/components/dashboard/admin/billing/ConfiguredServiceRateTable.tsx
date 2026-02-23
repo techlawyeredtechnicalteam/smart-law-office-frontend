@@ -137,7 +137,7 @@ const ConfiguredServiceRateTable = () => {
   const hasRates = rates.length > 0;
 
   return (
-    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-8 min-h-[400px]">
+    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 space-y-8 min-h-100">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex items-center space-x-2">
@@ -160,7 +160,7 @@ const ConfiguredServiceRateTable = () => {
               // onClick={fetchBillingInitialData}
               onClick={() => setShowBilling(true)}
             >
-              View Billing
+              Payment History
             </Button>
             <Button
               onClick={openSetRateModal}
@@ -171,6 +171,7 @@ const ConfiguredServiceRateTable = () => {
           </div>
         )}
       </div>
+
       {/* /* Data State */}
       <div className="space-y-10">
         <section>

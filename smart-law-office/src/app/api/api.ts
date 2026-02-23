@@ -87,21 +87,21 @@ api.interceptors.response.use(
           window.location.href = "/role?error=session_expired";
         }
 
-        // Reset flag after redirect (in case redirect fails somehow)
-        isLoggingOut = false;
+        // // Reset flag after redirect (in case redirect fails somehow)
+        // isLoggingOut = false;
       }, 2000);
     }
 
     // 3. Handle 403 Forbidden (Role mismatch)
-    if (status === 403) {
-      console.error(
-        "❌ 403 Forbidden - Insufficient Permissions:",
-        error.config?.url
-      );
-      toast.error(
-        "You don't have the authority to perform this action. Please contact your admin."
-      );
-    }
+    // if (status === 403) {
+    //   console.error(
+    //     "❌ 403 Forbidden - Insufficient Permissions:",
+    //     error.config?.url
+    //   );
+    //   toast.error(
+    //     "You don't have the authority to perform this action. Please contact your admin."
+    //   );
+    // }
 
     return Promise.reject(error);
   }

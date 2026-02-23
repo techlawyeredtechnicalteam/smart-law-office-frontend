@@ -54,31 +54,46 @@ export const useInvoiceStore = create<InvoiceState>()(
         set({ isLoading: true });
         try {
           const response = await getInvoices();
-          const history = (response?.data || []).map((inv: any) => ({
-            invoiceId: inv.invoiceNumber || inv.id?.slice(0, 8) || "N/A",
-            clientName: inv.userEmail || inv.clientEmail || "Unknown Client",
-            staffEmail: inv.staffEmail || "Unknown Staff",
-            service: inv.consultationFeeId ? "Consultation" : "Case",
-            consultationFee: inv.amount || 0,
-            duration: inv.duration || "N/A",
-            date: new Date(
-              inv.consultAt || inv.caseAt || inv.createdAt
-            ).toLocaleDateString(),
-            time: new Date(
-              inv.consultAt || inv.caseAt || inv.createdAt
-            ).toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit"
-            }),
-            notes: inv.note || "",
-            status: inv.status || "Pending",
-            accountDetails:
-              inv.bankAccountNumber || inv.accountNumber || "0123456789",
-            bank: inv.bankName || "UBA"
-          }));
+
+          // FIX: Axios returns the actual API response inside the .data property
+          const rawData = response?.data || [];
+
+          const history = rawData.map((inv: any) => {
+            const isCase = inv.type === "CASE";
+            const source = isCase ? inv.directCase : inv.consult;
+
+            const client = source?.client;
+            const clientName = client
+              ? `${client.firstName} ${client.lastName}`
+              : inv.userEmail || "Unknown Client";
+
+            const dateVal = inv.createdAt || source?.createdAt;
+
+            return {
+              invoiceId: inv.invoiceId || "N/A",
+              clientName: clientName,
+              staffEmail: source?.staff?.email || "Unknown Staff",
+              service: isCase ? "Case" : "Consultation",
+              consultationFee: inv.consultationFee || 0,
+              duration: inv.duration || "N/A",
+              date: dateVal ? new Date(dateVal).toLocaleDateString() : "N/A",
+              time: dateVal
+                ? new Date(dateVal).toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })
+                : "N/A",
+              notes: inv.note || "",
+              status: inv.status === "DRAFT" ? "Pending" : "Successful",
+              accountDetails: "0123456789",
+              bank: "UBA"
+            };
+          });
+
           set({ invoiceHistory: history });
         } catch (error) {
           console.error("Failed to fetch invoices:", error);
+          set({ invoiceHistory: [] }); // Fallback to empty on error
         } finally {
           set({ isLoading: false });
         }

@@ -1,70 +1,44 @@
 "use client";
 
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useInvoiceStore } from "@/store/invoiceStore";
-import { useFirmProfileStore } from "@/store/firmProfileStore";
-import {
-  useBillingStore,
-  ConsultationRate,
-  CaseRate
-} from "@/store/setRateBill";
+import { useBillingStore } from "@/store/setRateBill";
 import { Button } from "@/components/ui/button";
-import { Copy, ArrowLeft, Loader2 } from "lucide-react";
-import { Separator } from "@/components/ui/separator";
+import { ArrowLeft, Loader2, FileText, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
 import { invoiceConsultation, invoiceCase } from "@/app/api/invoice.api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle
+} from "@/components/ui/dialog";
 
 export function InvoiceDetailsSummary() {
   const { newInvoiceData, setStep } = useInvoiceStore();
-  const { formData: firmProfile } = useFirmProfileStore();
   const { rates } = useBillingStore();
-  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
   const invoice = useMemo(() => {
     if (!newInvoiceData) return null;
+    return newInvoiceData;
+  }, [newInvoiceData]);
 
-    return {
-      invoiceId: newInvoiceData.invoiceId || "",
-      clientName: newInvoiceData.clientName || "",
-      staffEmail: newInvoiceData.staffEmail || "",
-      service: newInvoiceData.service || "Consultation",
-      subServiceId: newInvoiceData.subServiceId || "",
-      consultationFee: newInvoiceData.consultationFee || 0,
-      duration: newInvoiceData.duration || "",
-      date: newInvoiceData.date || "",
-      time: newInvoiceData.time || "",
-      notes: newInvoiceData.notes || "",
-      accountNumber: firmProfile.bankAccountNumber || "Not Set",
-      bankName: firmProfile.bankName || "Not Set"
-    };
-  }, [newInvoiceData, firmProfile]);
+  if (!invoice) return null;
 
-  if (!invoice) {
-    return (
-      <div className="flex flex-col items-center justify-center p-20">
-        <p className="text-gray-500 mb-4">No invoice data found to preview.</p>
-        <Button onClick={() => setStep("form")}>Back to Form</Button>
-      </div>
-    );
-  }
-
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    toast.success("Account number copied!");
-  };
-
-  const handlePay = async () => {
+  const handleCreateInvoice = async () => {
+    if (!invoice) return;
     setIsSubmitting(true);
+
     try {
       const selectedRate = rates.find(
         (r) => String(r.id) === String(invoice.subServiceId)
-      ) as any;
+      );
 
-      if (!selectedRate) {
-        toast.error(
-          "Could not find the selected service rate. Please go back and reselect."
-        );
-        setIsSubmitting(false);
+      // Safety check: ensure the rate exists
+      if (!selectedRate && invoice.service === "Consultation") {
+        toast.error("Invalid Consultation Type selected.");
         return;
       }
 
@@ -73,135 +47,159 @@ export function InvoiceDetailsSummary() {
       ).toISOString();
 
       if (invoice.service === "Consultation") {
-        const payload = {
-          consultationFeeId: String(selectedRate.id || ""),
-          clientEmail: invoice.clientName,
-          consultType: String(selectedRate.consultType || ""),
+        const consultRate = selectedRate as any;
+
+        await invoiceConsultation({
+          consultationFeeId: String(consultRate?.id ?? ""),
+          clientEmail: invoice.clientName ?? "",
+          consultType: consultRate?.consultType ?? "TENANCY",
           consultAt: ISO_DATE,
-          note: invoice.notes || "Consultation Invoice",
-          amount: Number(selectedRate.rate || 0)
-        };
-        console.log("FINAL PAYLOAD:", JSON.stringify(payload, null, 2));
-        await invoiceConsultation(payload);
+          note: invoice.notes ?? "Consultation Invoice",
+          amount: Number(invoice.consultationFee)
+        });
       } else {
-        const payload = {
-          caseTypeId: String(selectedRate.caseTypeId || ""),
-          staffEmail: invoice.staffEmail,
-          userEmail: invoice.clientName,
+        // Case logic remains the same
+        const caseRate = selectedRate as any;
+        await invoiceCase({
+          caseTypeId: String(caseRate?.caseTypeId ?? ""),
+          staffEmail: invoice.staffEmail ?? "",
+          userEmail: invoice.clientName ?? "",
           caseAt: ISO_DATE,
-          note: invoice.notes || "Case Invoice",
-          amount: Number(selectedRate.caseRate || 0)
-        };
-        await invoiceCase(payload);
+          note: invoice.notes ?? "Case Invoice",
+          amount: Number(invoice.consultationFee)
+        });
       }
 
-      toast.success("Invoice Generated Successfully");
+      toast.success("Invoice Created Successfully");
       setStep("success");
-    } catch (error) {
-      console.error("API Error:", error);
-      toast.error("Submission failed. Please check your inputs.");
+    } catch (error: any) {
+      const errorMsg =
+        error.response?.data?.message?.[0] || "Failed to create invoice.";
+      toast.error(errorMsg);
+      console.error("Payload Error:", error.response?.data);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-8 bg-white rounded-xl shadow-lg border">
-      {/* Header */}
-      <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" onClick={() => setStep("form")}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-2xl font-bold">Review Invoice</h1>
+    <div id="invoice-card" className="max-w-4xl mx-auto p-4">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={() => setStep("form")}>
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <h1 className="text-xl font-bold">Invoice Details</h1>
+        </div>
+        <div className="flex gap-3">
+          <Button
+            variant="ghost"
+            className="text-purple-600"
+            onClick={() => setShowShareModal(true)}
+          >
+            Share Invoice
+          </Button>
+          <Button className="bg-purple-600">Download Invoice</Button>
+        </div>
       </div>
 
-      <div className="space-y-6">
-        {/* Section: Service Details */}
+      <div className="bg-white rounded-xl border p-8 space-y-8 shadow-sm">
+        {/* Client Details Section */}
         <section>
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Service Details
-          </h2>
-          <div className="grid grid-cols-2 gap-y-3 text-sm">
-            <span className="text-gray-600">Service Type</span>
-            <span className="font-medium text-right">{invoice.service}</span>
+          <h2 className="font-bold mb-4">Client Details</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Invoice ID</span>
+              <span>{invoice.invoiceId}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Client Name</span>
+              <span>{invoice.clientName}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Service</span>
+              <span>{invoice.service}</span>
+            </div>
+          </div>
+        </section>
 
-            <span className="text-gray-600">Client</span>
-            <span className="font-medium text-right">{invoice.clientName}</span>
+        <section>
+          <h2 className="font-bold border-t pt-6 mb-4">Invoice Summary</h2>
+          <div className="space-y-3 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Consultation Fee</span>
+              <span className="font-bold">
+                ₦ {Number(invoice.consultationFee).toLocaleString()}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Duration</span>
+              <span>{invoice.duration}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Date</span>
+              <span>{invoice.date}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Time</span>
+              <span>{invoice.time}</span>
+            </div>
+          </div>
+        </section>
 
-            {invoice.service === "Case" && (
-              <>
-                <span className="text-gray-600">Staff Email</span>
-                <span className="font-medium text-right">
-                  {invoice.staffEmail}
-                </span>
-              </>
+        <section>
+          <h2 className="font-bold border-t pt-6 mb-2">Notes</h2>
+          <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600 min-h-[80px]">
+            {invoice.notes || "No notes added..."}
+          </div>
+        </section>
+
+        <div className="flex justify-end gap-4 pt-4">
+          <Button
+            variant="secondary"
+            className="px-8"
+            onClick={() => setStep("form")}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="bg-purple-600 px-10"
+            onClick={handleCreateInvoice}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <Loader2 className="animate-spin h-4 w-4" />
+            ) : (
+              "Create"
             )}
-
-            <span className="text-gray-600">Scheduled For</span>
-            <span className="font-medium text-right">
-              {invoice.date} at {invoice.time}
-            </span>
-          </div>
-        </section>
-
-        <Separator />
-
-        {/* Section: Payment Details */}
-        <section>
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">
-            Payment Information
-          </h2>
-          <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Bank Name</span>
-              <span className="font-semibold">{invoice.bankName}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-600">Account Number</span>
-              <div
-                className="flex items-center gap-2 cursor-pointer hover:text-purple-600 transition-colors"
-                onClick={() => copyToClipboard(invoice.accountNumber)}
-              >
-                <span className="font-mono font-bold">
-                  {invoice.accountNumber}
-                </span>
-                <Copy className="h-4 w-4" />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-between items-center mt-6 p-2">
-            <span className="text-lg font-bold">Total Amount</span>
-            <span className="text-2xl font-black text-purple-700">
-              ₦{invoice.consultationFee.toLocaleString()}
-            </span>
-          </div>
-        </section>
-
-        {/* Section: Notes */}
-        {invoice.notes && (
-          <section className="bg-amber-50/50 p-3 rounded border border-amber-100">
-            <p className="text-xs font-bold text-amber-800 mb-1">Notes:</p>
-            <p className="text-sm text-amber-900">{invoice.notes}</p>
-          </section>
-        )}
-
-        {/* Action Button */}
-        <Button
-          onClick={handlePay}
-          disabled={isSubmitting}
-          className="w-full h-12 bg-purple-600 hover:bg-purple-700 text-lg font-bold mt-4"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            `Pay ₦${invoice.consultationFee.toLocaleString()}`
-          )}
-        </Button>
+          </Button>
+        </div>
       </div>
+
+      {/* Share Modal  */}
+      <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
+        <DialogContent className="max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-left text-sm font-medium text-gray-500 uppercase tracking-wider">
+              Share as
+            </DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 pt-4">
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2 border-purple-100 bg-purple-50/50 text-purple-600 hover:bg-purple-50"
+            >
+              <FileText className="h-6 w-6" /> <span>PDF</span>
+            </Button>
+            <Button
+              variant="outline"
+              className="h-24 flex flex-col gap-2 border-purple-100 bg-purple-50/50 text-purple-600 hover:bg-purple-50"
+            >
+              <ImageIcon className="h-6 w-6" /> <span>Image</span>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

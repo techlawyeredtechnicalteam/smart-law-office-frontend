@@ -74,13 +74,17 @@ export function CreateInvoiceForm() {
   const subServiceOptions = useMemo(() => {
     return rates
       .filter((r) => r.serviceType === selectedService)
-      .map((r) => ({
-        label:
+      .map((r) => {
+        const label =
           r.serviceType === "Consultation"
-            ? r.consultType
-            : (r as CaseRate).subServiceType,
-        value: String(r.id)
-      }));
+            ? (r as ConsultationRate).consultType
+            : (r as CaseRate).subServiceType;
+
+        return {
+          label: label,
+          value: String(r.id)
+        };
+      });
   }, [selectedService, rates]);
 
   const handlePreview = (values: InvoiceFormValues) => {

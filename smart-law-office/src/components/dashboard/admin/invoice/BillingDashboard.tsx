@@ -1,103 +1,109 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Plus, Download, Eye, Loader2 } from "lucide-react";
 import { useInvoiceStore } from "@/store/invoiceStore";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Plus, FileText, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { TableModal, TableColumn } from "@/components/shared/TableModal"; // Adjust path as needed
+import { TableModal, TableColumn } from "@/components/shared/TableModal";
 import { InvoiceDetails } from "@/types/Invoice.schema";
 
 export function InvoiceDashboard() {
-  const {
-    invoiceHistory,
-    fetchInvoices,
-    isLoading,
-    setStep,
-    setActiveInvoiceId
-  } = useInvoiceStore();
+  const { invoiceHistory, fetchInvoices, setStep, setActiveInvoiceId } =
+    useInvoiceStore();
 
   React.useEffect(() => {
     fetchInvoices();
   }, [fetchInvoices]);
 
-  // Dynamic Balance Calculation
-  const totalBalance = useMemo(() => {
+  const availableBalance = useMemo(() => {
     return invoiceHistory.reduce(
-      (sum, inv) => sum + (Number(inv.consultationFee) || 0),
+      (acc, inv) => acc + (Number(inv.consultationFee) || 0),
       0
     );
   }, [invoiceHistory]);
 
-  // CSV Export Logic
-  const handleDownloadHistory = () => {
-    if (invoiceHistory.length === 0) return;
-
-    const headers = ["Invoice ID,Service,Client,Amount,Status,Date\n"];
-    const rows = invoiceHistory.map(
-      (inv) =>
-        `${inv.invoiceId},${inv.service},${inv.clientName},${inv.consultationFee},${inv.status},${inv.date}`
+  const currentMonthTotal = useMemo(() => {
+    const now = new Date();
+    const currentMonthInvoices = invoiceHistory.filter((inv) => {
+      const invDate = new Date(inv.date);
+      return (
+        invDate.getMonth() === now.getMonth() &&
+        invDate.getFullYear() === now.getFullYear()
+      );
+    });
+    return currentMonthInvoices.reduce(
+      (acc, inv) => acc + (Number(inv.consultationFee) || 0),
+      0
     );
+  }, [invoiceHistory]);
 
-    const blob = new Blob([headers + rows.join("\n")], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `billing_history_${new Date().toISOString().split("T")[0]}.csv`;
-    a.click();
-  };
-
-  // Table Column Configuration
   const columns: TableColumn<InvoiceDetails>[] = [
     {
       key: "invoiceId",
       header: "Invoice ID",
-      render: (inv) => <span className="font-medium">{inv.invoiceId}</span>
-    },
-    {
-      key: "service",
-      header: "Service",
-      render: (inv) => inv.service
-    },
-    {
-      key: "clientName",
-      header: "Client",
-      render: (inv) => inv.clientName
-    },
-    {
-      key: "amount",
-      header: "Amount",
-      render: (inv) => `₦${Number(inv.consultationFee).toLocaleString()}`
-    },
-    {
-      key: "notes",
-      header: "Invoice Notes",
-      render: (inv) => inv.notes
-    },
-    {
-      key: "status",
-      header: "Status",
       render: (inv) => (
-        <Badge
-          variant="secondary"
-          className={cn(
-            "font-medium",
-            inv.status === "Successful" || ""
-              ? "bg-green-100 text-green-700"
-              : "bg-yellow-100 text-yellow-700"
-          )}
-        >
-          {inv.status || "Successful"}
-        </Badge>
+        <span className="text-gray-500 font-mono text-xs">
+          {inv.invoiceId.slice(0, 5)}
+        </span>
       )
     },
     {
+      key: "service",
+      header: "Service Type",
+      render: (inv) => (
+        <div className="flex items-center gap-2">
+          {inv.service === "Case" ? (
+            <Briefcase className="h-4 w-4 text-blue-500" />
+          ) : (
+            <FileText className="h-4 w-4 text-purple-500" />
+          )}
+          <span className="font-medium">{inv.service}</span>
+        </div>
+      )
+    },
+    {
+      key: "clientName",
+      header: "Client Name",
+      render: (inv) => (
+        <span className="text-gray-700 font-medium">{inv.clientName}</span>
+      )
+    },
+    // {
+    //   key: "amount",
+    //   header: "Amount",
+    //   render: (inv) => (
+    //     <span className="font-bold text-gray-900">
+    //       ₦ {Number(inv.consultationFee || 0).toLocaleString()}
+    //     </span>
+    //   )
+    // },
+    // {
+    //   key: "status",
+    //   header: "Status",
+    //   render: (inv) => (
+    //     <Badge
+    //       className={cn(
+    //         "rounded-full px-3 py-1 font-normal border shadow-none",
+    //         inv.status === "Successful"
+    //           ? "bg-green-50 text-green-600 border-green-200"
+    //           : "bg-orange-50 text-orange-600 border-orange-200"
+    //       )}
+    //     >
+    //       {inv.status}
+    //     </Badge>
+    //   )
+    // },
+    {
+      key: "date",
+      header: "Date",
+      render: (inv) => <span className="text-gray-500">{inv.date}</span>
+    },
+    {
       key: "action",
-      header: "Action",
-      headerClassName: "text-right",
-      cellClassName: "text-right",
+      header: "",
       render: (inv) => (
         <Button
           variant="ghost"
@@ -107,107 +113,101 @@ export function InvoiceDashboard() {
             setStep("history");
           }}
         >
-          <Eye className="h-4 w-4 text-gray-400" />
+          <span className="text-xl font-bold text-gray-400">...</span>
         </Button>
       )
     }
   ];
 
-  if (isLoading && invoiceHistory.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-      </div>
-    );
-  }
-
   return (
-    <div className="space-y-6 p-6">
-      {/* Header Section */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Billing</h1>
-          <p className="text-sm text-gray-500">
-            Available Balance:{" "}
-            <span className="font-bold text-black">
-              ₦ {totalBalance.toLocaleString()}
-            </span>
-          </p>
+    <div className="p-8 bg-[#FDFDFF] min-h-screen space-y-8">
+      <div className="flex justify-between items-start">
+        <div className="space-y-6">
+          <h1 className="text-2xl font-bold">Billing</h1>
+          <div>
+            <p className="text-sm text-gray-500 font-medium">
+              Available Balance
+            </p>
+            <p className="text-3xl font-bold mt-1">
+              ₦ {availableBalance.toLocaleString()}
+            </p>
+          </div>
         </div>
         <div className="flex gap-3">
           <Button
-            variant="outline"
-            className="text-purple-600 border-purple-200"
+            variant="ghost"
+            className="text-purple-600 hover:bg-purple-50"
           >
             View Rate
           </Button>
           <Button
+            className="bg-purple-600 hover:bg-purple-700 rounded-lg px-6"
             onClick={() => setStep("form")}
-            className="bg-purple-600 hover:bg-purple-700"
           >
             <Plus className="mr-2 h-4 w-4" /> Create Invoice
           </Button>
         </div>
       </div>
 
-      {invoiceHistory.length === 0 ? (
-        <Card className="flex flex-col items-center justify-center p-20 text-center space-y-4 border-dashed">
-          <div className="bg-purple-50 p-4 rounded-full">
-            <Download className="h-10 w-10 text-purple-300" />
-          </div>
-          <p className="text-gray-500 max-w-xs">
-            You have nothing here yet. Add an invoice to track payments.
-          </p>
-          <Button onClick={() => setStep("form")} className="bg-purple-600">
-            Generate Invoice
-          </Button>
-        </Card>
-      ) : (
-        <>
-          {/* Monthly Chart Card */}
-          <Card className="p-6">
-            <h3 className="font-bold mb-4">Monthly Financial Overview</h3>
-            <div className="h-40 flex items-end justify-between gap-2 px-4">
-              {["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((month) => (
-                <div
-                  key={month}
-                  className="flex-1 flex flex-col items-center gap-2"
-                >
-                  <div
-                    className={cn(
-                      "w-full rounded-t-md transition-all",
-                      month === "Jun"
-                        ? "bg-purple-600 h-32"
-                        : "bg-purple-100 h-20"
-                    )}
-                  />
-                  <span className="text-xs text-gray-500">{month}</span>
-                </div>
-              ))}
-            </div>
-          </Card>
+      <Card className="p-6 border-none shadow-sm rounded-2xl">
+        <h3 className="font-bold text-gray-800 mb-2">
+          Monthly Financial Overview
+        </h3>
+        <div className="flex items-baseline gap-2 mb-8">
+          <span className="text-xl font-bold">
+            ₦ {currentMonthTotal.toLocaleString()}
+          </span>
+          <span className="text-xs text-green-600 font-medium flex items-center">
+            <span className="mr-1">▲</span> 2.5% in the last 6 months
+          </span>
+        </div>
 
-          {/* History Table Card */}
-          <Card>
-            <div className="p-4 border-b flex justify-between items-center">
-              <h3 className="font-bold">Billing History</h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadHistory}
-              >
-                <Download className="mr-2 h-4 w-4" /> Download History
-              </Button>
+        <div className="h-44 flex items-end justify-between gap-4">
+          {["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((month) => (
+            <div
+              key={month}
+              className="flex-1 flex flex-col items-center gap-3 group relative"
+            >
+              {month === "Jun" && (
+                <div className="absolute -top-10 bg-white border shadow-md px-3 py-1 rounded-md text-xs font-bold">
+                  {currentMonthTotal.toLocaleString()}
+                  <div className="absolute top-full left-1/2 -ml-1 border-4 border-transparent border-t-white" />
+                </div>
+              )}
+              <div
+                className={cn(
+                  "w-full rounded-2xl transition-all duration-500",
+                  month === "Jun" ? "bg-purple-600 h-40" : "bg-purple-50 h-24"
+                )}
+              />
+              <span className="text-sm text-gray-400 font-medium">{month}</span>
             </div>
-            <TableModal
-              data={invoiceHistory}
-              columns={columns}
-              getRowKey={(item) => item.invoiceId}
-              containerClassName="bg-white"
-            />
-          </Card>
-        </>
-      )}
+          ))}
+        </div>
+      </Card>
+
+      <Card className="border-none shadow-sm rounded-2xl overflow-hidden">
+        <div className="p-6 flex justify-between items-center border-b bg-white">
+          <h3 className="font-bold">Billing History</h3>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="text-purple-600 border-purple-200"
+            >
+              Track Payment
+            </Button>
+            <Button className="bg-purple-50 text-purple-600 hover:bg-purple-100 border-none">
+              Download Billing History
+            </Button>
+          </div>
+        </div>
+        <TableModal
+          data={invoiceHistory}
+          columns={columns}
+          getRowKey={(inv) => inv.invoiceId}
+          containerClassName="px-4 pb-4"
+        />
+      </Card>
     </div>
   );
 }

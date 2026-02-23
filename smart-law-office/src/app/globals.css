@@ -151,3 +151,25 @@
 .animate-scale-in {
   animation: scale-in 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+@media print {
+
+  /* Hide every element on the page */
+  body * {
+    visibility: hidden;
+  }
+
+  /* Only show the invoice summary from the previous step */
+  #invoice-printable-area,
+  #invoice-printable-area * {
+    visibility: visible;
+  }
+
+  #invoice-printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+  }
+}

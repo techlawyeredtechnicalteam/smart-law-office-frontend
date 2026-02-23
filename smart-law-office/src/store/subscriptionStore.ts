@@ -24,7 +24,7 @@ const BASIC_PLAN: SubscriptionPlan = {
 
 const PRO_PLAN: SubscriptionPlan = {
   name: "PRO",
-  monthlyPrice: 15000,
+  monthlyPrice: 5000,
   billingTerm: "per seat",
   features: ["All Basic features", "Advanced scheduling", "Priority support"]
 };
