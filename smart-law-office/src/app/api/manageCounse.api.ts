@@ -18,7 +18,7 @@ export const addCounsel = (payload: CounselPayload) =>
 
 export const getCounsel = () => api.get("/users");
 
-export const updateCounsel = (id: string) => api.patch(`/users/${id}`);
+export const updateCounsel = (id: string, payload: Record<string, unknown>) => api.patch(`/users/${id}`, payload);
 
 export const deleteCounsel = (id: string) => api.delete(`/users/${id}`);
 

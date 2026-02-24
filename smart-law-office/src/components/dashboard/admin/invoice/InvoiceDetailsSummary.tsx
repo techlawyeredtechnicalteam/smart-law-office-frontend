@@ -4,18 +4,58 @@ import React, { useMemo, useState } from "react";
 import { useInvoiceStore } from "@/store/invoiceStore";
 import { useBillingStore } from "@/store/setRateBill";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Loader2, FileText, Image as ImageIcon } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  FileText,
+  Image as ImageIcon,
+  Download
+} from "lucide-react";
 import { toast } from "sonner";
-import { invoiceConsultation, invoiceCase } from "@/app/api/invoice.api";
+import html2canvas from "html2canvas";
+// import { invoiceConsultation, invoiceCase } from "@/app/api/invoice.api";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
+import { toPng } from "html-to-image";
+// @ts-ignore
+import { saveAs } from "file-saver";
+import {
+  Document,
+  Packer,
+  Paragraph,
+  TextRun,
+  ImageRun,
+  AlignmentType,
+  HeadingLevel,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType,
+  BorderStyle,
+  VerticalAlign
+} from "docx";
+// import {
+//   Document,
+//   Packer,
+//   Paragraph,
+//   TextRun,
+//   HeadingLevel,
+//   AlignmentType,
+//   Table,
+//   TableRow,
+//   TableCell,
+//   WidthType,
+//   BorderStyle,
+//   ImageRun
+// } from "docx";
+import { getProfile } from "@/app/api/profile.api";
 
 export function InvoiceDetailsSummary() {
-  const { newInvoiceData, setStep } = useInvoiceStore();
+  const { newInvoiceData, setStep, downloadAsDocx } = useInvoiceStore();
   const { rates } = useBillingStore();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
@@ -27,63 +67,14 @@ export function InvoiceDetailsSummary() {
 
   if (!invoice) return null;
 
-  const handleCreateInvoice = async () => {
-    if (!invoice) return;
-    setIsSubmitting(true);
-
-    try {
-      const selectedRate = rates.find(
-        (r) => String(r.id) === String(invoice.subServiceId)
-      );
-
-      // Safety check: ensure the rate exists
-      if (!selectedRate && invoice.service === "Consultation") {
-        toast.error("Invalid Consultation Type selected.");
-        return;
-      }
-
-      const ISO_DATE = new Date(
-        `${invoice.date}T${invoice.time}`
-      ).toISOString();
-
-      if (invoice.service === "Consultation") {
-        const consultRate = selectedRate as any;
-
-        await invoiceConsultation({
-          consultationFeeId: String(consultRate?.id ?? ""),
-          clientEmail: invoice.clientName ?? "",
-          consultType: consultRate?.consultType ?? "TENANCY",
-          consultAt: ISO_DATE,
-          note: invoice.notes ?? "Consultation Invoice",
-          amount: Number(invoice.consultationFee)
-        });
-      } else {
-        // Case logic remains the same
-        const caseRate = selectedRate as any;
-        await invoiceCase({
-          caseTypeId: String(caseRate?.caseTypeId ?? ""),
-          staffEmail: invoice.staffEmail ?? "",
-          userEmail: invoice.clientName ?? "",
-          caseAt: ISO_DATE,
-          note: invoice.notes ?? "Case Invoice",
-          amount: Number(invoice.consultationFee)
-        });
-      }
-
-      toast.success("Invoice Created Successfully");
-      setStep("success");
-    } catch (error: any) {
-      const errorMsg =
-        error.response?.data?.message?.[0] || "Failed to create invoice.";
-      toast.error(errorMsg);
-      console.error("Payload Error:", error.response?.data);
-    } finally {
-      setIsSubmitting(false);
-    }
+  const shareToWhatsApp = () => {
+    const text = `Hello, here is your invoice for ${newInvoiceData?.service}. Total Amount: ₦${newInvoiceData?.consultationFee?.toLocaleString()}.`;
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+    window.open(url, "_blank");
   };
 
   return (
-    <div id="invoice-card" className="max-w-4xl mx-auto p-4">
+    <div className="max-w-4xl mx-auto p-4">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" onClick={() => setStep("form")}>
@@ -91,19 +82,29 @@ export function InvoiceDetailsSummary() {
           </Button>
           <h1 className="text-xl font-bold">Invoice Details</h1>
         </div>
-        <div className="flex gap-3">
+        {/* <div className="flex gap-3">
           <Button
             variant="ghost"
             className="text-purple-600"
             onClick={() => setShowShareModal(true)}
           >
             Share Invoice
+          </Button>       
+          <Button
+            onClick={downloadAsImage}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            <Download className="mr-2 h-4 w-4" /> Download Invoice
           </Button>
-          <Button className="bg-purple-600">Download Invoice</Button>
-        </div>
+        </div> */}
       </div>
 
-      <div className="bg-white rounded-xl border p-8 space-y-8 shadow-sm">
+      {/* Added ID here for html2canvas to target */}
+      <div
+        id="invoice-printable-card"
+        className="bg-white rounded-xl border p-8 space-y-8 shadow-sm"
+        style={{ backgroundColor: "#ffffff" }}
+      >
         {/* Client Details Section */}
         <section>
           <h2 className="font-bold mb-4">Client Details</h2>
@@ -154,8 +155,8 @@ export function InvoiceDetailsSummary() {
           </div>
         </section>
 
-        <div className="flex justify-end gap-4 pt-4">
-          <Button
+        <div className="flex justify-end gap-4 pt-4 no-print">
+          {/* <Button
             variant="secondary"
             className="px-8"
             onClick={() => setStep("form")}
@@ -164,7 +165,7 @@ export function InvoiceDetailsSummary() {
           </Button>
           <Button
             className="bg-purple-600 px-10"
-            onClick={handleCreateInvoice}
+            onClick={downloadAsImage}
             disabled={isSubmitting}
           >
             {isSubmitting ? (
@@ -172,11 +173,24 @@ export function InvoiceDetailsSummary() {
             ) : (
               "Create"
             )}
+          </Button> */}
+          <Button
+            variant="ghost"
+            className="text-purple-600"
+            onClick={shareToWhatsApp}
+          >
+            Share Invoice
+          </Button>
+          <Button
+            onClick={downloadAsDocx}
+            className="bg-purple-600 hover:bg-purple-700"
+          >
+            <Download className="mr-2 h-4 w-4" /> Download Invoice
           </Button>
         </div>
       </div>
 
-      {/* Share Modal  */}
+      {/* Share Modal */}
       <Dialog open={showShareModal} onOpenChange={setShowShareModal}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
@@ -193,6 +207,7 @@ export function InvoiceDetailsSummary() {
             </Button>
             <Button
               variant="outline"
+              onClick={downloadAsDocx}
               className="h-24 flex flex-col gap-2 border-purple-100 bg-purple-50/50 text-purple-600 hover:bg-purple-50"
             >
               <ImageIcon className="h-6 w-6" /> <span>Image</span>

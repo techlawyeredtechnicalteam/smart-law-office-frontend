@@ -81,7 +81,7 @@ export interface ManageCounselStore {
   addCounsel: (payload: CounselPayload) => Promise<void>;
   updateCounsel: (
     id: string,
-    updatedFields: Partial<CounselPayload>
+    payload: Record<string, unknown>
   ) => Promise<void>;
   deleteCounsel: (id: string) => Promise<void>;
 }
@@ -157,12 +157,12 @@ const store: StateCreator<ManageCounselStore> = (set, get) => ({
     }
   },
 
-  updateCounsel: async (id) => {
+  updateCounsel: async (id, payload) => {
     if (get().isLoading) return;
     set({ isLoading: true });
 
     try {
-      await updateCounsel(id);
+      await updateCounsel(id, payload);
 
       await Promise.all([
         get().fetchCounsels(),

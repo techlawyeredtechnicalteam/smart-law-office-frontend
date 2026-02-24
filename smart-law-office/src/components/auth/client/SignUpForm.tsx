@@ -42,6 +42,7 @@ const SignUpFormClient = () => {
         `/verify?email=${encodeURIComponent(data.email)}&role=CLIENT`
       );
     } catch (error: any) {
+      toast.error(error?.response?.data?.message || "Signup failed.");
       console.error("Form error:", error);
     }
   };
