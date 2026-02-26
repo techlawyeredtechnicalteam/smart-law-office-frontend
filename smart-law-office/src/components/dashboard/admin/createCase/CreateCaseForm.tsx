@@ -56,14 +56,14 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   }, [counsels]);
 
   // map clients
-  const clientOptions = React.useMemo(
-    () =>
-      (clients || []).map((c) => ({
-        label: `${c.firstName} ${c.lastName} (${c.email})`,
-        value: c.email
-      })),
-    [clients]
-  );
+  // const clientOptions = React.useMemo(
+  //   () =>
+  //     (clients || []).map((c) => ({
+  //       label: `${c.firstName} ${c.lastName} (${c.email})`,
+  //       value: c.email
+  //     })),
+  //   [clients]
+  // );
 
   const statusOptions = [
     { label: "Scheduled", value: "Scheduled" },
@@ -75,6 +75,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     resolver: zodResolver(createCaseSchema),
     defaultValues: {
       clientEmail: "",
+      clientName: "",
       caseTypeId: "",
       staffEmail: !isAdmin ? user?.email || "" : "",
       lastAdjournedDate: "",
@@ -117,15 +118,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           options={caseTypeOptions}
           className="w-full"
         />
-
-        <CustomSelectField
-          control={form.control}
-          name="status"
-          label="Case Status"
-          placeholder="Select status"
-          options={statusOptions} // Use the status array here
-          className="w-full"
-        /> */}
+        
         {/* CLIENT FIELD: Conditional based on Role */}
         {/* {isAdmin ? (
           <CustomSelectField
@@ -152,6 +145,13 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           placeholder="Enter client's email address"
           type="email"
         />
+        <CustomFormField
+          control={form.control}
+          name="clientName"
+          label="Client Name"
+          placeholder="Enter client's name"
+          type="email"
+        />
 
         <CustomSelectField
           control={form.control}
@@ -159,6 +159,15 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           label="Case Type"
           placeholder="Select Case Type"
           options={caseTypeOptions}
+          className="w-full"
+        />
+
+        <CustomSelectField
+          control={form.control}
+          name="status"
+          label="Case Status"
+          placeholder="Select status"
+          options={statusOptions}
           className="w-full"
         />
 

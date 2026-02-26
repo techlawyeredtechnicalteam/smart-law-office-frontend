@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const createCaseSchema = z.object({
   clientEmail: z.string().catch(""),
+  clientName: z.string().optional(),
   // staffEmail: z.string().email("Invalid email"),
   staffEmail: z.string().email().optional().or(z.literal("")),
   caseTypeId: z.string().min(1, "Required"),
