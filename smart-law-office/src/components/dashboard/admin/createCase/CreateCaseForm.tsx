@@ -127,7 +127,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           className="w-full"
         /> */}
         {/* CLIENT FIELD: Conditional based on Role */}
-        {isAdmin ? (
+        {/* {isAdmin ? (
           <CustomSelectField
             control={form.control}
             name="clientEmail"
@@ -144,7 +144,14 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
             placeholder="enter.client@email.com"
             type="email"
           />
-        )}
+        )} */}
+        <CustomFormField
+          control={form.control}
+          name="clientEmail"
+          label="Client Email"
+          placeholder="Enter client's email address"
+          type="email"
+        />
 
         <CustomSelectField
           control={form.control}

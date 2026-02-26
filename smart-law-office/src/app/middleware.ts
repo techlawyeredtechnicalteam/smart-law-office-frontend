@@ -16,9 +16,6 @@ export async function middleware(request: NextRequest) {
   const token = request.cookies.get("auth-token")?.value;
   const userRole = request.cookies.get("user-role")?.value;
 
-  // 1. If no token, bounce to /role
-  // if (!token) return NextResponse.next();
-
   const isProtectedRoute =
     pathname.startsWith("/admin") ||
     pathname.startsWith("/staff") ||
