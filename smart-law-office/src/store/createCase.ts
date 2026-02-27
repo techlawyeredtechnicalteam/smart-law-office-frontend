@@ -9,6 +9,7 @@ import {
 } from "@/app/api/cases.api";
 import { useBillingStore } from "./setRateBill";
 import { caseDocument } from "@/app/api/document.api";
+import { toast } from "sonner";
 
 export interface CaseType {
   caseTypeId: string;
@@ -223,6 +224,7 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       }
       return true;
     } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to create case");
       set({
         error: err.response?.data?.message || "Action failed",
         isLoading: false
@@ -242,7 +244,7 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       const payload = {
         caseId,
         name,
-        document: file // This should be your Base64 string or File object
+        document: file 
       };
 
       const response = await caseDocument(payload);

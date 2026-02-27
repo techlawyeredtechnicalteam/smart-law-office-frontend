@@ -38,7 +38,6 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   }, []);
 
   const caseTypeOptions = React.useMemo(() => {
-    // Use optional chaining or fallback to empty array
     return (rates || [])
       .filter((r) => r.serviceType === "Case")
       .map((rate: any) => ({
@@ -101,43 +100,6 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         {/* Shared Fields */}
-        {/* <CustomSelectField
-          control={form.control}
-          name="clientEmail"
-          label="Select Client"
-          placeholder="Select a Client"
-          options={clientOptions}
-          disabled={isFetchingData}
-        />
-
-        <CustomSelectField
-          control={form.control}
-          name="caseTypeId"
-          label="Case Type"
-          placeholder="Select Case Type"
-          options={caseTypeOptions}
-          className="w-full"
-        />
-        
-        {/* CLIENT FIELD: Conditional based on Role */}
-        {/* {isAdmin ? (
-          <CustomSelectField
-            control={form.control}
-            name="clientEmail"
-            label="Select Client"
-            placeholder="Select a Client"
-            options={clientOptions}
-            disabled={isFetchingData}
-          />
-        ) : (
-          <CustomFormField
-            control={form.control}
-            name="clientEmail"
-            label="Client Email"
-            placeholder="enter.client@email.com"
-            type="email"
-          />
-        )} */}
         <CustomFormField
           control={form.control}
           name="clientEmail"
@@ -150,7 +112,7 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           name="clientName"
           label="Client Name"
           placeholder="Enter client's name"
-          type="email"
+          type="text"
         />
 
         <CustomSelectField
