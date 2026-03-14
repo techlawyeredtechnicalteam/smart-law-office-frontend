@@ -1,44 +1,56 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { useDocumentStore } from "@/store/documentStore"; // <-- NEW IMPORT
-import { MoreHorizontal } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { FileText } from "lucide-react";
+import { StatusBadge } from "../admin/manageCounsel/StatusBadge";
 
-export function DocumentsPanel() {
-  const { documents } = useDocumentStore();
- 
-  const documentsToShow = documents.slice(0, 3);
-
+export function DocumentsPanel({
+  documents,
+  viewAllLink
+}: {
+  documents: any[];
+  viewAllLink: string;
+}) {
   return (
-    <Card className="shadow-sm border border-gray-100 h-full">      
-      <CardContent className="p-0">
-        <div className="divide-y divide-gray-100">
-          {/* Header Row */}
-          <div className="grid grid-cols-2 text-xs font-medium text-gray-500 p-4">
-            <span className="truncate">Title</span>
-            <span className="truncate">Case</span>
-          </div>
+    <div className="bg-white p-6 rounded-xl border shadow-sm">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-lg font-bold text-gray-800">Recent Documents</h3>
+        <Link href={viewAllLink}>
+          <Button
+            variant="ghost"
+            className="text-violet-600 hover:text-violet-700 font-medium"
+          >
+            View All
+          </Button>
+        </Link>
+      </div>
 
-          {/* Document Items */}
-          {documentsToShow.map((doc, index) => (
+      <div className="space-y-4">
+        {documents.length > 0 ? (
+          documents.map((doc) => (
             <div
               key={doc.caseDocumentId}
-              className="grid grid-cols-2 items-center text-sm p-4 hover:bg-gray-50 transition-colors"
+              className="flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg border border-transparent hover:border-gray-100 transition-all"
             >
-              <span className="font-medium text-gray-700 truncate">
-                {doc.name}
-              </span>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-500 truncate">{doc.caseName}</span>
-                <MoreHorizontal className="h-4 w-4 text-gray-400 cursor-pointer" />
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-violet-50 rounded-lg">
+                  <FileText className="h-5 w-5 text-violet-600" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {doc.name}
+                  </p>
+                  <p className="text-xs text-gray-500">{doc.caseName}</p>
+                </div>
               </div>
+              {/* <StatusBadge status={doc.status} /> */}
             </div>
-          ))}
-          {documentsToShow.length === 0 && (
-            <div className="p-4 text-center text-gray-500 italic">
-              No documents uploaded yet.
-            </div>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+          ))
+        ) : (
+          <p className="text-center text-gray-500 py-10 text-sm">
+            No documents found.
+          </p>
+        )}
+      </div>
+    </div>
   );
 }

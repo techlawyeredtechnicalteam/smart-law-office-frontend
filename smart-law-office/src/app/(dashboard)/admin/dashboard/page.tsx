@@ -7,7 +7,7 @@ import { CaseTablePanel } from "@/components/dashboard/dashboard/CaseTablePanel"
 import { DocumentsPanel } from "@/components/dashboard/dashboard/DocumentPanel";
 import { MessagesPanel } from "@/components/dashboard/dashboard/MessagePanel";
 import { PerformanceReviewPanel } from "@/components/dashboard/dashboard/PerformanceReviewPanel";
-import React, { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useDocumentStore } from "@/store/documentStore";
 import { useAuthStore } from "@/store/authStore";
 import useConsultationStore from "@/store/consultationStore";
@@ -17,7 +17,7 @@ export default function AdminDashboardPage() {
   const { cases, fetchCases } = useCaseStore();
   const { fetchBillingInitialData } = useBillingStore();
   const { counsel, fetchCounsels } = useCounselStore();
-  const { documents } = useDocumentStore();
+  // const { documents } = useDocumentStore();
 
   const { user } = useAuthStore();
   const isAdmin = user?.role === "ADMIN";
@@ -31,7 +31,27 @@ export default function AdminDashboardPage() {
     };
 
     init();
-  }, [isAdmin]);
+  }, [isAdmin, fetchBillingInitialData, fetchCases, fetchCounsels]);
+
+  const allDocuments = useMemo(() => {
+    return cases.flatMap((c) =>
+      (c.documents || []).map((doc) => ({
+        ...doc,
+        caseName: c.clientName,
+        caseDocumentId: doc.name || doc.url,
+        status: "Discovery"
+      }))
+    );
+  }, [cases]);
+
+  const recentDocuments = useMemo(
+    () => allDocuments.slice(0, 5),
+    [allDocuments]
+  );
+  const documentCount = allDocuments.length;
+
+  // 2. Slice first 5 cases
+  const recentCases = useMemo(() => cases.slice(0, 5), [cases]);
 
   return (
     <div className="p-6 space-y-6">
@@ -60,7 +80,7 @@ export default function AdminDashboardPage() {
               <span className=""></span>
               // <OverviewMetrics title="Consultations" value={consultation.length} />
             )}
-            <OverviewMetrics title="Documents" value={documents.length} />
+            <OverviewMetrics title="Documents" value={documentCount} />
             <OverviewMetrics title="Payments" value={0} />
           </div>
         </div>
@@ -73,8 +93,14 @@ export default function AdminDashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <CaseTablePanel cases={cases} />
-        <DocumentsPanel />
+        <CaseTablePanel
+          cases={recentCases}
+          viewAllLink={isAdmin ? "/admin/case-mgmt" : "/staff/my-cases"}
+        />
+        <DocumentsPanel
+          documents={recentDocuments}
+          viewAllLink={isAdmin ? "/admin/documents" : "/staff/document"}
+        />
       </div>
 
       <div className="w-full">

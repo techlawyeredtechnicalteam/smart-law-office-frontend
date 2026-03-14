@@ -43,18 +43,40 @@ export function AddDocumentModal() {
   }, [isAddModalOpen, fetchCases]);
 
   const onSubmit = async (values: DocumentFormValues) => {
-    // Directly use the store action that matches your payload {caseId, document}
-    const success = await uploadDocumentToCase(
-      values.caseType, // The UUID from the dropdown
-      values.name,
-      values.file // Base64 string
-    );
+    try {
+      const success = await uploadDocumentToCase(
+        values.caseType,
+        values.name,
+        values.file
+      );
 
-    if (success) {
-      setIsAddModalOpen(false);
-      setIsSuccessModalOpen(true);
-      form.reset();
-      toast.success("Document attached to case.");
+      if (success) {
+        const targetCase = activeCaseOptions.find(
+          (c) => c.value === values.caseType
+        );
+
+        // 2. Update the Document Store manually
+        useDocumentStore.getState().addDocument({
+          caseDocumentId: Date.now().toString(), // Use the real ID from API if available
+          name: values.name,
+          caseName: targetCase?.label || "Unknown Case",
+          status: values.status as "Discovery" | "Contract" | "Pleading",
+          date: new Date().toLocaleDateString(),
+          time: new Date().toLocaleTimeString(),
+          fileData: values.file
+        });
+
+        setIsAddModalOpen(false);
+        setIsSuccessModalOpen(true);
+        form.reset();
+
+        toast.success("Document attached to case.");
+      } else {
+        toast.error("Upload failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast.error("An unexpected error occurred.");
     }
   };
 
@@ -109,10 +131,12 @@ export function AddDocumentModal() {
             type="submit"
             className="bg-violet-600"
             disabled={
-              form.formState.isSubmitting || activeCaseOptions.length === 0
+              isLoading ||
+              form.formState.isSubmitting ||
+              activeCaseOptions.length === 0
             }
           >
-            {form.formState.isSubmitting ? (
+            {isLoading ? (
               <Loader2 className="animate-spin" />
             ) : (
               "Upload Document"

@@ -38,20 +38,6 @@ import {
   BorderStyle,
   VerticalAlign
 } from "docx";
-// import {
-//   Document,
-//   Packer,
-//   Paragraph,
-//   TextRun,
-//   HeadingLevel,
-//   AlignmentType,
-//   Table,
-//   TableRow,
-//   TableCell,
-//   WidthType,
-//   BorderStyle,
-//   ImageRun
-// } from "docx";
 import { getProfile } from "@/app/api/profile.api";
 
 export function InvoiceDetailsSummary() {

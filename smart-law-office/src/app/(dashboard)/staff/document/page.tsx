@@ -6,13 +6,32 @@ import { DocumentTable } from "@/components/dashboard/staff/document/DocumentTab
 import DocumentView from "@/components/dashboard/staff/document/DocumentView";
 import { SuccessModal } from "@/components/dashboard/staff/document/SuccessModal";
 import { Button } from "@/components/ui/button";
+import { useCaseStore } from "@/store/createCase";
 import { useDocumentStore } from "@/store/documentStore";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 
 const DocumentPage = () => {
-  const { documents, viewMode, setIsAddModalOpen } = useDocumentStore();
-  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const { cases } = useCaseStore();
+  const {
+    documents,
+    viewMode,
+    setIsAddModalOpen,
+    isAddModalOpen,
+    isSuccessModalOpen
+  } = useDocumentStore();
+
+  const allDocuments = React.useMemo(() => {
+    return cases.flatMap((c) =>
+      (c.documents || []).map((doc) => ({
+        caseDocumentId: doc.name || doc.url,
+        name: doc.name,
+        caseName: c.clientName,
+        status: "Discovery",
+        fileData: doc.url
+      }))
+    );
+  }, [cases]);
 
   if (viewMode === "view") return <DocumentView />;
 
@@ -20,13 +39,9 @@ const DocumentPage = () => {
     <div className="p-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold">Documents</h1>
-        <Button
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-purple-600"
-        >
-          Upload document
-        </Button>
+        <CreateDocumentModal />
       </div>
+
       {documents.length === 0 ? (
         <div className="flex flex-col items-center justify-center p-20 bg-purple-50 rounded-2xl text-center shadow-lg max-w-lg mx-auto">
           <div className="p-4 bg-purple-50 rounded-full mb-4">
@@ -37,16 +52,15 @@ const DocumentPage = () => {
             No documents found. Start by adding case-related files for easy
             access and secure sharing.
           </p>
-          <CreateDocumentModal
-            isSuccessOpen={isSuccessModalOpen}
-            setSuccessOpen={setIsSuccessModalOpen}
-          />
+          <CreateDocumentModal />
         </div>
       ) : (
-        <DocumentTable data={documents} />
+        <DocumentTable data={allDocuments} />
       )}
-      {/* <AddDocumentModal /> */}
-      <SuccessModal />{" "}
+
+      {isAddModalOpen && <AddDocumentModal />}
+
+      {isSuccessModalOpen && <SuccessModal />}
     </div>
   );
 };

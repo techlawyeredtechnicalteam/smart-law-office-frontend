@@ -49,13 +49,13 @@ export function DocumentTable({ data }: { data: any[] }) {
     {
       key: "name",
       header: "Document name",
-      cellClassName: "font-medium",
+      cellClassName: "font-medium text-gray-900",
       render: (doc) => doc.name
     },
     {
       key: "caseName",
       header: "Case",
-      render: (doc) => doc.caseName
+      render: (doc) => doc.caseName || "Unassigned"
     },
     {
       key: "status",
@@ -63,24 +63,23 @@ export function DocumentTable({ data }: { data: any[] }) {
       render: (doc) => <StatusBadge status={doc.status} />
     },
     {
-      key: "date",
-      header: "Date",
-      render: (doc) => doc.date
-    },
-    {
       key: "action",
       header: "Action",
-      headerClassName: "text-right",
+      headerClassName: "text-right pr-4",
       render: (doc) => (
-        <DropdownModal
-          item={doc}
-          onView={(item) => {
-            setSelectedDoc(item);
-            setViewMode("view");
-          }}
-          onDownload={(item) => handleDownload(item.fileData, item.name)}
-          onDelete={handleOnDelete}
-        />
+        <div className="flex justify-end pr-2">
+          <DropdownModal
+            item={doc}
+            onView={(item) => {
+              setSelectedDoc(item);
+              setViewMode("view");
+            }}
+            onDownload={(item) =>
+              handleDownload(item.fileData || item.url, item.name)
+            }
+            onDelete={() => handleOnDelete(doc.caseDocumentId)}
+          />
+        </div>
       )
     }
   ];
@@ -90,8 +89,8 @@ export function DocumentTable({ data }: { data: any[] }) {
       data={data}
       columns={columns}
       emptyMessage="No documents uploaded yet."
-      getRowKey={(doc) => doc.id}
-      containerClassName="border rounded-xl bg-white shadow-sm"
+      getRowKey={(doc) => doc.caseDocumentId || doc.id}
+      containerClassName="border rounded-xl bg-white shadow-sm overflow-hidden"
     />
   );
 }

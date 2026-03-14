@@ -1,20 +1,11 @@
 import { CreateModal } from "@/components/shared/CreateModal";
 import React from "react";
 import { AddDocumentModal } from "./AddDocumentModal";
+import { useDocumentStore } from "@/store/documentStore";
 
-interface CreateDocumentModalProps {
-  isSuccessOpen: boolean;
-  setSuccessOpen: (open: boolean) => void;
-}
-
-export function CreateDocumentModal({
-  setSuccessOpen
-}: CreateDocumentModalProps) {
+export function CreateDocumentModal() {
   const [isOpen, setIsOpen] = React.useState(false);
-
-  const handleFormSuccess = () => {
-    setSuccessOpen(true);
-  };
+  const { setIsSuccessModalOpen } = useDocumentStore();
 
   return (
     <CreateModal

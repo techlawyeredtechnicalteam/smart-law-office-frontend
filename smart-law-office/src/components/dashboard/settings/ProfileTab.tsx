@@ -42,7 +42,6 @@ export default function ProfileTab() {
     loadProfile();
   }, []);
 
-
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -87,10 +86,10 @@ export default function ProfileTab() {
   const confirmDeleteAccount = async () => {
     try {
       await deleteFirmProfile();
-      toast.success("Account deleted successfully");
+      toast.success("Logo deleted successfully");
       logout();
     } catch (error) {
-      toast.error("Failed to delete account. Please try again.");
+      toast.error("Failed to delete logo. Please try again.");
       console.error(error);
     }
   };

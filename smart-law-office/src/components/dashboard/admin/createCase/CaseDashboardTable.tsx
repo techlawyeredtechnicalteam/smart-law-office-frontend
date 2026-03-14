@@ -69,7 +69,7 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
       key: "caseType",
       header: "Case Category",
       render: (caseItem) => (
-        <div className="max-w-[200px]">
+        <div className="max-w-50">
           <span className="text-xs font-semibold text-gray-700 block leading-tight">
             {caseItem.caseType}
           </span>
@@ -90,8 +90,7 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
     {
       key: "notes",
       header: "Notes",
-      render: (caseItem) => {
-        // Updated to look into directCaseNotes array from your JSON
+      render: (caseItem) => {        
         const noteText =
           caseItem.notes !== "No notes added"
             ? caseItem.notes
@@ -112,8 +111,7 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
     {
       key: "document",
       header: "Document",
-      render: (caseItem) => {
-        // Check both 'documents' array and single 'document' field
+      render: (caseItem) => {        
         const docUrl =
           caseItem.documents?.[0]?.url || (caseItem as any).document;
         const docName = caseItem.documents?.[0]?.name || "View File";

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Edit, ChevronDown, Loader2 } from "lucide-react";
 import { useFirmProfileStore } from "@/store/firmProfileStore";
 import { toast } from "sonner";
+import { editFirmProfile } from "@/app/api/firmProfile.api";
 
 export default function PaymentTab() {
   const {
@@ -18,9 +19,9 @@ export default function PaymentTab() {
   // Local state for editing
   const [isEditing, setIsEditing] = useState(false);
   const [bankName, setBankName] = useState("");
-  const [accountName, setAccountName] = useState("");
-  const [accountNumber, setAccountNumber] = useState("");
-  const [firmName, setfirmName] = useState("");
+  const [bankAccountName, setBankAccountName] = useState("");
+  const [bankAccountNumber, setBankAccountNumber] = useState("");
+  const [firmName, setFirmName] = useState("");
 
   // 1. Fetch data on mount
   useEffect(() => {
@@ -29,16 +30,21 @@ export default function PaymentTab() {
 
   // 2. Sync local state when store data arrives or when user cancels edit
   useEffect(() => {
-    if (storeData) {
+    if (storeData && !isEditing) {
       setBankName(storeData.bankName || "");
-      setAccountName(storeData.bankAccountName || "");
-      setAccountNumber(storeData.bankAccountNumber || "");      
-      setfirmName(storeData.firmName || "");
+      setBankAccountName(storeData.bankAccountName || "");
+      setBankAccountNumber(storeData.bankAccountNumber || "");
+      setFirmName(storeData.firmName || "");
     }
   }, [storeData, isEditing]);
 
   const handleSave = async () => {
-    try {     
+    try {
+      const payload = { bankName, bankAccountName, bankAccountNumber };
+      await editFirmProfile(payload);
+
+      await fetchProfile();
+
       toast.success("Payment details updated!");
       setIsEditing(false);
     } catch (error) {
@@ -47,6 +53,11 @@ export default function PaymentTab() {
   };
 
   const handleCancel = () => {
+    // Reverts local state to store values
+    setBankName(storeData.bankName || "");
+    setBankAccountName(storeData.bankAccountName || "");
+    setBankAccountNumber(storeData.bankAccountNumber || "");
+    setFirmName(storeData.firmName || "");
     setIsEditing(false);
   };
 
@@ -96,9 +107,9 @@ export default function PaymentTab() {
           </Label>
           <Input
             id="accountName"
-            value={accountName}
+            value={bankAccountName}
             readOnly={!isEditing}
-            onChange={(e) => setAccountName(e.target.value)}
+            onChange={(e) => setBankAccountName(e.target.value)}
             placeholder="E.g. Smart Law Office"
             className={cn(
               "border-gray-300 focus-visible:ring-[#7C5CFC]",
@@ -118,9 +129,9 @@ export default function PaymentTab() {
           <div className="relative">
             <Input
               id="accountNumber"
-              value={accountNumber}
+              value={bankAccountNumber}
               readOnly={!isEditing}
-              onChange={(e) => setAccountNumber(e.target.value)}
+              onChange={(e) => setBankAccountNumber(e.target.value)}
               placeholder="E.g. 1022334455"
               className={cn(
                 "pr-10 border-gray-300 focus-visible:ring-[#7C5CFC]",
@@ -156,7 +167,7 @@ export default function PaymentTab() {
             type="text"
             value={firmName}
             readOnly={!isEditing}
-            onChange={(e) => setfirmName(e.target.value)}
+            onChange={(e) => setFirmName(e.target.value)}
             placeholder="smartlawoffice"
             className={cn(
               "border-gray-300 focus-visible:ring-[#7C5CFC]",

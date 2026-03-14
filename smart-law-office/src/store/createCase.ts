@@ -37,7 +37,7 @@ export interface Case {
   title?: string;
   staffEmail: string;
   clientEmail: string;
-  clientName?: string;
+  clientName: string;
   notes: string;
   documents: { name: string; url: string }[];
   caseTypeId: string;
@@ -90,6 +90,15 @@ interface CaseState {
   clearError: () => void;
 }
 
+// splitName function
+function splitName(fullName: string) {
+  const parts = fullName.trim().split(/\s+/);
+  return {
+    firstName: parts[0] || "",
+    lastName: parts.length > 1 ? parts.slice(1).join(" ") : ""
+  };
+}
+
 export const useCaseStore = create<CaseState>((set, get) => ({
   cases: [],
   caseTypes: [],
@@ -101,33 +110,38 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     pending: 0,
     meetingHours: 0
   },
+
   calculateStats: (allCases: Case[]) => {
-    const user = useAuthStore.getState().user;
+    const total = allCases.length;
 
-    // Filter cases the user is allowed to see
-    const visibleCases =
-      user?.role === "ADMIN"
-        ? allCases
-        : allCases.filter((c) => c.staffEmail === user?.email);
+    // 2. Aggregate statuses
+    const getStatusCount = (statuses: string[]) =>
+      allCases.filter((c) => statuses.includes(c.status?.toUpperCase() || ""))
+        .length;
 
-    const total = visibleCases.length;
+    const completed = getStatusCount(["COMPLETED", "CLOSED", "RESOLVED"]);
 
-    // Added .toUpperCase() to handle backend consistency
-    const completed = visibleCases.filter(
-      (c) => c.status?.toUpperCase() === "COMPLETED"
-    ).length;
+    const pending = getStatusCount([
+      "PENDING",
+      "IN_PROGRESS",
+      "IN-PROGRESS",
+      "DEFAULT",
+      "OPEN"
+    ]);
 
-    const pending = visibleCases.filter(
-      (c) =>
-        c.status?.toUpperCase() === "PENDING" ||
-        c.status?.toUpperCase() === "IN_PROGRESS" ||
-        c.status?.toUpperCase() === "DEFAULT"
-    ).length;
+    // 3. Optional: Calculate total hours or other metrics if available in your Case object
+    // const meetingHours = allCases.reduce((acc, c) => acc + (c.totalHours || 0), 0);
 
     set({
-      stats: { total, completed, pending, meetingHours: 0 }
+      stats: {
+        total,
+        completed,
+        pending,
+        meetingHours: 0
+      }
     });
   },
+
   fetchCases: async () => {
     set({ isLoading: true, error: null });
     const user = useAuthStore.getState().user;
@@ -141,7 +155,7 @@ export const useCaseStore = create<CaseState>((set, get) => ({
 
       const response =
         user?.role === "ADMIN" ? await getAllCases() : await getStaffCases();
-      const rawData = response.data?.data || response.data || []; // Handle nested data property
+      const rawData = response.data?.data || response.data || [];
 
       const normalizedCases: Case[] = rawData.map((c: any) => {
         // 1. Find the rate in the rates array
@@ -158,16 +172,23 @@ export const useCaseStore = create<CaseState>((set, get) => ({
           caseTypeDisplay = matchedRate.subServiceType;
         }
 
+        // Improved ClientName to take the FulName
+        let clientDisplayName = "Walk-in Client";
+        if (c.client) {
+          const combined =
+            `${c.client.firstName || ""} ${c.client.lastName || ""}`.trim();
+          clientDisplayName = combined || c.client.email || "Unnamed Client";
+        } else if (c.clientName) {
+          clientDisplayName = c.clientName;
+        }
+
         return {
-          // id: c.directCaseId || c.id,
           id: c.id || c.directCaseId || c.caseId || c._id,
           caseCode: c.caseCode,
           staffEmail: (c.staff?.email || c.staffEmail || "").toLowerCase(),
           clientEmail: c.client?.email || "",
-          clientName: c.client
-            ? `${c.client.firstName} ${c.client.lastName}`.trim()
-            : "Walk-in Client",
-          caseType: caseTypeDisplay, // Now correctly typed and assigned
+          clientName: clientDisplayName,
+          caseType: caseTypeDisplay,
           status: c.status,
           createdAt: c.createdAt,
           notes: c.directCaseNotes?.[0]?.description || "No notes added",
@@ -189,47 +210,42 @@ export const useCaseStore = create<CaseState>((set, get) => ({
 
   executeCreate: async (values, role) => {
     set({ isLoading: true, error: null });
-
     try {
-      let response;
+      const { firstName, lastName } = splitName(values.clientName);
 
-      if (role === "ADMIN") {
-        const adminPayload = {
-          clientEmail: values.clientEmail,
-          caseTypeId: values.caseTypeId,
-          staffEmail: values.staffEmail,
-          note: values.notes,
-          status: values.status,
-          lastAdjournedAt: values.lastAdjournedDate || null,
-          nextAdjournedAt: values.nextAdjournedDate || null
-        };
-        response = await adminCreateCase(adminPayload);
-      } else {
-        const staffPayload = {
-          clientEmail: values.clientEmail,
-          caseTypeId: values.caseTypeId,
-          note: values.notes,
-          document: values.document,
-          lastAdjournedAt: values.lastAdjournedDate || null,
-          nextAdjournedAt: values.nextAdjournedDate || null,
-          status: values.status
-        };
-        response = await staffCreateCase(staffPayload);
-      }
+      const commonData = {
+        clientEmail: values.clientEmail,
+        clientName: values.clientName,
+        firstName,
+        lastName,
+        caseTypeId: values.caseTypeId,
+        note: values.notes,
+        status: values.status,
+        lastAdjournedAt: values.lastAdjournedDate || null,
+        nextAdjournedAt: values.nextAdjournedDate || null
+      };
 
-      if (response.data) {
+      const response =
+        role === "ADMIN"
+          ? await adminCreateCase({
+              ...commonData,
+              staffEmail: values.staffEmail
+            })
+          : await staffCreateCase({ ...commonData, document: values.document });
+
+      // Only refresh and return true if response is successful
+      if (response.status === 200 || response.status === 201) {
         await get().fetchCases();
+        toast.success("Case created successfully");
         set({ isLoading: false });
         return true;
       }
-      return true;
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || "Failed to create case");
-      set({
-        error: err.response?.data?.message || "Action failed",
-        isLoading: false
-      });
 
+      throw new Error("Unexpected response from server");
+    } catch (err: any) {
+      const msg = err.response?.data?.message || "Failed to create case";
+      toast.error(msg);
+      set({ error: msg, isLoading: false });
       return false;
     }
   },
@@ -243,13 +259,13 @@ export const useCaseStore = create<CaseState>((set, get) => ({
     try {
       const payload = {
         caseId,
-        name,
-        document: file 
+        document: file
       };
-
       const response = await caseDocument(payload);
 
       const newDoc = response.data?.data || response.data;
+
+      console.log("Document upload response:", newDoc);
 
       set((state) => ({
         cases: state.cases.map((c) =>
@@ -259,7 +275,7 @@ export const useCaseStore = create<CaseState>((set, get) => ({
                 documents: [
                   ...(c.documents || []),
                   {
-                    name: newDoc.name || name,
+                    name: name || newDoc.name,
                     url: newDoc.url || newDoc.document || file,
                     date: new Date().toISOString()
                   }
