@@ -8,3 +8,9 @@ export const adminCreateCase = (data: any) =>
 export const getAllCases = () => api.get("/all/cases");
 export const getAllCasesDirect = () => api.get("/all/cases/direct");
 export const getStaffCases = () => api.get("/cases/staff");
+
+export const updateCase = (id: string, data: any) =>
+  api.patch(`/cases/${id}`, data);
+
+export const deleteCase = (caseCode: string) =>
+  api.delete(`/cases/${caseCode}`);

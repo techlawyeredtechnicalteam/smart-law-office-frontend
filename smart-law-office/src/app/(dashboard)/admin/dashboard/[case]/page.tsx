@@ -24,10 +24,11 @@ export default function AllCasesPage() {
   }, []);
 
   // Filter cases based on search query (Client Name or Case Code)
-  const filteredCases = cases.filter((c) =>
-    c.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.caseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    c.caseType?.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredCases = cases.filter(
+    (c) =>
+      c.clientName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.caseCode?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      c.caseType?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -35,9 +36,11 @@ export default function AllCasesPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Case Management</h1>
-          <p className="text-sm text-gray-500">View and manage all legal matters and filings.</p>
+          <p className="text-sm text-gray-500">
+            View and manage all legal matters and filings.
+          </p>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <div className="relative w-full md:w-72">
             <Search className="absolute left-3 top-1/2 -transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -61,7 +64,7 @@ export default function AllCasesPage() {
           <p className="text-gray-500 text-sm">Synchronizing case records...</p>
         </div>
       ) : (
-        <CaseTablePanel cases={filteredCases} />
+        <CaseTablePanel cases={filteredCases} viewAllLink="" />
       )}
     </div>
   );

@@ -32,6 +32,7 @@ interface ReusableTableProps<T> {
   containerClassName?: string;
   /** Optional function to get unique key for each row */
   getRowKey?: (item: T, index: number) => string | number;
+  onRowClick?: (item: T) => void;
 }
 
 export function TableModal<T>({
@@ -39,13 +40,16 @@ export function TableModal<T>({
   columns,
   emptyMessage = "No data available",
   containerClassName = "",
-  getRowKey
+  getRowKey,
+  onRowClick
 }: ReusableTableProps<T>) {
   return (
     <div className={containerClassName}>
       <Table>
         <TableHeader>
-          <TableRow>
+          <TableRow className="hover:bg-transparent">
+            {" "}
+            {/* Avoid hover on header */}
             {columns.map((column) => (
               <TableHead key={column.key} className={column.headerClassName}>
                 {column.header}
@@ -69,10 +73,17 @@ export function TableModal<T>({
                 ? getRowKey(item, index)
                 : (item as any).id || `row-${index}`;
               return (
-                <TableRow key={rowKey}>
+                <TableRow
+                  key={rowKey}
+                  onClick={() => onRowClick?.(item)}
+                  className={
+                    onRowClick
+                      ? "cursor-pointer hover:bg-gray-50 transition-colors"
+                      : ""
+                  }
+                >
                   {columns.map((column) => (
                     <TableCell
-                      // IMPORTANT: Key should combine the row's unique identity + column key
                       key={`${rowKey}-${column.key}`}
                       className={column.cellClassName}
                     >

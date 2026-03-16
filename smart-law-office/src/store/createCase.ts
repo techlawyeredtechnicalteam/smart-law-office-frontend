@@ -3,9 +3,11 @@ import { create } from "zustand";
 import { useAuthStore } from "./authStore";
 import {
   adminCreateCase,
+  deleteCase,
   getAllCases,
   getStaffCases,
-  staffCreateCase
+  staffCreateCase,
+  updateCase
 } from "@/app/api/cases.api";
 import { useBillingStore } from "./setRateBill";
 import { caseDocument } from "@/app/api/document.api";
@@ -81,6 +83,8 @@ interface CaseState {
   fetchCaseTypes: () => Promise<void>;
   calculateStats: (allCases: Case[]) => void;
   executeCreate: (values: createCaseSchema, role: string) => Promise<boolean>;
+  executeUpdate: (id: string, values: any) => Promise<boolean>;
+  executeDelete: (caseCode: string) => Promise<boolean>;
   uploadDocumentToCase: (
     caseId: string,
     name: string,
@@ -247,6 +251,47 @@ export const useCaseStore = create<CaseState>((set, get) => ({
       toast.error(msg);
       set({ error: msg, isLoading: false });
       return false;
+    }
+  },
+
+  executeUpdate: async (id, values) => {
+    set({ isLoading: true });
+    try {
+      const payload = {
+        staffEmail: values.staffEmail,
+        clientEmail: values.clientEmail,
+        clientName: values.clientName,
+        note: values.notes,
+        document: values.document,
+        caseTypeId: values.caseTypeId,
+        lastAdjournedAt: values.lastAdjournedDate,
+        nextAdjournedAt: values.nextAdjournedDate,
+        status: values.status
+      };
+      await updateCase(id, payload);
+      await get().fetchCases();
+      toast.success("Case updated successfully");
+      return true;
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to update case");
+      return false;
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  executeDelete: async (caseCode) => {
+    set({ isLoading: true });
+    try {
+      await deleteCase(caseCode);
+      await get().fetchCases();
+      toast.success("Case deleted successfully");
+      return true;
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Failed to delete case");
+      return false;
+    } finally {
+      set({ isLoading: false });
     }
   },
 

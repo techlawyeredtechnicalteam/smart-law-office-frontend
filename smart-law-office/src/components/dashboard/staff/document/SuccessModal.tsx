@@ -1,6 +1,6 @@
 "use client";
 
-import { Dialog, DialogContent } from "@radix-ui/react-dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { useDocumentStore } from "@/store/documentStore";

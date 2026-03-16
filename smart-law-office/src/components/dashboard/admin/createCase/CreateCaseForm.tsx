@@ -1,32 +1,33 @@
 "use client";
 
+import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Form } from "@/components/ui/form";
-import { useCaseStore } from "@/store/createCase";
+import { useCaseStore, Case } from "@/store/createCase";
 import { createCaseSchema } from "@/types/case.schema";
 import { CustomFormField } from "@/components/shared/CustomFormField";
 import { CustomSelectField } from "@/components/shared/CustomSelectField";
-import * as React from "react";
 import { Loader2, Plus } from "lucide-react";
 import FileUpload from "@/components/shared/FileUpload";
 import { useAuthStore } from "@/store/authStore";
 import { useBillingStore } from "@/store/setRateBill";
 import { useAssignStore } from "@/store/assignCaseStore";
 
-interface CreateCaseFormProps {
+interface CaseFormProps {
+  caseData?: Case | null; // If provided, we are in EDIT mode
   onSuccess: () => void;
   onClose: () => void;
 }
 
-const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
-  const { executeCreate, isLoading: isCreating } = useCaseStore();
+const CaseForm = ({ caseData, onSuccess, onClose }: CaseFormProps) => {
+  const isEditMode = !!caseData;
+  const { executeCreate, executeUpdate, isLoading } = useCaseStore();
   const { rates, fetchBillingInitialData } = useBillingStore();
   const {
     fetchUnassigned,
     counsels,
-    clients,
     isLoading: isFetchingData
   } = useAssignStore();
   const user = useAuthStore((state) => state.user);
@@ -42,11 +43,10 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
       .filter((r) => r.serviceType === "Case")
       .map((rate: any) => ({
         label: `${rate.subServiceType} (₦${rate.caseRate?.toLocaleString()})`,
-        value: String((rate as any).caseTypeId || (rate as any).caseTypeId)
+        value: String(rate.caseTypeId || rate.id)
       }));
   }, [rates]);
 
-  // Map staff Lawyers
   const staffOptions = React.useMemo(() => {
     return counsels.map((c, index) => ({
       label: `${c.name} (${c.email})`,
@@ -54,137 +54,112 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
     }));
   }, [counsels]);
 
-  // map clients
-  // const clientOptions = React.useMemo(
-  //   () =>
-  //     (clients || []).map((c) => ({
-  //       label: `${c.firstName} ${c.lastName} (${c.email})`,
-  //       value: c.email
-  //     })),
-  //   [clients]
-  // );
-
   const statusOptions = [
     { label: "Scheduled", value: "Scheduled" },
     { label: "Pending", value: "Pending" },
     { label: "Completed", value: "Completed" }
   ];
 
-  const form = useForm<createCaseSchema>({
+  const form = useForm({
     resolver: zodResolver(createCaseSchema),
     defaultValues: {
-      clientEmail: "",
-      clientName: "",
-      caseTypeId: "",
-      staffEmail: !isAdmin ? user?.email || "" : "",
-      lastAdjournedDate: "",
-      nextAdjournedDate: "",
-      notes: "",
-      document: "",
-      title: "",
-      status: "Scheduled"
+      clientEmail: caseData?.clientEmail || "",
+      clientName: caseData?.clientName || "",
+      caseTypeId: caseData?.caseTypeId || "",
+      staffEmail: caseData?.staffEmail || (!isAdmin ? user?.email || "" : ""),
+      lastAdjournedDate: caseData?.lastAdjournedAt?.split("T")[0] || "",
+      nextAdjournedDate: caseData?.nextAdjournedAt?.split("T")[0] || "",
+      notes: caseData?.notes === "No notes added" ? "" : caseData?.notes || "",
+      document: caseData?.documents?.[0]?.url || "",
+      title: caseData?.title || "",
+      status: caseData?.status || "Scheduled"
     }
   });
 
-  const onSubmit = async (values: createCaseSchema) => {
-    const success = await executeCreate(values, user?.role || "USER");
+  const onSubmit = async (values: any) => {
+    let success = false;
+    if (isEditMode && caseData) {
+      success = await executeUpdate(caseData.id, values);
+    } else {
+      success = await executeCreate(values, user?.role || "USER");
+    }
 
     if (success) {
       onSuccess();
       onClose();
-      form.reset();
+      if (!isEditMode) form.reset();
     }
   };
 
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {/* Shared Fields */}
-        <CustomFormField
-          control={form.control}
-          name="clientEmail"
-          label="Client Email"
-          placeholder="Enter client's email address"
-          type="email"
-        />
-        <CustomFormField
-          control={form.control}
-          name="clientName"
-          label="Client Name"
-          placeholder="Enter client's name"
-          type="text"
-        />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <CustomFormField
+            control={form.control}
+            name="clientName"
+            label="Client Name"
+            placeholder="Full Name"
+          />
+          <CustomFormField
+            control={form.control}
+            name="clientEmail"
+            label="Client Email"
+            placeholder="Client Email"
+            type="email"
+          />
+        </div>
 
-        <CustomSelectField
-          control={form.control}
-          name="caseTypeId"
-          label="Case Type"
-          placeholder="Select Case Type"
-          options={caseTypeOptions}
-          className="w-full"
-        />
+        <div className="grid grid-cols-2 gap-4">
+          <CustomSelectField
+            control={form.control}
+            name="caseTypeId"
+            label="Case Type"
+            placeholder="Case Type"
+            options={caseTypeOptions}
+          />
+          <CustomSelectField
+            control={form.control}
+            name="status"
+            label="Status"
+            placeholder="Status"
+            options={statusOptions}
+          />
+        </div>
 
-        <CustomSelectField
-          control={form.control}
-          name="status"
-          label="Case Status"
-          placeholder="Select status"
-          options={statusOptions}
-          className="w-full"
-        />
-
-        {/* Admin Form - Includes staffEmail assignment */}
         {isAdmin && (
-          <div className="space-y-4">
-            <CustomSelectField
-              control={form.control}
-              name="staffEmail"
-              label="Assign Counsel"
-              placeholder="Select Counsel"
-              options={staffOptions}
-              disabled={isFetchingData}
-            />
-          </div>
+          <CustomSelectField
+            control={form.control}
+            name="staffEmail"
+            label="Assign Counsel"
+            placeholder="Assign Counsel"
+            options={staffOptions}
+            disabled={isFetchingData}
+          />
         )}
 
-        {/* Staff UI Hint: Show they are self-assigning */}
-        {!isAdmin && (
-          <div className="p-3 bg-violet-50 rounded-lg border border-violet-100">
-            <p className="text-xs text-violet-700 flex items-center">
-              <span className="font-semibold mr-1">Note:</span> This case will
-              be automatically assigned to you.
-            </p>
-          </div>
-        )}
-
-        {/* Shared Date Fields */}
         <div className="grid grid-cols-2 gap-4">
           <CustomFormField
             control={form.control}
             name="lastAdjournedDate"
-            label="Last Adjourned Date"
+            label="Last Adjourned"
+            placeholder="Last Adjourned Date"
             type="date"
-            placeholder="Pick a date"
           />
-
           <CustomFormField
             control={form.control}
             name="nextAdjournedDate"
-            label="Next Adjourned Date"
+            label="Next Adjourned"
+            placeholder="Next Adjourned Date"
             type="date"
-            placeholder="Pick a date"
           />
         </div>
 
-        {/* Document Section - Available for both roles */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label className="text-sm font-semibold">Document</label>
-            <Plus className="h-4 w-4 cursor-pointer text-gray-500" />
-          </div>
+          <label className="text-sm font-semibold">Document</label>
           <FileUpload
             id="case-doc-upload"
-            label=""
+            label="Case document Upload"
             fileData={form.watch("document") || null}
             onFileChange={(data) => form.setValue("document", data || "")}
             maxSize={10}
@@ -192,36 +167,28 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
           />
         </div>
 
-        {/* Notes Section - Available for both roles */}
         <div className="space-y-2">
           <label className="text-sm font-semibold">Notes</label>
           <textarea
             {...form.register("notes")}
-            className="w-full min-h-[100px] p-3 border rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-violet-500 text-sm"
-            placeholder="Enter consultation notes"
+            className="w-full min-h-20 p-3 border rounded-lg bg-gray-50 text-sm focus:ring-2 focus:ring-violet-500 outline-none"
+            placeholder="Enter case notes..."
           />
         </div>
 
-        {/* Action Buttons */}
         <div className="flex justify-end gap-2 pt-4 border-t">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onClose}
-            className="px-6 rounded-md text-gray-600"
-          >
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
             type="submit"
             className="bg-violet-600 hover:bg-violet-700 px-8"
-            disabled={isCreating}
+            disabled={isLoading}
           >
-            {isCreating ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
+            {isLoading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : isEditMode ? (
+              "Update Case"
             ) : (
               "Create Case"
             )}
@@ -232,4 +199,4 @@ const CreateCaseForm = ({ onSuccess, onClose }: CreateCaseFormProps) => {
   );
 };
 
-export default CreateCaseForm;
+export default CaseForm;

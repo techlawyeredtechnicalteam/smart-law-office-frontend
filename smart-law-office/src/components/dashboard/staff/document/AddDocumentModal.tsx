@@ -57,7 +57,7 @@ export function AddDocumentModal() {
 
         // 2. Update the Document Store manually
         useDocumentStore.getState().addDocument({
-          caseDocumentId: Date.now().toString(), // Use the real ID from API if available
+          caseDocumentId: Date.now().toString(),
           name: values.name,
           caseName: targetCase?.label || "Unknown Case",
           status: values.status as "Discovery" | "Contract" | "Pleading",

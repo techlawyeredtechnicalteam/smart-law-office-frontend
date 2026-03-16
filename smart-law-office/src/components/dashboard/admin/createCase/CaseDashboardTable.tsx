@@ -1,9 +1,13 @@
 import { Case, useCaseStore } from "@/store/createCase";
 import { Badge } from "@/components/ui/badge";
-import { User } from "lucide-react";
+import { Edit, Eye, Trash2, User } from "lucide-react";
 import { CaseDetailsModal } from "./CaseDetailsModal";
 import { TableColumn, TableModal } from "@/components/shared/TableModal";
 import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { CreateModal } from "@/components/shared/CreateModal";
+import DeleteCaseForm from "./DeleteCaseForm";
+import CaseForm from "./CreateCaseForm";
 
 interface CaseDashboardProps {
   cases: Case[];
@@ -27,10 +31,18 @@ const getStatusBadgeVariant = (status: string) => {
 export function CaseDashboard({ cases }: CaseDashboardProps) {
   const [selectedCase, setSelectedCase] = useState<Case | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
 
   const handleRowClick = (item: Case) => {
     setSelectedCase(item);
     setIsModalOpen(true);
+  };
+
+  const handleCloseDetails = () => {
+    setIsDetailsOpen(false);
+    // Optional: setSelectedCase(null);
   };
 
   const columns: TableColumn<Case>[] = [
@@ -76,21 +88,21 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
         </div>
       )
     },
-    {
-      key: "status",
-      header: "Status",
-      render: (caseItem) => (
-        <Badge
-          className={`${getStatusBadgeVariant(caseItem.status)} border shadow-sm`}
-        >
-          {caseItem.status || "PENDING"}
-        </Badge>
-      )
-    },
+    // {
+    //   key: "status",
+    //   header: "Status",
+    //   render: (caseItem) => (
+    //     <Badge
+    //       className={`${getStatusBadgeVariant(caseItem.status)} border shadow-sm`}
+    //     >
+    //       {caseItem.status || "PENDING"}
+    //     </Badge>
+    //   )
+    // },
     {
       key: "notes",
       header: "Notes",
-      render: (caseItem) => {        
+      render: (caseItem) => {
         const noteText =
           caseItem.notes !== "No notes added"
             ? caseItem.notes
@@ -111,7 +123,7 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
     {
       key: "document",
       header: "Document",
-      render: (caseItem) => {        
+      render: (caseItem) => {
         const docUrl =
           caseItem.documents?.[0]?.url || (caseItem as any).document;
         const docName = caseItem.documents?.[0]?.name || "View File";
@@ -129,6 +141,55 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
           </a>
         );
       }
+    },
+    {
+      key: "actions" as any,
+      header: "Actions",
+      render: (caseItem) => (
+        <div className="flex items-center gap-2">
+          {/* View Details Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-gray-600 hover:text-violet-700 hover:bg-violet-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedCase(caseItem);
+              setIsDetailsOpen(true);
+            }}
+          >
+            <Eye className="w-4 h-4" />
+          </Button>
+
+          {/* Edit Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedCase(caseItem);
+              setIsEditOpen(true);
+            }}
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+
+          {/* Delete Button */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+            onClick={(e) => {
+              e.stopPropagation();
+              setSelectedCase(caseItem);
+              setIsDeleteOpen(true);
+            }}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      )
     }
   ];
 
@@ -138,18 +199,61 @@ export function CaseDashboard({ cases }: CaseDashboardProps) {
         <TableModal
           data={cases}
           columns={columns}
-          emptyMessage="No cases found. Create your first case to get started"
-          getRowKey={(caseItem) =>
-            caseItem.id || (caseItem as any).directCaseId
-          }
+          emptyMessage="No cases found."
+          getRowKey={(caseItem) => caseItem.id}
+          onRowClick={(item) => {
+            setSelectedCase(item);
+            setIsDetailsOpen(true);
+          }}
         />
       </div>
 
-      <CaseDetailsModal
+      {/* <CaseDetailsModal
         selectedCase={selectedCase}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+      /> */}
+
+      {/* 1. Case Details Modal */}
+      <CaseDetailsModal
+        selectedCase={selectedCase}
+        isOpen={isDetailsOpen}
+        onClose={() => setIsDetailsOpen(false)}
       />
+
+      {/* Edit Modal using your CreateModal */}
+      <CreateModal
+        modalTitle={`Edit Case: ${selectedCase?.caseCode || ""}`}
+        triggerText=""
+        isOpen={isEditOpen}
+        onOpenChange={setIsEditOpen}
+        customTrigger={<span className="hidden" />}
+      >
+        <CaseForm
+          caseData={selectedCase}
+          onClose={() => setIsEditOpen(false)}
+          onSuccess={() => {
+            setIsEditOpen(false);
+          }}
+        />
+      </CreateModal>
+
+      {/* Delete Modal using your CreateModal */}
+      <CreateModal
+        modalTitle="Confirm Deletion"
+        triggerText=""
+        isOpen={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        customTrigger={<span className="hidden" />}
+      >
+        {selectedCase && (
+          <DeleteCaseForm
+            caseData={selectedCase}
+            onClose={() => setIsDeleteOpen(false)}
+            onSuccess={() => setIsDeleteOpen(false)}
+          />
+        )}
+      </CreateModal>
     </>
   );
 }

@@ -8,16 +8,13 @@ import { DocumentsPanel } from "@/components/dashboard/dashboard/DocumentPanel";
 import { MessagesPanel } from "@/components/dashboard/dashboard/MessagePanel";
 import { PerformanceReviewPanel } from "@/components/dashboard/dashboard/PerformanceReviewPanel";
 import React, { useEffect, useMemo } from "react";
-import { useDocumentStore } from "@/store/documentStore";
 import { useAuthStore } from "@/store/authStore";
-import useConsultationStore from "@/store/consultationStore";
 import { useBillingStore } from "@/store/setRateBill";
 
 export default function AdminDashboardPage() {
   const { cases, fetchCases } = useCaseStore();
   const { fetchBillingInitialData } = useBillingStore();
   const { counsel, fetchCounsels } = useCounselStore();
-  // const { documents } = useDocumentStore();
 
   const { user } = useAuthStore();
   const isAdmin = user?.role === "ADMIN";
@@ -69,8 +66,8 @@ export default function AdminDashboardPage() {
           <div
             className={`grid gap-4 ${
               isAdmin
-                ? "grid-cols-2" // Admin: 2x2 inside the 2/3 column
-                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4" // Staff: Straight 4-card line
+                ? "grid-cols-2"
+                : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
             }`}
           >
             <OverviewMetrics title="Total Cases" value={cases.length} />
@@ -99,7 +96,7 @@ export default function AdminDashboardPage() {
         />
         <DocumentsPanel
           documents={recentDocuments}
-          viewAllLink={isAdmin ? "/admin/documents" : "/staff/document"}
+          viewAllLink={isAdmin ? "/admin/document" : "/staff/document"}
         />
       </div>
 
