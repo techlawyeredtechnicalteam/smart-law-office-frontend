@@ -8,20 +8,20 @@ export function DocumentsPanel({
   viewAllLink
 }: {
   documents: any[];
-  viewAllLink: string;
+  viewAllLink?: string;
 }) {
   return (
     <div className="bg-white p-6 rounded-xl border shadow-sm">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-lg font-bold text-gray-800">Recent Documents</h3>
-        <Link href={viewAllLink}>
-          <Button
-            variant="ghost"
-            className="text-violet-600 hover:text-violet-700 font-medium"
+        {viewAllLink && (
+          <Link
+            href={viewAllLink}
+            className="text-sm text-blue-600 hover:underline"
           >
             View All
-          </Button>
-        </Link>
+          </Link>
+        )}
       </div>
 
       <div className="space-y-4">

@@ -11,7 +11,7 @@ export function CaseTablePanel({
   viewAllLink
 }: {
   cases: any[];
-  viewAllLink: string;
+  viewAllLink?: string;
 }) {
   return (
     <Card className="shadow-sm border border-gray-100 overflow-hidden">
@@ -24,11 +24,14 @@ export function CaseTablePanel({
             Click on any row to view full case details and documents.
           </p> */}
         </div>
-        <Link href={viewAllLink}>
-          <Button variant="ghost" className="text-purple-600 text-sm">
+        {viewAllLink && (
+          <Link
+            href={viewAllLink}
+            className="text-sm text-blue-600 hover:underline"
+          >
             View All
-          </Button>
-        </Link>
+          </Link>
+        )}
       </CardHeader>
       <CardContent className="p-0 border-t border-gray-50">
         <CaseDashboard cases={cases} />

@@ -30,8 +30,20 @@ export default function AdminDashboardPage() {
     init();
   }, [isAdmin, fetchBillingInitialData, fetchCases, fetchCounsels]);
 
+  const assignedToMe = useMemo(() => {
+    if (isAdmin) return cases;
+
+    const currentUserEmail = user?.email?.toLowerCase();
+    return cases.filter(
+      (c) => c.staffEmail?.toLowerCase() === currentUserEmail
+    );
+  }, [cases, user, isAdmin]);
+
+  // Use 'assignedToMe' for your tables and document counts
+  const recentCases = useMemo(() => assignedToMe.slice(0, 5), [assignedToMe]);
+  // Use filteredCases for documents
   const allDocuments = useMemo(() => {
-    return cases.flatMap((c) =>
+    return assignedToMe.flatMap((c) =>
       (c.documents || []).map((doc) => ({
         ...doc,
         caseName: c.clientName,
@@ -39,16 +51,14 @@ export default function AdminDashboardPage() {
         status: "Discovery"
       }))
     );
-  }, [cases]);
+  }, [assignedToMe]);
+
+  const documentCount = allDocuments.length;
 
   const recentDocuments = useMemo(
     () => allDocuments.slice(0, 5),
     [allDocuments]
   );
-  const documentCount = allDocuments.length;
-
-  // 2. Slice first 5 cases
-  const recentCases = useMemo(() => cases.slice(0, 5), [cases]);
 
   return (
     <div className="p-6 space-y-6">
@@ -70,7 +80,7 @@ export default function AdminDashboardPage() {
                 : "grid-cols-1 md:grid-cols-2 lg:grid-cols-4"
             }`}
           >
-            <OverviewMetrics title="Total Cases" value={cases.length} />
+            <OverviewMetrics title="Total Cases" value={assignedToMe.length} />
             {isAdmin ? (
               <OverviewMetrics title="Counsel" value={counsel.length} />
             ) : (
@@ -96,7 +106,7 @@ export default function AdminDashboardPage() {
         />
         <DocumentsPanel
           documents={recentDocuments}
-          viewAllLink={isAdmin ? "/admin/document" : "/staff/document"}
+          viewAllLink={!isAdmin ? "/staff/document" : undefined}
         />
       </div>
 

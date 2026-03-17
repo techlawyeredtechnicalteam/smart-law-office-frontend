@@ -59,7 +59,7 @@ export const CaseDetailsModal = ({
         </div>
 
         {/* Top Info Bar (The Grid Layout) */}
-        <div className="bg-white grid grid-cols-2 md:grid-cols-5 gap-6 p-6 border-b border-gray-50">
+        <div className="bg-white grid grid-cols-2 md:grid-cols-4 gap-6 p-6 border-b border-gray-50">
           <DetailItem label="Case ID" value={selectedCase.caseCode} isBold />
           <DetailItem
             label="Client Name"
@@ -83,11 +83,11 @@ export const CaseDetailsModal = ({
             }
             icon={<Calendar className="h-4 w-4 text-gray-400" />}
           />
-          <DetailItem
-            label="Category"
-            value={selectedCase.caseType || "Legal Case"}
-            icon={<Clock className="h-4 w-4 text-gray-400" />}
-          />
+          {/* <DetailItem
+              label="Category"
+              value={selectedCase.caseType || "Legal Case"}
+              icon={<Clock className="h-4 w-4 text-gray-400" />}
+            /> */}
         </div>
 
         {/* Notes & Content Section */}

@@ -82,6 +82,7 @@ interface CaseState {
   fetchCases: () => Promise<void>;
   fetchCaseTypes: () => Promise<void>;
   calculateStats: (allCases: Case[]) => void;
+  getAssignedCases: () => Case[];
   executeCreate: (values: createCaseSchema, role: string) => Promise<boolean>;
   executeUpdate: (id: string, values: any) => Promise<boolean>;
   executeDelete: (caseCode: string) => Promise<boolean>;
@@ -144,6 +145,20 @@ export const useCaseStore = create<CaseState>((set, get) => ({
         meetingHours: 0
       }
     });
+  },
+
+  getAssignedCases: () => {
+    const user = useAuthStore.getState().user;
+    const allCases = get().cases;
+
+    if (user?.role === "ADMIN") {
+      return allCases; // Admins see everything
+    }
+
+    // Staff only see cases where their email matches
+    return allCases.filter(
+      (c) => c.staffEmail.toLowerCase() === user?.email?.toLowerCase()
+    );
   },
 
   fetchCases: async () => {
