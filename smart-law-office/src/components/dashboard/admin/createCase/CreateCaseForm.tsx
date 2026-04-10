@@ -71,6 +71,7 @@ const CaseForm = ({ caseData, onSuccess, onClose }: CaseFormProps) => {
       nextAdjournedDate: caseData?.nextAdjournedAt?.split("T")[0] || "",
       notes: caseData?.notes === "No notes added" ? "" : caseData?.notes || "",
       document: caseData?.documents?.[0]?.url || "",
+      documentName:"",
       title: caseData?.title || "",
       status: caseData?.status || "Scheduled"
     }
@@ -161,7 +162,10 @@ const CaseForm = ({ caseData, onSuccess, onClose }: CaseFormProps) => {
             id="case-doc-upload"
             label="Case document Upload"
             fileData={form.watch("document") || null}
-            onFileChange={(data) => form.setValue("document", data || "")}
+            onFileChange={(data,name) => {
+              form.setValue("document", data || "")
+              form.setValue("documentName", name || "")
+            }}
             maxSize={10}
             accept=".pdf,.docx,.jpg"
           />

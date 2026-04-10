@@ -15,7 +15,8 @@ export const createCaseSchema = z.object({
   lastAdjournedDate: z.string().catch(""),
   nextAdjournedDate: z.string().catch(""),
   notes: z.string().catch(""),
-  document: z.string().catch("")
+  document: z.string().catch(""),
+  documentName:z.string().optional().catch("")
 });
 
 export type createCaseSchema = z.infer<typeof createCaseSchema>;

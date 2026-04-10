@@ -250,7 +250,7 @@ export const useCaseStore = create<CaseState>((set, get) => ({
               ...commonData,
               staffEmail: values.staffEmail
             })
-          : await staffCreateCase({ ...commonData, document: values.document });
+          : await staffCreateCase({ ...commonData, document: values.document,documentName:values.documentName });
 
       // Only refresh and return true if response is successful
       if (response.status === 200 || response.status === 201) {
@@ -281,7 +281,8 @@ export const useCaseStore = create<CaseState>((set, get) => ({
         caseTypeId: values.caseTypeId,
         lastAdjournedAt: values.lastAdjournedDate,
         nextAdjournedAt: values.nextAdjournedDate,
-        status: values.status
+        status: values.status,
+        documentName:values.documentName
       };
       await updateCase(id, payload);
       await get().fetchCases();
