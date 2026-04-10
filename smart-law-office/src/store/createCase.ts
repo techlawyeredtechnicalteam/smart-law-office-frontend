@@ -248,7 +248,9 @@ export const useCaseStore = create<CaseState>((set, get) => ({
         role === "ADMIN"
           ? await adminCreateCase({
               ...commonData,
-              staffEmail: values.staffEmail
+              staffEmail: values.staffEmail,
+              document: values.document,
+              documentName:values.documentName
             })
           : await staffCreateCase({ ...commonData, document: values.document,documentName:values.documentName });
 
